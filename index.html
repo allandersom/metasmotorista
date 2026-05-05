@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Metas - Frota SGC</title>
+    <title>Sistema de Metas - Frota</title>
+    <!-- Importando a biblioteca de Gráficos (Chart.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -12,6 +14,34 @@
             margin: 0;
             padding: 20px;
         }
+        
+        /* Menu Superior de Abas */
+        .main-navigation {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .nav-tab {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #6c757d;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.2s;
+        }
+        .nav-tab:hover { background: #e9ecef; }
+        .nav-tab.active {
+            background: #0d6efd;
+            color: #fff;
+        }
+
         .topbar {
             background: #fff;
             padding: 15px 30px;
@@ -24,56 +54,43 @@
             flex-wrap: wrap;
             gap: 15px;
         }
-        .topbar h2 {
-            margin: 0;
-            color: #2c3e50;
-            border-left: 4px solid #0d6efd;
-            padding-left: 10px;
-        }
-        .global-controls {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
+        .topbar h2 { margin: 0; color: #2c3e50; border-left: 4px solid #0d6efd; padding-left: 10px; }
+        .global-controls { display: flex; gap: 20px; align-items: center; }
         
-        /* Resumos Globais */
-        .resumo-badge {
-            background: #e9ecef;
-            padding: 10px 15px;
-            border-radius: 8px;
-            border-left: 4px solid #198754;
-            display: flex;
-            flex-direction: column;
-        }
+        .resumo-badge { background: #e9ecef; padding: 10px 15px; border-radius: 8px; border-left: 4px solid #198754; display: flex; flex-direction: column; }
         .resumo-badge.semana { border-left-color: #0d6efd; }
         .resumo-titulo { font-size: 11px; font-weight: bold; color: #6c757d; text-transform: uppercase; }
         .resumo-valor { font-size: 18px; font-weight: bold; color: #212529; }
 
-        /* Layout Principal */
-        .app-layout {
-            display: flex;
-            gap: 20px;
-            align-items: flex-start;
-        }
+        .app-layout { display: flex; gap: 20px; align-items: flex-start; }
 
-        /* Sidebar de Motoristas */
+        /* Sidebar e Busca */
         .sidebar {
             width: 260px;
             background: #fff;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             padding: 15px;
-            height: calc(100vh - 150px);
-            overflow-y: auto;
+            height: calc(100vh - 220px);
+            display: flex;
+            flex-direction: column;
             flex-shrink: 0;
         }
-        .sidebar h3 {
-            margin-top: 0;
-            font-size: 16px;
-            color: #495057;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
+        .sidebar h3 { margin-top: 0; font-size: 16px; color: #495057; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .search-box:focus { outline: none; border-color: #0d6efd; }
+        
+        .driver-list-container {
+            overflow-y: auto;
+            flex: 1;
         }
         .driver-list { list-style: none; padding: 0; margin: 0; }
         .driver-item {
@@ -88,68 +105,28 @@
             border: 1px solid transparent;
         }
         .driver-item:hover { background: #e9ecef; transform: translateX(5px); }
-        .driver-item.active {
-            background: #0d6efd;
-            color: #fff;
-            border-color: #0a58ca;
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2);
-            transform: translateX(5px);
-        }
+        .driver-item.active { background: #0d6efd; color: #fff; border-color: #0a58ca; font-weight: bold; box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2); transform: translateX(5px); }
 
-        /* Painel Principal (Direita) */
         .main-panel {
             flex: 1;
             background: #fff;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             padding: 25px;
-            min-height: calc(100vh - 150px);
+            min-height: calc(100vh - 220px);
         }
         .empty-state { text-align: center; color: #adb5bd; margin-top: 100px; font-size: 1.2em; }
         
-        .header-motorista {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eee;
-        }
+        .header-motorista { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #eee; }
         .header-motorista h3 { margin: 0 0 10px 0; color: #0d6efd; font-size: 24px; }
 
-        /* NOVOS RESUMOS DO MOTORISTA */
-        .resumo-motorista-container {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .resumo-motorista-box {
-            flex: 1;
-            background: #f8f9fa;
-            padding: 12px 15px;
-            border-radius: 6px;
-            border-left: 4px solid #198754;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid #e9ecef;
-            border-right: 1px solid #e9ecef;
-            border-bottom: 1px solid #e9ecef;
-        }
+        .resumo-motorista-container { display: flex; gap: 15px; margin-bottom: 20px; }
+        .resumo-motorista-box { flex: 1; background: #f8f9fa; padding: 12px 15px; border-radius: 6px; border-left: 4px solid #198754; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e9ecef; border-right: 1px solid #e9ecef; border-bottom: 1px solid #e9ecef; }
         .resumo-motorista-box.semana { border-left-color: #0d6efd; }
         .resumo-motorista-box span { font-size: 12px; color: #6c757d; font-weight: bold; text-transform: uppercase; }
         .resumo-motorista-box strong { font-size: 18px; color: #212529; }
 
-        /* Formulário de Lançamento */
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto auto;
-            gap: 15px;
-            align-items: end;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-            margin-bottom: 25px;
-        }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 15px; align-items: end; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; margin-bottom: 25px; }
         label { font-weight: 600; font-size: 0.85em; margin-bottom: 5px; display: block; color: #495057; }
         input, select, button { padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 14px; width: 100%; box-sizing: border-box;}
         .checkbox-group { display: flex; align-items: center; gap: 5px; height: 40px; }
@@ -158,7 +135,6 @@
         button.btn-primary { background-color: #0d6efd; color: white; border: none; cursor: pointer; font-weight: bold; }
         button.btn-primary:hover { background-color: #0b5ed7; }
 
-        /* Tabela do Motorista */
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
         th { background-color: #212529; color: white; }
@@ -168,97 +144,131 @@
         .badge-meta { background-color: #ffc107; color: #000; font-size: 10px; padding: 3px 6px; border-radius: 4px; margin-left: 8px; font-weight: bold; }
         .badge-feriado { background-color: #17a2b8; color: #fff; font-size: 10px; padding: 3px 6px; border-radius: 4px; margin-left: 8px; font-weight: bold; }
 
+        /* Estilos da Aba de Rankings */
+        #viewRankings { display: none; }
+        .ranking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .graficos-container { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grafico-card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .grafico-card h4 { text-align: center; color: #495057; margin-top: 0; }
+        canvas { width: 100% !important; height: 400px !important; }
+
     </style>
 </head>
 <body>
 
-    <!-- Barra Superior: Controles Globais da Frota -->
-    <div class="topbar">
-        <h2>Painel de Lançamentos</h2>
-        <div class="global-controls">
-            <div>
-                <label for="dataGlobal" style="margin-bottom: 2px;">Data Global da Frota:</label>
-                <input type="date" id="dataGlobal" onchange="atualizarResumosGlobais()">
+    <!-- Navegação Principal -->
+    <div class="main-navigation">
+        <button class="nav-tab active" id="btnTabLancamentos" onclick="mudarAba('lancamentos')">Painel de Lançamentos</button>
+        <button class="nav-tab" id="btnTabRankings" onclick="mudarAba('rankings')">Gráficos & Rankings</button>
+    </div>
+
+    <!-- VIEW 1: LANÇAMENTOS (O que você já usava) -->
+    <div id="viewLancamentos">
+        <div class="topbar">
+            <h2>Gestão Diária</h2>
+            <div class="global-controls">
+                <div>
+                    <label for="dataGlobal" style="margin-bottom: 2px;">Data Global da Frota:</label>
+                    <input type="date" id="dataGlobal" onchange="atualizarResumosGlobais()">
+                </div>
+                <div class="resumo-badge">
+                    <span class="resumo-titulo">Total da Frota (Dia)</span>
+                    <span class="resumo-valor" id="totalDiaGlobal">R$ 0,00</span>
+                </div>
+                <div class="resumo-badge semana">
+                    <span class="resumo-titulo">Total da Frota (Semana)</span>
+                    <span class="resumo-valor" id="totalSemanaGlobal">R$ 0,00</span>
+                </div>
             </div>
-            <div class="resumo-badge">
-                <span class="resumo-titulo">Total da Frota (Dia)</span>
-                <span class="resumo-valor" id="totalDiaGlobal">R$ 0,00</span>
+        </div>
+
+        <div class="app-layout">
+            <div class="sidebar">
+                <h3>Motoristas</h3>
+                <!-- BARRA DE PESQUISA ADICIONADA AQUI -->
+                <input type="text" id="buscaMotorista" class="search-box" placeholder="🔍 Buscar nome..." onkeyup="filtrarMotoristas()">
+                
+                <div class="driver-list-container">
+                    <ul class="driver-list" id="listaMotoristas"></ul>
+                </div>
             </div>
-            <div class="resumo-badge semana">
-                <span class="resumo-titulo">Total da Frota (Semana)</span>
-                <span class="resumo-valor" id="totalSemanaGlobal">R$ 0,00</span>
+
+            <div class="main-panel">
+                <div id="estadoVazio" class="empty-state">
+                    👈 Selecione um motorista na lista ao lado.
+                </div>
+
+                <div id="conteudoMotorista" style="display: none;">
+                    <div class="header-motorista">
+                        <h3 id="nomeMotoristaDisplay">Nome do Motorista</h3>
+                        <div class="resumo-motorista-container">
+                            <div class="resumo-motorista-box">
+                                <span>Total de Diárias (Na Data Abaixo):</span>
+                                <strong id="motoristaTotalDia">R$ 0,00</strong>
+                            </div>
+                            <div class="resumo-motorista-box semana">
+                                <span>Total na Semana (Da Data Abaixo):</span>
+                                <strong id="motoristaTotalSemana">R$ 0,00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div>
+                            <label for="dataLancamento">Data do Serviço:</label>
+                            <input type="date" id="dataLancamento" onchange="atualizarResumosDoMotorista()">
+                        </div>
+                        <div>
+                            <label for="servicos">Qtd de Serviços:</label>
+                            <input type="number" id="servicos" min="0" placeholder="Ex: 10">
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="feriado">
+                            <label for="feriado">É Feriado?</label>
+                        </div>
+                        <button class="btn-primary" onclick="salvarLancamento()">Lançar Meta</button>
+                    </div>
+
+                    <h4>Histórico de Serviços</h4>
+                    <table id="tabelaHistorico">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Serviços</th>
+                                <th>Tipo de Dia</th>
+                                <th>Valor (R$)</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Layout Principal -->
-    <div class="app-layout">
-        
-        <!-- Sidebar Esquerda -->
-        <div class="sidebar">
-            <h3>Motoristas</h3>
-            <ul class="driver-list" id="listaMotoristas"></ul>
+    <!-- VIEW 2: GRÁFICOS E RANKINGS (Nova Aba) -->
+    <div id="viewRankings">
+        <div class="topbar">
+            <h2>Painel de Resultados (Rankings)</h2>
+            <div class="global-controls">
+                <div>
+                    <label for="mesFiltro" style="margin-bottom: 2px;">Selecione o Mês:</label>
+                    <!-- Campo de input mês (YYYY-MM) -->
+                    <input type="month" id="mesFiltro" onchange="gerarGraficos()">
+                </div>
+            </div>
         </div>
 
-        <!-- Painel Central do Motorista -->
-        <div class="main-panel">
-            
-            <div id="estadoVazio" class="empty-state">
+        <div class="graficos-container">
+            <div class="grafico-card">
+                <h4>🏆 Top Produtividade (Qtd de Serviços)</h4>
+                <canvas id="chartServicos"></canvas>
             </div>
-
-            <div id="conteudoMotorista" style="display: none;">
-                
-                <div class="header-motorista">
-                    <h3 id="nomeMotoristaDisplay">Nome do Motorista</h3>
-                    
-                    <!-- NOVOS RESUMOS INDIVIDUAIS DO MOTORISTA -->
-                    <div class="resumo-motorista-container">
-                        <div class="resumo-motorista-box">
-                            <span>Total de Diárias (Na Data Abaixo):</span>
-                            <strong id="motoristaTotalDia">R$ 0,00</strong>
-                        </div>
-                        <div class="resumo-motorista-box semana">
-                            <span>Total na Semana (Da Data Abaixo):</span>
-                            <strong id="motoristaTotalSemana">R$ 0,00</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Formulário de Lançamento -->
-                <div class="form-grid">
-                    <div>
-                        <label for="dataLancamento">Data do Serviço:</label>
-                        <input type="date" id="dataLancamento" onchange="atualizarResumosDoMotorista()">
-                    </div>
-                    <div>
-                        <label for="servicos">Qtd de Serviços:</label>
-                        <input type="number" id="servicos" min="0" placeholder="Ex: 10">
-                    </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="feriado">
-                        <label for="feriado">É Feriado?</label>
-                    </div>
-                    <button class="btn-primary" onclick="salvarLancamento()">Lançar Meta</button>
-                </div>
-
-                <!-- Histórico -->
-                <h4>Histórico de Serviços</h4>
-                <table id="tabelaHistorico">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Serviços</th>
-                            <th>Tipo de Dia</th>
-                            <th>Valor (R$)</th>
-                            <th>Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Gerado via JS -->
-                    </tbody>
-                </table>
+            <div class="grafico-card">
+                <h4>💰 Top Faturamento (R$ Recebido)</h4>
+                <canvas id="chartDinheiro"></canvas>
             </div>
-
         </div>
     </div>
 
@@ -271,15 +281,53 @@
         ];
 
         let motoristaSelecionado = null;
+        let chartInstanciaServicos = null;
+        let chartInstanciaDinheiro = null;
 
         window.onload = () => {
             const dataHoje = new Date();
             document.getElementById('dataGlobal').valueAsDate = dataHoje;
             document.getElementById('dataLancamento').valueAsDate = dataHoje;
             
+            // Configura o input de mês com o mês atual para o gráfico
+            const anoMesAtual = dataHoje.toISOString().substring(0, 7);
+            document.getElementById('mesFiltro').value = anoMesAtual;
+            
             renderizarSidebar();
             atualizarResumosGlobais();
         };
+
+        // --- CONTROLE DE ABAS ---
+        function mudarAba(aba) {
+            document.getElementById('btnTabLancamentos').classList.remove('active');
+            document.getElementById('btnTabRankings').classList.remove('active');
+            document.getElementById('viewLancamentos').style.display = 'none';
+            document.getElementById('viewRankings').style.display = 'none';
+
+            if (aba === 'lancamentos') {
+                document.getElementById('btnTabLancamentos').classList.add('active');
+                document.getElementById('viewLancamentos').style.display = 'block';
+            } else if (aba === 'rankings') {
+                document.getElementById('btnTabRankings').classList.add('active');
+                document.getElementById('viewRankings').style.display = 'block';
+                gerarGraficos(); // Atualiza os gráficos assim que abrir a aba
+            }
+        }
+
+        // --- SISTEMA DE PESQUISA DE MOTORISTA ---
+        function filtrarMotoristas() {
+            const input = document.getElementById('buscaMotorista').value.toUpperCase();
+            const itensLista = document.querySelectorAll('.driver-item');
+            
+            itensLista.forEach(item => {
+                const nome = item.textContent || item.innerText;
+                if (nome.toUpperCase().indexOf(input) > -1) {
+                    item.style.display = "";
+                } else {
+                    item.style.display = "none";
+                }
+            });
+        }
 
         function renderizarSidebar() {
             const ul = document.getElementById('listaMotoristas');
@@ -339,15 +387,12 @@
 
             const dataObj = new Date(dataStr + 'T00:00:00');
             const diaSemana = dataObj.getDay(); 
-            
             const isDomingo = diaSemana === 0;
             const isSabado = diaSemana === 6;
-
             const metaBase = (motoristaSelecionado === "ROBERTO CARLOS") ? 4 : 8;
 
             let valor = 0;
             let bateuMetaSemana = false;
-
             let bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
 
             if (isSabado && !isFeriado) {
@@ -355,10 +400,8 @@
                 for (let i = 1; i <= 5; i++) {
                     let dataCheck = new Date(dataObj);
                     dataCheck.setDate(dataObj.getDate() - (6 - i));
-                    
                     let dataCheckStr = formatarDataParaBusca(dataCheck);
                     let lancamentoDia = bancoDados[dataCheckStr]?.[motoristaSelecionado];
-                    
                     if (!lancamentoDia || lancamentoDia.servicos < metaBase) {
                         bateuMetaSemana = false;
                         break;
@@ -376,9 +419,7 @@
                 }
             }
             
-            if (!bancoDados[dataStr]) {
-                bancoDados[dataStr] = {};
-            }
+            if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
 
             bancoDados[dataStr][motoristaSelecionado] = {
                 servicos: servicos,
@@ -399,19 +440,14 @@
 
         function carregarHistoricoMotorista() {
             if (!motoristaSelecionado) return;
-
             const tbody = document.querySelector('#tabelaHistorico tbody');
             tbody.innerHTML = ''; 
-
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             let historico = [];
 
             for (const data in bancoDados) {
                 if (bancoDados[data][motoristaSelecionado]) {
-                    historico.push({
-                        data: data,
-                        dados: bancoDados[data][motoristaSelecionado]
-                    });
+                    historico.push({ data: data, dados: bancoDados[data][motoristaSelecionado] });
                 }
             }
 
@@ -424,12 +460,9 @@
 
             historico.forEach(item => {
                 const tr = document.createElement('tr');
-                
                 let tagsDia = '';
                 const dataObj = new Date(item.data + 'T00:00:00');
-                const diaSemana = dataObj.getDay();
-                
-                if (diaSemana === 0) tagsDia += '<span class="badge-feriado">DOMINGO</span> ';
+                if (dataObj.getDay() === 0) tagsDia += '<span class="badge-feriado">DOMINGO</span> ';
                 if (item.dados.isFeriado) tagsDia += '<span class="badge-feriado">FERIADO</span> ';
                 if (item.dados.ganhouBonusSemana) tagsDia += '<span class="badge-meta">BÔNUS SEMANAL</span>';
                 if (tagsDia === '') tagsDia = 'Normal';
@@ -449,11 +482,7 @@
             if(confirm(`Deseja apagar o lançamento do dia ${formatarDataParaExibicao(dataStr)}?`)) {
                 let bancoDados = JSON.parse(localStorage.getItem('metas_logistica'));
                 delete bancoDados[dataStr][motoristaSelecionado];
-                
-                if(Object.keys(bancoDados[dataStr]).length === 0) {
-                    delete bancoDados[dataStr];
-                }
-
+                if(Object.keys(bancoDados[dataStr]).length === 0) delete bancoDados[dataStr];
                 localStorage.setItem('metas_logistica', JSON.stringify(bancoDados));
                 carregarHistoricoMotorista();
                 atualizarResumosGlobais();
@@ -461,11 +490,6 @@
             }
         }
 
-        // ==========================================
-        // NOVAS FUNÇÕES DE CÁLCULO
-        // ==========================================
-
-        // Calcula APENAS do motorista selecionado
         function atualizarResumosDoMotorista() {
             if (!motoristaSelecionado) return;
             const dataRefStr = document.getElementById('dataLancamento').value;
@@ -473,18 +497,15 @@
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             
-            // Valor do Dia
             let totalDia = 0;
             if (bancoDados[dataRefStr] && bancoDados[dataRefStr][motoristaSelecionado]) {
                 totalDia = bancoDados[dataRefStr][motoristaSelecionado].valor;
             }
             document.getElementById('motoristaTotalDia').innerText = `R$ ${totalDia.toFixed(2).replace('.', ',')}`;
 
-            // Valor da Semana (Seg a Dom)
             let totalSemana = 0;
             const dataObj = new Date(dataRefStr + 'T00:00:00');
-            const diaSemana = dataObj.getDay(); 
-            const diffParaSegunda = (diaSemana === 0) ? -6 : 1 - diaSemana;
+            const diffParaSegunda = (dataObj.getDay() === 0) ? -6 : 1 - dataObj.getDay();
             const dataSegunda = new Date(dataObj);
             dataSegunda.setDate(dataObj.getDate() + diffParaSegunda);
 
@@ -500,7 +521,6 @@
             document.getElementById('motoristaTotalSemana').innerText = `R$ ${totalSemana.toFixed(2).replace('.', ',')}`;
         }
 
-        // Calcula GRANA GERAL DA EMPRESA
         function atualizarResumosGlobais() {
             const dataGlobalStr = document.getElementById('dataGlobal').value;
             if(!dataGlobalStr) return;
@@ -509,15 +529,12 @@
             
             let totalDiaGlobal = 0;
             const dadosDoDia = bancoDados[dataGlobalStr] || {};
-            for (const mot in dadosDoDia) {
-                totalDiaGlobal += dadosDoDia[mot].valor;
-            }
+            for (const mot in dadosDoDia) { totalDiaGlobal += dadosDoDia[mot].valor; }
             document.getElementById('totalDiaGlobal').innerText = `R$ ${totalDiaGlobal.toFixed(2).replace('.', ',')}`;
 
             let totalSemanaGlobal = 0;
             const dataObj = new Date(dataGlobalStr + 'T00:00:00');
-            const diaSemana = dataObj.getDay(); 
-            const diffParaSegunda = (diaSemana === 0) ? -6 : 1 - diaSemana;
+            const diffParaSegunda = (dataObj.getDay() === 0) ? -6 : 1 - dataObj.getDay();
             const dataSegunda = new Date(dataObj);
             dataSegunda.setDate(dataObj.getDate() + diffParaSegunda);
 
@@ -525,13 +542,83 @@
                 const diaCheck = new Date(dataSegunda);
                 diaCheck.setDate(dataSegunda.getDate() + i);
                 const diaCheckStr = formatarDataParaBusca(diaCheck);
-                
                 const dadosDia = bancoDados[diaCheckStr] || {};
-                for (const mot in dadosDia) {
-                    totalSemanaGlobal += dadosDia[mot].valor;
-                }
+                for (const mot in dadosDia) { totalSemanaGlobal += dadosDia[mot].valor; }
             }
             document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalSemanaGlobal.toFixed(2).replace('.', ',')}`;
+        }
+
+        // ==========================================
+        // SISTEMA DE GRÁFICOS E RANKINGS (CHART.JS)
+        // ==========================================
+        function gerarGraficos() {
+            const mesFiltro = document.getElementById('mesFiltro').value; // Formato: YYYY-MM
+            if (!mesFiltro) return;
+
+            const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
+            
+            // Objeto para acumular os totais do mês para cada motorista
+            let acumuladoMes = {};
+            motoristas.forEach(m => acumuladoMes[m] = { servicos: 0, valor: 0 });
+
+            // Vasculha o banco e soma tudo que pertence ao mês/ano selecionado
+            for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+                if (dataStr.startsWith(mesFiltro)) {
+                    for (const [mot, dados] of Object.entries(dadosDia)) {
+                        if (acumuladoMes[mot]) {
+                            acumuladoMes[mot].servicos += dados.servicos;
+                            acumuladoMes[mot].valor += dados.valor;
+                        }
+                    }
+                }
+            }
+
+            // Transforma o objeto em Arrays e ordena do maior para o menor
+            let rankServicos = Object.keys(acumuladoMes)
+                .map(mot => ({ nome: mot, val: acumuladoMes[mot].servicos }))
+                .filter(item => item.val > 0) // Remove quem não fez nada
+                .sort((a, b) => b.val - a.val);
+
+            let rankDinheiro = Object.keys(acumuladoMes)
+                .map(mot => ({ nome: mot, val: acumuladoMes[mot].valor }))
+                .filter(item => item.val > 0)
+                .sort((a, b) => b.val - a.val);
+
+            // Destrói os gráficos antigos antes de desenhar os novos para não bugar
+            if (chartInstanciaServicos) chartInstanciaServicos.destroy();
+            if (chartInstanciaDinheiro) chartInstanciaDinheiro.destroy();
+
+            // Configuração Gráfico de Serviços (Azul)
+            const ctxServicos = document.getElementById('chartServicos').getContext('2d');
+            chartInstanciaServicos = new Chart(ctxServicos, {
+                type: 'bar',
+                data: {
+                    labels: rankServicos.map(item => item.nome),
+                    datasets: [{
+                        label: 'Quantidade de Serviços',
+                        data: rankServicos.map(item => item.val),
+                        backgroundColor: '#0d6efd',
+                        borderRadius: 5
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Configuração Gráfico de Dinheiro (Verde)
+            const ctxDinheiro = document.getElementById('chartDinheiro').getContext('2d');
+            chartInstanciaDinheiro = new Chart(ctxDinheiro, {
+                type: 'bar',
+                data: {
+                    labels: rankDinheiro.map(item => item.nome),
+                    datasets: [{
+                        label: 'Valor Recebido (R$)',
+                        data: rankDinheiro.map(item => item.val),
+                        backgroundColor: '#198754',
+                        borderRadius: 5
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
         }
     </script>
 </body>
