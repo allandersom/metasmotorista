@@ -68,7 +68,6 @@
         }
         button:hover { background-color: #0b5ed7; }
         
-        /* Estilos da Tabela */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -97,6 +96,15 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+        }
+        .badge-meta {
+            background-color: #ffc107;
+            color: #000;
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -127,7 +135,6 @@
             <div class="form-group checkbox-group">
                 <input type="checkbox" id="feriado">
                 <label for="feriado" style="margin: 0; cursor: pointer;">É Feriado?</label>
-                <small style="display:block; color:#6c757d; font-size: 0.8em; margin-top: 4px;">(Domingos são detectados automaticamente)</small>
             </div>
 
             <button onclick="salvarLancamento()">Lançar Meta</button>
@@ -149,7 +156,6 @@
     </div>
 
     <script>
-        // Lista de motoristas organizada em ordem alfabética para facilitar a busca
         const motoristas = [
             "ADRIELSON", "BRUNO", "CLOVIS", "ELCIDES", "EMERSON", "JACKSON", 
             "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGO", 
@@ -157,9 +163,7 @@
             "MATHEUS", "MAYKEL", "PLATINIS", "RÉGIO", "ROBERTO CARLOS", "RODRIGO"
         ];
 
-        // Inicializa o sistema
         window.onload = () => {
-            // Preenche o select de motoristas
             const selectMotorista = document.getElementById('motorista');
             motoristas.forEach(mot => {
                 const option = document.createElement('option');
@@ -168,10 +172,17 @@
                 selectMotorista.appendChild(option);
             });
 
-            // Define a data de hoje como padrão no filtro
             document.getElementById('dataFiltro').valueAsDate = new Date();
             atualizarTabela();
         };
+
+        // Função auxiliar para formatar a data como YYYY-MM-DD mantendo o fuso local
+        function formatarDataParaBusca(data) {
+            const ano = data.getFullYear();
+            const mes = String(data.getMonth() + 1).padStart(2, '0');
+            const dia = String(data.getDate()).padStart(2, '0');
+            return `${ano}-${mes}-${dia}`;
+        }
 
         function salvarLancamento() {
             const dataStr = document.getElementById('dataFiltro').value;
@@ -184,15 +195,40 @@
                 return;
             }
 
-            // Descobre se a data escolhida é um Domingo (0 = Domingo, 1 = Segunda...)
-            // Corrige o fuso horário para a data exata selecionada no input
             const dataObj = new Date(dataStr + 'T00:00:00');
-            const isDomingo = dataObj.getDay() === 0;
+            const diaSemana = dataObj.getDay(); // 0 = Dom, 1 = Seg ... 6 = Sáb
+            
+            const isDomingo = diaSemana === 0;
+            const isSabado = diaSemana === 6;
 
             let valor = 0;
+            let bateuMetaSemana = false;
 
-            // Regra de negócio
-            if (isDomingo || isFeriado) {
+            // Busca o banco de dados atual
+            let bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
+
+            // SE FOR SÁBADO: Verifica o histórico de Segunda (1) a Sexta (5)
+            if (isSabado && !isFeriado) {
+                bateuMetaSemana = true; // Assume que bateu até provar o contrário
+
+                for (let i = 1; i <= 5; i++) {
+                    let dataCheck = new Date(dataObj);
+                    // Subtrai os dias para voltar na semana (Sábado é 6. Para voltar para Sexta(5), subtrai 1...)
+                    dataCheck.setDate(dataObj.getDate() - (6 - i));
+                    
+                    let dataCheckStr = formatarDataParaBusca(dataCheck);
+                    let lancamentoDia = bancoDados[dataCheckStr]?.[motorista];
+                    
+                    // Se não trabalhou no dia OU fez menos de 8 caixas, perde a meta do sábado
+                    if (!lancamentoDia || lancamentoDia.servicos < 8) {
+                        bateuMetaSemana = false;
+                        break;
+                    }
+                }
+            }
+
+            // APLICAÇÃO DAS REGRAS DE NEGÓCIO
+            if (isDomingo || isFeriado || (isSabado && bateuMetaSemana)) {
                 valor = servicos * 20;
             } else {
                 if (servicos >= 8) {
@@ -201,24 +237,20 @@
                     valor = 0;
                 }
             }
-
-            // Estrutura de salvamento no LocalStorage
-            let bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             
-            // Cria o objeto da data se não existir
             if (!bancoDados[dataStr]) {
                 bancoDados[dataStr] = {};
             }
 
-            // Salva os dados do motorista naquela data
+            // Salva os dados, incluindo uma flag se ele ganhou a bonificação da semana
             bancoDados[dataStr][motorista] = {
                 servicos: servicos,
-                valor: valor
+                valor: valor,
+                ganhouBonusSemana: (isSabado && bateuMetaSemana)
             };
 
             localStorage.setItem('metas_logistica', JSON.stringify(bancoDados));
             
-            // Limpa o input e atualiza
             document.getElementById('servicos').value = '';
             atualizarTabela();
         }
@@ -226,22 +258,24 @@
         function atualizarTabela() {
             const dataStr = document.getElementById('dataFiltro').value;
             const tbody = document.querySelector('#tabelaMetas tbody');
-            tbody.innerHTML = ''; // Limpa a tabela
+            tbody.innerHTML = ''; 
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             const dadosDoDia = bancoDados[dataStr] || {};
 
-            // Se não houver dados, mostra mensagem
             if (Object.keys(dadosDoDia).length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#6c757d;">Nenhum lançamento para esta data.</td></tr>';
                 return;
             }
 
-            // Preenche a tabela com os lançamentos do dia
             for (const [nomeMot, dados] of Object.entries(dadosDoDia)) {
                 const tr = document.createElement('tr');
+                
+                // Se ele ativou a meta semanal no sábado, mostra uma tag visual
+                let tagBonus = dados.ganhouBonusSemana ? '<span class="badge-meta">META SEMANAL BATIDA!</span>' : '';
+
                 tr.innerHTML = `
-                    <td><strong>${nomeMot}</strong></td>
+                    <td><strong>${nomeMot}</strong> ${tagBonus}</td>
                     <td>${dados.servicos}</td>
                     <td style="color: #198754; font-weight: bold;">R$ ${dados.valor.toFixed(2).replace('.', ',')}</td>
                     <td><button class="btn-delete" onclick="deletarLancamento('${dataStr}', '${nomeMot}')">Excluir</button></td>
