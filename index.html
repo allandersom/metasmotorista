@@ -3,198 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Metas - Frota</title>
+    <title>Sistema de Metas - Frota SGC</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f6f9;
+            background-color: #f0f2f5;
             color: #333;
             margin: 0;
             padding: 20px;
         }
-        .dashboard {
-            max-width: 900px;
-            margin: 0 auto;
+        .topbar {
             background: #fff;
-            padding: 20px 30px;
+            padding: 15px 30px;
             border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
-        h2 {
-            border-bottom: 2px solid #0d6efd;
-            padding-bottom: 10px;
+        .topbar h2 {
+            margin: 0;
             color: #2c3e50;
+            border-left: 4px solid #0d6efd;
+            padding-left: 10px;
         }
+        .global-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        /* Resumos Globais */
+        .resumo-badge {
+            background: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #198754;
+            display: flex;
+            flex-direction: column;
+        }
+        .resumo-badge.semana { border-left-color: #0d6efd; }
+        .resumo-titulo { font-size: 11px; font-weight: bold; color: #6c757d; text-transform: uppercase; }
+        .resumo-valor { font-size: 18px; font-weight: bold; color: #212529; }
+
+        /* Layout Principal: Sidebar + Conteúdo */
+        .app-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        /* Sidebar de Motoristas */
+        .sidebar {
+            width: 260px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 15px;
+            height: calc(100vh - 150px);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #495057;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .driver-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .driver-item {
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            color: #495057;
+            border: 1px solid transparent;
+        }
+        .driver-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        .driver-item.active {
+            background: #0d6efd;
+            color: #fff;
+            border-color: #0a58ca;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2);
+            transform: translateX(5px);
+        }
+
+        /* Painel Principal (Direita) */
+        .main-panel {
+            flex: 1;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 25px;
+            min-height: calc(100vh - 150px);
+        }
+        .empty-state {
+            text-align: center;
+            color: #adb5bd;
+            margin-top: 100px;
+            font-size: 1.2em;
+        }
+        
+        /* Formulário de Lançamento */
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr auto;
+            grid-template-columns: 1fr 1fr auto auto;
             gap: 15px;
             align-items: end;
-            margin-bottom: 20px;
             background: #f8f9fa;
             padding: 15px;
             border-radius: 8px;
             border: 1px solid #e9ecef;
+            margin-bottom: 25px;
         }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            font-weight: 600;
-            font-size: 0.9em;
-            margin-bottom: 5px;
-            color: #495057;
-        }
-        input, select, button {
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        .checkbox-group {
-            flex-direction: row;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        button {
-            background-color: #0d6efd;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-        button:hover { background-color: #0b5ed7; }
-        
-        /* Estilos dos Resumos */
-        .resumo-container {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .card-resumo {
-            flex: 1;
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 5px solid #198754;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .card-resumo.semana {
-            border-left-color: #0d6efd;
-        }
-        .resumo-titulo {
-            font-weight: bold;
-            color: #495057;
-            font-size: 14px;
-        }
-        .resumo-valor {
-            font-size: 20px;
-            font-weight: bold;
-            color: #212529;
-        }
+        label { font-weight: 600; font-size: 0.85em; margin-bottom: 5px; display: block; color: #495057; }
+        input, select, button { padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 14px; width: 100%; box-sizing: border-box;}
+        .checkbox-group { display: flex; align-items: center; gap: 5px; height: 40px; }
+        .checkbox-group input { width: auto; margin: 0; cursor: pointer; }
+        .checkbox-group label { margin: 0; cursor: pointer; font-size: 14px;}
+        button.btn-primary { background-color: #0d6efd; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button.btn-primary:hover { background-color: #0b5ed7; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #dee2e6;
-        }
-        th {
-            background-color: #212529;
-            color: white;
-        }
-        tr:hover { background-color: #f8f9fa; }
-        .btn-delete {
-            background-color: #dc3545;
-            padding: 5px 10px;
-            font-size: 12px;
-            border-radius: 3px;
-        }
-        .btn-delete:hover { background-color: #bb2d3b; }
-        
-        .header-controls {
+        /* Tabela do Motorista */
+        .header-motorista {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
         }
-        .badge-meta {
-            background-color: #ffc107;
-            color: #000;
-            font-size: 10px;
-            padding: 3px 6px;
-            border-radius: 4px;
-            margin-left: 8px;
-            font-weight: bold;
-        }
+        .header-motorista h3 { margin: 0; color: #0d6efd; font-size: 22px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #212529; color: white; }
+        tr:hover { background-color: #f8f9fa; }
+        .btn-delete { background-color: #dc3545; color: white; padding: 5px 10px; font-size: 12px; border-radius: 3px; border: none; cursor: pointer; }
+        .btn-delete:hover { background-color: #bb2d3b; }
+        .badge-meta { background-color: #ffc107; color: #000; font-size: 10px; padding: 3px 6px; border-radius: 4px; margin-left: 8px; font-weight: bold; }
+        .badge-feriado { background-color: #17a2b8; color: #fff; font-size: 10px; padding: 3px 6px; border-radius: 4px; margin-left: 8px; font-weight: bold; }
+
     </style>
 </head>
 <body>
 
-    <div class="dashboard">
-        <div class="header-controls">
-            <h2>Lançamento Diário de Metas</h2>
-            <div class="form-group">
-                <label for="dataFiltro">Visualizar/Lançar para o dia:</label>
-                <input type="date" id="dataFiltro" onchange="atualizarInterface()">
+    <!-- Barra Superior: Controles Globais e Resumos -->
+    <div class="topbar">
+        <h2>Painel de Lançamentos</h2>
+        <div class="global-controls">
+            <div>
+                <label for="dataGlobal" style="margin-bottom: 2px;">Data de Referência (Painel):</label>
+                <input type="date" id="dataGlobal" onchange="atualizarResumos()">
             </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="motorista">Motorista:</label>
-                <select id="motorista">
-                    <!-- Preenchido via JavaScript -->
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="servicos">Serviços Realizados:</label>
-                <input type="number" id="servicos" min="0" placeholder="Ex: 10">
-            </div>
-
-            <div class="form-group checkbox-group">
-                <input type="checkbox" id="feriado">
-                <label for="feriado" style="margin: 0; cursor: pointer;">É Feriado?</label>
-            </div>
-
-            <button onclick="salvarLancamento()">Lançar Meta</button>
-        </div>
-
-        <!-- Painel de Resumos Financeiros -->
-        <div class="resumo-container">
-            <div class="card-resumo">
-                <span class="resumo-titulo">Custo do Dia (Selecionado)</span>
+            <div class="resumo-badge">
+                <span class="resumo-titulo">Total da Frota (Dia)</span>
                 <span class="resumo-valor" id="totalDia">R$ 0,00</span>
             </div>
-            <div class="card-resumo semana">
-                <span class="resumo-titulo">Custo da Semana (Seg a Dom)</span>
+            <div class="resumo-badge semana">
+                <span class="resumo-titulo">Total da Frota (Semana)</span>
                 <span class="resumo-valor" id="totalSemana">R$ 0,00</span>
             </div>
         </div>
+    </div>
 
-        <table id="tabelaMetas">
-            <thead>
-                <tr>
-                    <th>Motorista</th>
-                    <th>Serviços</th>
-                    <th>Valor (R$)</th>
-                    <th>Ação</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Linhas geradas via JavaScript -->
-            </tbody>
-        </table>
+    <!-- Layout Principal -->
+    <div class="app-layout">
+        
+        <!-- Sidebar Esquerda: Lista de Motoristas -->
+        <div class="sidebar">
+            <h3>Motoristas</h3>
+            <ul class="driver-list" id="listaMotoristas">
+                <!-- Gerado via JS -->
+            </ul>
+        </div>
+
+        <!-- Painel Central: Detalhes do Motorista Selecionado -->
+        <div class="main-panel">
+            
+            <div id="estadoVazio" class="empty-state">
+                👈 Selecione um motorista na lista ao lado para lançar e ver os serviços.
+            </div>
+
+            <div id="conteudoMotorista" style="display: none;">
+                
+                <div class="header-motorista">
+                    <h3 id="nomeMotoristaDisplay">Nome do Motorista</h3>
+                </div>
+
+                <!-- Formulário de Lançamento Focado -->
+                <div class="form-grid">
+                    <div>
+                        <label for="dataLancamento">Data do Serviço:</label>
+                        <input type="date" id="dataLancamento">
+                    </div>
+                    <div>
+                        <label for="servicos">Qtd de Serviços:</label>
+                        <input type="number" id="servicos" min="0" placeholder="Ex: 10">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="feriado">
+                        <label for="feriado">É Feriado?</label>
+                    </div>
+                    <button class="btn-primary" onclick="salvarLancamento()">Lançar Meta</button>
+                </div>
+
+                <!-- Histórico do Motorista -->
+                <h4>Histórico de Serviços</h4>
+                <table id="tabelaHistorico">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Serviços</th>
+                            <th>Tipo de Dia</th>
+                            <th>Valor (R$)</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Linhas geradas via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
     </div>
 
     <script>
@@ -205,18 +252,51 @@
             "MATHEUS", "MAYKEL", "PLATINIS", "RÉGIO", "ROBERTO CARLOS", "RODRIGO"
         ];
 
-        window.onload = () => {
-            const selectMotorista = document.getElementById('motorista');
-            motoristas.forEach(mot => {
-                const option = document.createElement('option');
-                option.value = mot;
-                option.textContent = mot;
-                selectMotorista.appendChild(option);
-            });
+        let motoristaSelecionado = null;
 
-            document.getElementById('dataFiltro').valueAsDate = new Date();
-            atualizarInterface();
+        window.onload = () => {
+            const dataHoje = new Date();
+            document.getElementById('dataGlobal').valueAsDate = dataHoje;
+            document.getElementById('dataLancamento').valueAsDate = dataHoje;
+            
+            renderizarSidebar();
+            atualizarResumos();
         };
+
+        // Renderiza a lista de motoristas na lateral
+        function renderizarSidebar() {
+            const ul = document.getElementById('listaMotoristas');
+            ul.innerHTML = '';
+
+            motoristas.forEach(mot => {
+                const li = document.createElement('li');
+                li.className = 'driver-item';
+                li.textContent = mot;
+                li.onclick = () => selecionarMotorista(mot, li);
+                ul.appendChild(li);
+            });
+        }
+
+        // Função ativada ao clicar em um motorista na esquerda
+        function selecionarMotorista(nome, elementoLista) {
+            motoristaSelecionado = nome;
+            
+            // Atualiza classe visual no menu
+            document.querySelectorAll('.driver-item').forEach(el => el.classList.remove('active'));
+            elementoLista.classList.add('active');
+
+            // Esconde estado vazio e mostra painel
+            document.getElementById('estadoVazio').style.display = 'none';
+            document.getElementById('conteudoMotorista').style.display = 'block';
+
+            // Atualiza Título
+            document.getElementById('nomeMotoristaDisplay').textContent = nome;
+
+            // Sincroniza a data de lançamento com a data global para facilitar
+            document.getElementById('dataLancamento').value = document.getElementById('dataGlobal').value;
+
+            carregarHistoricoMotorista();
+        }
 
         function formatarDataParaBusca(data) {
             const ano = data.getFullYear();
@@ -225,14 +305,23 @@
             return `${ano}-${mes}-${dia}`;
         }
 
+        function formatarDataParaExibicao(dataStr) {
+            const partes = dataStr.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
         function salvarLancamento() {
-            const dataStr = document.getElementById('dataFiltro').value;
-            const motorista = document.getElementById('motorista').value;
+            if (!motoristaSelecionado) {
+                alert("Selecione um motorista primeiro!");
+                return;
+            }
+
+            const dataStr = document.getElementById('dataLancamento').value;
             const servicos = parseInt(document.getElementById('servicos').value);
             const isFeriado = document.getElementById('feriado').checked;
 
             if (!dataStr || isNaN(servicos) || servicos < 0) {
-                alert("Preencha a data e uma quantidade válida de serviços.");
+                alert("Preencha uma quantidade válida de serviços.");
                 return;
             }
 
@@ -242,25 +331,24 @@
             const isDomingo = diaSemana === 0;
             const isSabado = diaSemana === 6;
 
-            // REGRA DA MERDA DO CAMINHÃO DO ROBERTO CARLOS 😂
-            const metaBase = (motorista === "ROBERTO CARLOS") ? 4 : 8;
+            // REGRA DO CAMINHÃO DO ROBERTO CARLOS MANTIDA
+            const metaBase = (motoristaSelecionado === "ROBERTO CARLOS") ? 4 : 8;
 
             let valor = 0;
             let bateuMetaSemana = false;
 
             let bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
 
+            // Verificação de Meta de Sábado
             if (isSabado && !isFeriado) {
                 bateuMetaSemana = true; 
-
                 for (let i = 1; i <= 5; i++) {
                     let dataCheck = new Date(dataObj);
                     dataCheck.setDate(dataObj.getDate() - (6 - i));
                     
                     let dataCheckStr = formatarDataParaBusca(dataCheck);
-                    let lancamentoDia = bancoDados[dataCheckStr]?.[motorista];
+                    let lancamentoDia = bancoDados[dataCheckStr]?.[motoristaSelecionado];
                     
-                    // Verifica se bateu a meta dele especificamente
                     if (!lancamentoDia || lancamentoDia.servicos < metaBase) {
                         bateuMetaSemana = false;
                         break;
@@ -268,8 +356,9 @@
                 }
             }
 
+            // NOVA REGRA DE VALOR: DOMINGO, FERIADO E SÁBADO (COM META BASTIDA) = R$ 30
             if (isDomingo || isFeriado || (isSabado && bateuMetaSemana)) {
-                valor = servicos * 30;
+                valor = servicos * 30; // ATUALIZADO DE 20 PARA 30
             } else {
                 if (servicos >= metaBase) {
                     valor = 50 + ((servicos - metaBase) * 10);
@@ -282,73 +371,114 @@
                 bancoDados[dataStr] = {};
             }
 
-            bancoDados[dataStr][motorista] = {
+            bancoDados[dataStr][motoristaSelecionado] = {
                 servicos: servicos,
                 valor: valor,
+                isFeriado: isFeriado,
                 ganhouBonusSemana: (isSabado && bateuMetaSemana)
             };
 
             localStorage.setItem('metas_logistica', JSON.stringify(bancoDados));
             
+            // Reset do input e atualização visual
             document.getElementById('servicos').value = '';
-            atualizarInterface();
+            document.getElementById('feriado').checked = false;
+            
+            carregarHistoricoMotorista();
+            atualizarResumos(); // Atualiza painel financeiro superior
         }
 
-        // Centraliza as atualizações de tela
-        function atualizarInterface() {
-            const dataStr = document.getElementById('dataFiltro').value;
-            atualizarTabela(dataStr);
-            atualizarResumos(dataStr);
-        }
+        // Carrega apenas os serviços do motorista selecionado
+        function carregarHistoricoMotorista() {
+            if (!motoristaSelecionado) return;
 
-        function atualizarTabela(dataStr) {
-            const tbody = document.querySelector('#tabelaMetas tbody');
+            const tbody = document.querySelector('#tabelaHistorico tbody');
             tbody.innerHTML = ''; 
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
-            const dadosDoDia = bancoDados[dataStr] || {};
+            let historico = [];
 
-            if (Object.keys(dadosDoDia).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#6c757d;">Nenhum lançamento para esta data.</td></tr>';
+            // Varre o banco procurando lançamentos deste motorista
+            for (const data in bancoDados) {
+                if (bancoDados[data][motoristaSelecionado]) {
+                    historico.push({
+                        data: data,
+                        dados: bancoDados[data][motoristaSelecionado]
+                    });
+                }
+            }
+
+            // Ordena da data mais recente para a mais antiga
+            historico.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+            if (historico.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#6c757d;">Nenhum lançamento encontrado para este motorista.</td></tr>';
                 return;
             }
 
-            for (const [nomeMot, dados] of Object.entries(dadosDoDia)) {
+            historico.forEach(item => {
                 const tr = document.createElement('tr');
-                let tagBonus = dados.ganhouBonusSemana ? '<span class="badge-meta">META SEMANAL BATIDA!</span>' : '';
+                
+                let tagsDia = '';
+                const dataObj = new Date(item.data + 'T00:00:00');
+                const diaSemana = dataObj.getDay();
+                
+                if (diaSemana === 0) tagsDia += '<span class="badge-feriado">DOMINGO</span> ';
+                if (item.dados.isFeriado) tagsDia += '<span class="badge-feriado">FERIADO</span> ';
+                if (item.dados.ganhouBonusSemana) tagsDia += '<span class="badge-meta">BÔNUS SEMANAL</span>';
+                if (tagsDia === '') tagsDia = 'Normal';
 
                 tr.innerHTML = `
-                    <td><strong>${nomeMot}</strong> ${tagBonus}</td>
-                    <td>${dados.servicos}</td>
-                    <td style="color: #198754; font-weight: bold;">R$ ${dados.valor.toFixed(2).replace('.', ',')}</td>
-                    <td><button class="btn-delete" onclick="deletarLancamento('${dataStr}', '${nomeMot}')">Excluir</button></td>
+                    <td><strong>${formatarDataParaExibicao(item.data)}</strong></td>
+                    <td>${item.dados.servicos}</td>
+                    <td>${tagsDia}</td>
+                    <td style="color: #198754; font-weight: bold;">R$ ${item.dados.valor.toFixed(2).replace('.', ',')}</td>
+                    <td><button class="btn-delete" onclick="deletarLancamentoEspecifico('${item.data}')">Excluir</button></td>
                 `;
                 tbody.appendChild(tr);
+            });
+        }
+
+        function deletarLancamentoEspecifico(dataStr) {
+            if(confirm(`Deseja apagar o lançamento do dia ${formatarDataParaExibicao(dataStr)}?`)) {
+                let bancoDados = JSON.parse(localStorage.getItem('metas_logistica'));
+                delete bancoDados[dataStr][motoristaSelecionado];
+                
+                // Se a data ficar vazia de motoristas, remove ela também para manter o banco limpo
+                if(Object.keys(bancoDados[dataStr]).length === 0) {
+                    delete bancoDados[dataStr];
+                }
+
+                localStorage.setItem('metas_logistica', JSON.stringify(bancoDados));
+                carregarHistoricoMotorista();
+                atualizarResumos();
             }
         }
 
-        function atualizarResumos(dataStr) {
+        // Calcula a grana total gasta com a frota inteira
+        function atualizarResumos() {
+            const dataGlobalStr = document.getElementById('dataGlobal').value;
+            if(!dataGlobalStr) return;
+
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             
-            // 1. CÁLCULO DO DIA
+            // 1. CÁLCULO DO DIA SELECIONADO
             let totalDia = 0;
-            const dadosDoDia = bancoDados[dataStr] || {};
+            const dadosDoDia = bancoDados[dataGlobalStr] || {};
             for (const mot in dadosDoDia) {
                 totalDia += dadosDoDia[mot].valor;
             }
             document.getElementById('totalDia').innerText = `R$ ${totalDia.toFixed(2).replace('.', ',')}`;
 
-            // 2. CÁLCULO DA SEMANA
+            // 2. CÁLCULO DA SEMANA DA DATA SELECIONADA
             let totalSemana = 0;
-            const dataObj = new Date(dataStr + 'T00:00:00');
+            const dataObj = new Date(dataGlobalStr + 'T00:00:00');
             const diaSemana = dataObj.getDay(); 
             
-            // Lógica para encontrar a Segunda-feira da semana (Início da contagem)
             const diffParaSegunda = (diaSemana === 0) ? -6 : 1 - diaSemana;
             const dataSegunda = new Date(dataObj);
             dataSegunda.setDate(dataObj.getDate() + diffParaSegunda);
 
-            // Soma de Segunda(0) até Domingo(6)
             for (let i = 0; i < 7; i++) {
                 const diaCheck = new Date(dataSegunda);
                 diaCheck.setDate(dataSegunda.getDate() + i);
@@ -360,15 +490,6 @@
                 }
             }
             document.getElementById('totalSemana').innerText = `R$ ${totalSemana.toFixed(2).replace('.', ',')}`;
-        }
-
-        function deletarLancamento(dataStr, motorista) {
-            if(confirm(`Deseja apagar o lançamento de ${motorista}?`)) {
-                let bancoDados = JSON.parse(localStorage.getItem('metas_logistica'));
-                delete bancoDados[dataStr][motorista];
-                localStorage.setItem('metas_logistica', JSON.stringify(bancoDados));
-                atualizarInterface();
-            }
         }
     </script>
 </body>
