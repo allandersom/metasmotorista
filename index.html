@@ -127,7 +127,7 @@
 
     <div class="main-navigation">
         <button class="nav-tab active" id="btnTabLancamentos" onclick="mudarAba('lancamentos')">📋 Painel de Lançamentos</button>
-        <button class="nav-tab" id="btnTabRankings" onclick="mudarAba('rankings')">⚔️Rankings</button>
+        <button class="nav-tab" id="btnTabRankings" onclick="mudarAba('rankings')">⚔️ Leaderboard (Rankings)</button>
     </div>
 
     <!-- VIEW 1: LANÇAMENTOS -->
@@ -317,7 +317,7 @@
             
             carregarHistoricoMotorista();
             atualizarResumosDoMotorista();
-            atualizarGraficoEvolucao(); // Atualiza o gráfico de linhas
+            atualizarGraficoEvolucao();
         }
 
         function formatarDataParaBusca(data) {
@@ -397,7 +397,7 @@
                     historico.push({ data: data, dados: bancoDados[data][motoristaSelecionado] });
                 }
             }
-            historico.sort((a, b) => new Date(b.data) - new Date(a.data)); // Mais recente primeiro
+            historico.sort((a, b) => new Date(b.data) - new Date(a.data));
 
             if (historico.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding: 30px;">Nenhum lançamento encontrado para este motorista.</td></tr>';
@@ -490,16 +490,12 @@
             document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalSemanaGlobal.toFixed(2).replace('.', ',')}`;
         }
 
-        // ==========================================
-        // GRÁFICO DE EVOLUÇÃO INDIVIDUAL (LINHA)
-        // ==========================================
         function atualizarGraficoEvolucao() {
             if (!motoristaSelecionado) return;
             
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             let dadosEvolucao = [];
 
-            // Puxa todos os dias que ele trabalhou
             for (const data in bancoDados) {
                 if (bancoDados[data][motoristaSelecionado]) {
                     dadosEvolucao.push({
@@ -509,10 +505,9 @@
                 }
             }
 
-            // Ordena cronologicamente (do mais antigo pro mais novo pro gráfico fazer sentido)
             dadosEvolucao.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
 
-            const labels = dadosEvolucao.map(d => formatarDataParaExibicao(d.dataStr).substring(0, 5)); // Só dia/mes
+            const labels = dadosEvolucao.map(d => formatarDataParaExibicao(d.dataStr).substring(0, 5));
             const dataPoints = dadosEvolucao.map(d => d.servicos);
 
             if (chartInstanciaEvolucao) chartInstanciaEvolucao.destroy();
@@ -535,7 +530,7 @@
                         pointBorderWidth: 2,
                         pointRadius: 4,
                         fill: true,
-                        tension: 0.3 // Deixa a linha suave/curvada
+                        tension: 0.3 
                     }]
                 },
                 options: {
@@ -551,18 +546,18 @@
         }
 
         // ==========================================
-        // SISTEMA DE RANKING VALORANT ELO (TABELA)
+        // NOVA REGRA DE CORTE (BASEADA NOS DADOS REAIS)
         // ==========================================
         function obterRankElo(qtdServicos) {
-            // Regras de Rank (pode ajustar os valores baseando na sua realidade de fretes por mês)
-            if (qtdServicos >= 180) return { nome: 'Radiante', classe: 'elo-radiante' };
-            if (qtdServicos >= 140) return { nome: 'Imortal', classe: 'elo-imortal' };
-            if (qtdServicos >= 100) return { nome: 'Ascendente', classe: 'elo-ascendente' };
-            if (qtdServicos >= 70)  return { nome: 'Diamante', classe: 'elo-diamante' };
-            if (qtdServicos >= 40)  return { nome: 'Platina', classe: 'elo-platina' };
-            if (qtdServicos >= 20)  return { nome: 'Ouro', classe: 'elo-ouro' };
-            if (qtdServicos >= 10)  return { nome: 'Prata', classe: 'elo-prata' };
-            if (qtdServicos > 0)    return { nome: 'Bronze', classe: 'elo-bronze' };
+            // Ajustado de acordo com a lista real de caixas da SGC
+            if (qtdServicos >= 200) return { nome: 'Radiante', classe: 'elo-radiante' };
+            if (qtdServicos >= 160) return { nome: 'Imortal', classe: 'elo-imortal' };
+            if (qtdServicos >= 130) return { nome: 'Ascendente', classe: 'elo-ascendente' };
+            if (qtdServicos >= 110) return { nome: 'Diamante', classe: 'elo-diamante' };
+            if (qtdServicos >= 90)  return { nome: 'Platina', classe: 'elo-platina' };
+            if (qtdServicos >= 60)  return { nome: 'Ouro', classe: 'elo-ouro' };
+            if (qtdServicos >= 30)  return { nome: 'Prata', classe: 'elo-prata' };
+            if (qtdServicos >= 15)  return { nome: 'Bronze', classe: 'elo-bronze' };
             return { nome: 'Ferro', classe: 'elo-ferro' };
         }
 
@@ -585,7 +580,6 @@
                 }
             }
 
-            // Transforma em array e ordena por maior quantidade de serviços
             let rankFinal = Object.keys(acumuladoMes)
                 .map(mot => ({ 
                     nome: mot, 
@@ -599,7 +593,7 @@
             divLista.innerHTML = '';
 
             if(rankFinal.length === 0) {
-                divLista.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">Nenhum serviço registrado neste mês. O elo de todo mundo é Ferro! 🥶</div>';
+                divLista.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8; font-weight: 500;">Nenhum serviço registrado neste mês. O elo de todo mundo é Ferro! 🥶</div>';
                 return;
             }
 
