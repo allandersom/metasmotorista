@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cálculo de Metas - Motoristas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            padding-top: 50px;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+            color: #555;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0b5ed7;
+        }
+        #resultado {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #d1e7dd;
+            color: #0f5132;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 1.2em;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Metas da Frota</h2>
+        
+        <label for="motorista">Nome do Motorista (Opcional):</label>
+        <input type="text" id="motorista" placeholder="Ex: Roberto Carlos">
+
+        <label for="servicos">Quantidade de Serviços:</label>
+        <input type="number" id="servicos" min="0" placeholder="Ex: 10">
+
+        <label for="tipoDia">Tipo de Dia:</label>
+        <select id="tipoDia">
+            <option value="normal">Dia Normal (Seg a Sáb)</option>
+            <option value="domingo_feriado">Domingo ou Feriado</option>
+        </select>
+
+        <button onclick="calcularMeta()">Calcular Bônus</button>
+
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        function calcularMeta() {
+            // Captura os valores dos inputs
+            const servicos = parseInt(document.getElementById('servicos').value) || 0;
+            const tipoDia = document.getElementById('tipoDia').value;
+            let bonus = 0;
+
+            // Lógica de cálculo
+            if (tipoDia === 'domingo_feriado') {
+                bonus = servicos * 20;
+            } else {
+                if (servicos >= 8) {
+                    bonus = 50 + ((servicos - 8) * 10);
+                } else {
+                    bonus = 0;
+                }
+            }
+
+            // Exibe o resultado na tela
+            const divResultado = document.getElementById('resultado');
+            divResultado.style.display = 'block';
+            divResultado.innerHTML = `Valor a receber: <strong>R$ ${bonus.toFixed(2).replace('.', ',')}</strong>`;
+        }
+    </script>
+</body>
+</html>
