@@ -3,41 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cálculo de Metas - Motoristas</title>
+    <title>Painel de Metas - Frota</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #e9ecef;
-            display: flex;
-            justify-content: center;
-            padding-top: 50px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
         }
-        .container {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
+        .dashboard {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         h2 {
-            text-align: center;
-            color: #333;
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 10px;
+            color: #2c3e50;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
         }
         label {
-            font-weight: bold;
-            display: block;
-            margin-top: 15px;
-            color: #555;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            color: #495057;
         }
         input, select, button {
-            width: 100%;
             padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 16px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .checkbox-group {
+            flex-direction: row;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
         }
         button {
             background-color: #0d6efd;
@@ -45,67 +64,199 @@
             border: none;
             cursor: pointer;
             font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { background-color: #0b5ed7; }
+        
+        /* Estilos da Tabela */
+        table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
         }
-        button:hover {
-            background-color: #0b5ed7;
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
         }
-        #resultado {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #d1e7dd;
-            color: #0f5132;
-            border-radius: 4px;
-            text-align: center;
-            font-size: 1.2em;
-            display: none;
+        th {
+            background-color: #212529;
+            color: white;
+        }
+        tr:hover { background-color: #f8f9fa; }
+        .btn-delete {
+            background-color: #dc3545;
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+        .btn-delete:hover { background-color: #bb2d3b; }
+        
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Metas da Frota</h2>
-        
-        <label for="motorista">Nome do Motorista (Opcional):</label>
-        <input type="text" id="motorista" placeholder="Ex: Roberto Carlos">
+    <div class="dashboard">
+        <div class="header-controls">
+            <h2>Lançamento Diário de Metas</h2>
+            <div class="form-group">
+                <label for="dataFiltro">Visualizar/Lançar para o dia:</label>
+                <input type="date" id="dataFiltro" onchange="atualizarTabela()">
+            </div>
+        </div>
 
-        <label for="servicos">Quantidade de Serviços:</label>
-        <input type="number" id="servicos" min="0" placeholder="Ex: 10">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="motorista">Motorista:</label>
+                <select id="motorista">
+                    <!-- Preenchido via JavaScript -->
+                </select>
+            </div>
 
-        <label for="tipoDia">Tipo de Dia:</label>
-        <select id="tipoDia">
-            <option value="normal">Dia Normal (Seg a Sáb)</option>
-            <option value="domingo_feriado">Domingo ou Feriado</option>
-        </select>
+            <div class="form-group">
+                <label for="servicos">Serviços Realizados:</label>
+                <input type="number" id="servicos" min="0" placeholder="Ex: 10">
+            </div>
 
-        <button onclick="calcularMeta()">Calcular Bônus</button>
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="feriado">
+                <label for="feriado" style="margin: 0; cursor: pointer;">É Feriado?</label>
+                <small style="display:block; color:#6c757d; font-size: 0.8em; margin-top: 4px;">(Domingos são detectados automaticamente)</small>
+            </div>
 
-        <div id="resultado"></div>
+            <button onclick="salvarLancamento()">Lançar Meta</button>
+        </div>
+
+        <table id="tabelaMetas">
+            <thead>
+                <tr>
+                    <th>Motorista</th>
+                    <th>Serviços</th>
+                    <th>Valor (R$)</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Linhas geradas via JavaScript -->
+            </tbody>
+        </table>
     </div>
 
     <script>
-        function calcularMeta() {
-            // Captura os valores dos inputs
-            const servicos = parseInt(document.getElementById('servicos').value) || 0;
-            const tipoDia = document.getElementById('tipoDia').value;
-            let bonus = 0;
+        // Lista de motoristas organizada em ordem alfabética para facilitar a busca
+        const motoristas = [
+            "ADRIELSON", "BRUNO", "CLOVIS", "ELCIDES", "EMERSON", "JACKSON", 
+            "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGO", 
+            "LUIZ RODRIGUES", "MANSUETO", "MARCELO ANDRE", "MARCONI", "MARIO", 
+            "MATHEUS", "MAYKEL", "PLATINIS", "RÉGIO", "ROBERTO CARLOS", "RODRIGO"
+        ];
 
-            // Lógica de cálculo
-            if (tipoDia === 'domingo_feriado') {
-                bonus = servicos * 20;
+        // Inicializa o sistema
+        window.onload = () => {
+            // Preenche o select de motoristas
+            const selectMotorista = document.getElementById('motorista');
+            motoristas.forEach(mot => {
+                const option = document.createElement('option');
+                option.value = mot;
+                option.textContent = mot;
+                selectMotorista.appendChild(option);
+            });
+
+            // Define a data de hoje como padrão no filtro
+            document.getElementById('dataFiltro').valueAsDate = new Date();
+            atualizarTabela();
+        };
+
+        function salvarLancamento() {
+            const dataStr = document.getElementById('dataFiltro').value;
+            const motorista = document.getElementById('motorista').value;
+            const servicos = parseInt(document.getElementById('servicos').value);
+            const isFeriado = document.getElementById('feriado').checked;
+
+            if (!dataStr || isNaN(servicos) || servicos < 0) {
+                alert("Preencha a data e uma quantidade válida de serviços.");
+                return;
+            }
+
+            // Descobre se a data escolhida é um Domingo (0 = Domingo, 1 = Segunda...)
+            // Corrige o fuso horário para a data exata selecionada no input
+            const dataObj = new Date(dataStr + 'T00:00:00');
+            const isDomingo = dataObj.getDay() === 0;
+
+            let valor = 0;
+
+            // Regra de negócio
+            if (isDomingo || isFeriado) {
+                valor = servicos * 20;
             } else {
                 if (servicos >= 8) {
-                    bonus = 50 + ((servicos - 8) * 10);
+                    valor = 50 + ((servicos - 8) * 10);
                 } else {
-                    bonus = 0;
+                    valor = 0;
                 }
             }
 
-            // Exibe o resultado na tela
-            const divResultado = document.getElementById('resultado');
-            divResultado.style.display = 'block';
-            divResultado.innerHTML = `Valor a receber: <strong>R$ ${bonus.toFixed(2).replace('.', ',')}</strong>`;
+            // Estrutura de salvamento no LocalStorage
+            let bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
+            
+            // Cria o objeto da data se não existir
+            if (!bancoDados[dataStr]) {
+                bancoDados[dataStr] = {};
+            }
+
+            // Salva os dados do motorista naquela data
+            bancoDados[dataStr][motorista] = {
+                servicos: servicos,
+                valor: valor
+            };
+
+            localStorage.setItem('metas_logistica', JSON.stringify(bancoDados));
+            
+            // Limpa o input e atualiza
+            document.getElementById('servicos').value = '';
+            atualizarTabela();
+        }
+
+        function atualizarTabela() {
+            const dataStr = document.getElementById('dataFiltro').value;
+            const tbody = document.querySelector('#tabelaMetas tbody');
+            tbody.innerHTML = ''; // Limpa a tabela
+
+            const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
+            const dadosDoDia = bancoDados[dataStr] || {};
+
+            // Se não houver dados, mostra mensagem
+            if (Object.keys(dadosDoDia).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#6c757d;">Nenhum lançamento para esta data.</td></tr>';
+                return;
+            }
+
+            // Preenche a tabela com os lançamentos do dia
+            for (const [nomeMot, dados] of Object.entries(dadosDoDia)) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${nomeMot}</strong></td>
+                    <td>${dados.servicos}</td>
+                    <td style="color: #198754; font-weight: bold;">R$ ${dados.valor.toFixed(2).replace('.', ',')}</td>
+                    <td><button class="btn-delete" onclick="deletarLancamento('${dataStr}', '${nomeMot}')">Excluir</button></td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function deletarLancamento(dataStr, motorista) {
+            if(confirm(`Deseja apagar o lançamento de ${motorista}?`)) {
+                let bancoDados = JSON.parse(localStorage.getItem('metas_logistica'));
+                delete bancoDados[dataStr][motorista];
+                localStorage.setItem('metas_logistica', JSON.stringify(bancoDados));
+                atualizarTabela();
+            }
         }
     </script>
 </body>
