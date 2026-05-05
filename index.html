@@ -49,7 +49,7 @@
         .resumo-titulo { font-size: 11px; font-weight: bold; color: #6c757d; text-transform: uppercase; }
         .resumo-valor { font-size: 18px; font-weight: bold; color: #212529; }
 
-        /* Layout Principal: Sidebar + Conteúdo */
+        /* Layout Principal */
         .app-layout {
             display: flex;
             gap: 20px;
@@ -75,11 +75,7 @@
             border-bottom: 1px solid #eee;
             padding-bottom: 10px;
         }
-        .driver-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+        .driver-list { list-style: none; padding: 0; margin: 0; }
         .driver-item {
             padding: 12px 15px;
             margin-bottom: 5px;
@@ -91,10 +87,7 @@
             color: #495057;
             border: 1px solid transparent;
         }
-        .driver-item:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
-        }
+        .driver-item:hover { background: #e9ecef; transform: translateX(5px); }
         .driver-item.active {
             background: #0d6efd;
             color: #fff;
@@ -113,13 +106,38 @@
             padding: 25px;
             min-height: calc(100vh - 150px);
         }
-        .empty-state {
-            text-align: center;
-            color: #adb5bd;
-            margin-top: 100px;
-            font-size: 1.2em;
-        }
+        .empty-state { text-align: center; color: #adb5bd; margin-top: 100px; font-size: 1.2em; }
         
+        .header-motorista {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        .header-motorista h3 { margin: 0 0 10px 0; color: #0d6efd; font-size: 24px; }
+
+        /* NOVOS RESUMOS DO MOTORISTA */
+        .resumo-motorista-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .resumo-motorista-box {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border-left: 4px solid #198754;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e9ecef;
+            border-right: 1px solid #e9ecef;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .resumo-motorista-box.semana { border-left-color: #0d6efd; }
+        .resumo-motorista-box span { font-size: 12px; color: #6c757d; font-weight: bold; text-transform: uppercase; }
+        .resumo-motorista-box strong { font-size: 18px; color: #212529; }
+
         /* Formulário de Lançamento */
         .form-grid {
             display: grid;
@@ -141,15 +159,6 @@
         button.btn-primary:hover { background-color: #0b5ed7; }
 
         /* Tabela do Motorista */
-        .header-motorista {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eee;
-        }
-        .header-motorista h3 { margin: 0; color: #0d6efd; font-size: 22px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
         th { background-color: #212529; color: white; }
@@ -163,21 +172,21 @@
 </head>
 <body>
 
-    <!-- Barra Superior: Controles Globais e Resumos -->
+    <!-- Barra Superior: Controles Globais da Frota -->
     <div class="topbar">
         <h2>Painel de Lançamentos</h2>
         <div class="global-controls">
             <div>
-                <label for="dataGlobal" style="margin-bottom: 2px;">Data de Referência (Painel):</label>
-                <input type="date" id="dataGlobal" onchange="atualizarResumos()">
+                <label for="dataGlobal" style="margin-bottom: 2px;">Data Global da Frota:</label>
+                <input type="date" id="dataGlobal" onchange="atualizarResumosGlobais()">
             </div>
             <div class="resumo-badge">
                 <span class="resumo-titulo">Total da Frota (Dia)</span>
-                <span class="resumo-valor" id="totalDia">R$ 0,00</span>
+                <span class="resumo-valor" id="totalDiaGlobal">R$ 0,00</span>
             </div>
             <div class="resumo-badge semana">
                 <span class="resumo-titulo">Total da Frota (Semana)</span>
-                <span class="resumo-valor" id="totalSemana">R$ 0,00</span>
+                <span class="resumo-valor" id="totalSemanaGlobal">R$ 0,00</span>
             </div>
         </div>
     </div>
@@ -185,32 +194,42 @@
     <!-- Layout Principal -->
     <div class="app-layout">
         
-        <!-- Sidebar Esquerda: Lista de Motoristas -->
+        <!-- Sidebar Esquerda -->
         <div class="sidebar">
             <h3>Motoristas</h3>
-            <ul class="driver-list" id="listaMotoristas">
-                <!-- Gerado via JS -->
-            </ul>
+            <ul class="driver-list" id="listaMotoristas"></ul>
         </div>
 
-        <!-- Painel Central: Detalhes do Motorista Selecionado -->
+        <!-- Painel Central do Motorista -->
         <div class="main-panel">
             
             <div id="estadoVazio" class="empty-state">
-                👈 Selecione um motorista na lista ao lado para lançar e ver os serviços.
+                👈 Selecione um motorista na lista ao lado.
             </div>
 
             <div id="conteudoMotorista" style="display: none;">
                 
                 <div class="header-motorista">
                     <h3 id="nomeMotoristaDisplay">Nome do Motorista</h3>
+                    
+                    <!-- NOVOS RESUMOS INDIVIDUAIS DO MOTORISTA -->
+                    <div class="resumo-motorista-container">
+                        <div class="resumo-motorista-box">
+                            <span>Total de Diárias (Na Data Abaixo):</span>
+                            <strong id="motoristaTotalDia">R$ 0,00</strong>
+                        </div>
+                        <div class="resumo-motorista-box semana">
+                            <span>Total na Semana (Da Data Abaixo):</span>
+                            <strong id="motoristaTotalSemana">R$ 0,00</strong>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Formulário de Lançamento Focado -->
+                <!-- Formulário de Lançamento -->
                 <div class="form-grid">
                     <div>
                         <label for="dataLancamento">Data do Serviço:</label>
-                        <input type="date" id="dataLancamento">
+                        <input type="date" id="dataLancamento" onchange="atualizarResumosDoMotorista()">
                     </div>
                     <div>
                         <label for="servicos">Qtd de Serviços:</label>
@@ -223,7 +242,7 @@
                     <button class="btn-primary" onclick="salvarLancamento()">Lançar Meta</button>
                 </div>
 
-                <!-- Histórico do Motorista -->
+                <!-- Histórico -->
                 <h4>Histórico de Serviços</h4>
                 <table id="tabelaHistorico">
                     <thead>
@@ -236,7 +255,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Linhas geradas via JavaScript -->
+                        <!-- Gerado via JS -->
                     </tbody>
                 </table>
             </div>
@@ -260,10 +279,9 @@
             document.getElementById('dataLancamento').valueAsDate = dataHoje;
             
             renderizarSidebar();
-            atualizarResumos();
+            atualizarResumosGlobais();
         };
 
-        // Renderiza a lista de motoristas na lateral
         function renderizarSidebar() {
             const ul = document.getElementById('listaMotoristas');
             ul.innerHTML = '';
@@ -277,25 +295,20 @@
             });
         }
 
-        // Função ativada ao clicar em um motorista na esquerda
         function selecionarMotorista(nome, elementoLista) {
             motoristaSelecionado = nome;
             
-            // Atualiza classe visual no menu
             document.querySelectorAll('.driver-item').forEach(el => el.classList.remove('active'));
             elementoLista.classList.add('active');
 
-            // Esconde estado vazio e mostra painel
             document.getElementById('estadoVazio').style.display = 'none';
             document.getElementById('conteudoMotorista').style.display = 'block';
 
-            // Atualiza Título
             document.getElementById('nomeMotoristaDisplay').textContent = nome;
-
-            // Sincroniza a data de lançamento com a data global para facilitar
             document.getElementById('dataLancamento').value = document.getElementById('dataGlobal').value;
 
             carregarHistoricoMotorista();
+            atualizarResumosDoMotorista();
         }
 
         function formatarDataParaBusca(data) {
@@ -331,7 +344,6 @@
             const isDomingo = diaSemana === 0;
             const isSabado = diaSemana === 6;
 
-            // REGRA DO CAMINHÃO DO ROBERTO CARLOS MANTIDA
             const metaBase = (motoristaSelecionado === "ROBERTO CARLOS") ? 4 : 8;
 
             let valor = 0;
@@ -339,7 +351,6 @@
 
             let bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
 
-            // Verificação de Meta de Sábado
             if (isSabado && !isFeriado) {
                 bateuMetaSemana = true; 
                 for (let i = 1; i <= 5; i++) {
@@ -356,9 +367,8 @@
                 }
             }
 
-            // NOVA REGRA DE VALOR: DOMINGO, FERIADO E SÁBADO (COM META BASTIDA) = R$ 30
             if (isDomingo || isFeriado || (isSabado && bateuMetaSemana)) {
-                valor = servicos * 30; // ATUALIZADO DE 20 PARA 30
+                valor = servicos * 30;
             } else {
                 if (servicos >= metaBase) {
                     valor = 50 + ((servicos - metaBase) * 10);
@@ -380,15 +390,14 @@
 
             localStorage.setItem('metas_logistica', JSON.stringify(bancoDados));
             
-            // Reset do input e atualização visual
             document.getElementById('servicos').value = '';
             document.getElementById('feriado').checked = false;
             
             carregarHistoricoMotorista();
-            atualizarResumos(); // Atualiza painel financeiro superior
+            atualizarResumosGlobais(); 
+            atualizarResumosDoMotorista();
         }
 
-        // Carrega apenas os serviços do motorista selecionado
         function carregarHistoricoMotorista() {
             if (!motoristaSelecionado) return;
 
@@ -398,7 +407,6 @@
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             let historico = [];
 
-            // Varre o banco procurando lançamentos deste motorista
             for (const data in bancoDados) {
                 if (bancoDados[data][motoristaSelecionado]) {
                     historico.push({
@@ -408,7 +416,6 @@
                 }
             }
 
-            // Ordena da data mais recente para a mais antiga
             historico.sort((a, b) => new Date(b.data) - new Date(a.data));
 
             if (historico.length === 0) {
@@ -444,37 +451,73 @@
                 let bancoDados = JSON.parse(localStorage.getItem('metas_logistica'));
                 delete bancoDados[dataStr][motoristaSelecionado];
                 
-                // Se a data ficar vazia de motoristas, remove ela também para manter o banco limpo
                 if(Object.keys(bancoDados[dataStr]).length === 0) {
                     delete bancoDados[dataStr];
                 }
 
                 localStorage.setItem('metas_logistica', JSON.stringify(bancoDados));
                 carregarHistoricoMotorista();
-                atualizarResumos();
+                atualizarResumosGlobais();
+                atualizarResumosDoMotorista();
             }
         }
 
-        // Calcula a grana total gasta com a frota inteira
-        function atualizarResumos() {
+        // ==========================================
+        // NOVAS FUNÇÕES DE CÁLCULO
+        // ==========================================
+
+        // Calcula APENAS do motorista selecionado
+        function atualizarResumosDoMotorista() {
+            if (!motoristaSelecionado) return;
+            const dataRefStr = document.getElementById('dataLancamento').value;
+            if (!dataRefStr) return;
+
+            const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
+            
+            // Valor do Dia
+            let totalDia = 0;
+            if (bancoDados[dataRefStr] && bancoDados[dataRefStr][motoristaSelecionado]) {
+                totalDia = bancoDados[dataRefStr][motoristaSelecionado].valor;
+            }
+            document.getElementById('motoristaTotalDia').innerText = `R$ ${totalDia.toFixed(2).replace('.', ',')}`;
+
+            // Valor da Semana (Seg a Dom)
+            let totalSemana = 0;
+            const dataObj = new Date(dataRefStr + 'T00:00:00');
+            const diaSemana = dataObj.getDay(); 
+            const diffParaSegunda = (diaSemana === 0) ? -6 : 1 - diaSemana;
+            const dataSegunda = new Date(dataObj);
+            dataSegunda.setDate(dataObj.getDate() + diffParaSegunda);
+
+            for (let i = 0; i < 7; i++) {
+                const diaCheck = new Date(dataSegunda);
+                diaCheck.setDate(dataSegunda.getDate() + i);
+                const diaCheckStr = formatarDataParaBusca(diaCheck);
+                
+                if (bancoDados[diaCheckStr] && bancoDados[diaCheckStr][motoristaSelecionado]) {
+                    totalSemana += bancoDados[diaCheckStr][motoristaSelecionado].valor;
+                }
+            }
+            document.getElementById('motoristaTotalSemana').innerText = `R$ ${totalSemana.toFixed(2).replace('.', ',')}`;
+        }
+
+        // Calcula GRANA GERAL DA EMPRESA
+        function atualizarResumosGlobais() {
             const dataGlobalStr = document.getElementById('dataGlobal').value;
             if(!dataGlobalStr) return;
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             
-            // 1. CÁLCULO DO DIA SELECIONADO
-            let totalDia = 0;
+            let totalDiaGlobal = 0;
             const dadosDoDia = bancoDados[dataGlobalStr] || {};
             for (const mot in dadosDoDia) {
-                totalDia += dadosDoDia[mot].valor;
+                totalDiaGlobal += dadosDoDia[mot].valor;
             }
-            document.getElementById('totalDia').innerText = `R$ ${totalDia.toFixed(2).replace('.', ',')}`;
+            document.getElementById('totalDiaGlobal').innerText = `R$ ${totalDiaGlobal.toFixed(2).replace('.', ',')}`;
 
-            // 2. CÁLCULO DA SEMANA DA DATA SELECIONADA
-            let totalSemana = 0;
+            let totalSemanaGlobal = 0;
             const dataObj = new Date(dataGlobalStr + 'T00:00:00');
             const diaSemana = dataObj.getDay(); 
-            
             const diffParaSegunda = (diaSemana === 0) ? -6 : 1 - diaSemana;
             const dataSegunda = new Date(dataObj);
             dataSegunda.setDate(dataObj.getDate() + diffParaSegunda);
@@ -486,10 +529,10 @@
                 
                 const dadosDia = bancoDados[diaCheckStr] || {};
                 for (const mot in dadosDia) {
-                    totalSemana += dadosDia[mot].valor;
+                    totalSemanaGlobal += dadosDia[mot].valor;
                 }
             }
-            document.getElementById('totalSemana').innerText = `R$ ${totalSemana.toFixed(2).replace('.', ',')}`;
+            document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalSemanaGlobal.toFixed(2).replace('.', ',')}`;
         }
     </script>
 </body>
