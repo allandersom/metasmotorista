@@ -365,6 +365,10 @@
         let motoristaSelecionado = null;
         let chartInstanciaEvolucao = null;
 
+        function getMetaDiaria(nome) {
+            return nome === "ROBERTO CARLOS" ? 4 : 8;
+        }
+
         window.onload = () => {
             const dataHoje = new Date();
             const offset = dataHoje.getTimezoneOffset() * 60000;
@@ -501,9 +505,13 @@
             
             const selectVeiculo = document.getElementById('tipoVeiculo');
             if(nome === "CLOVIS" || nome === "RODRIGO") { 
-                selectVeiculo.innerHTML = '<option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>';
+                selectVeiculo.innerHTML = '<option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option><option value="poliguindaste">Poliguindaste (Meta 8 Cx)</option>';
                 selectVeiculo.value = "cacamba"; 
             } 
+            else if (nome === "ROBERTO CARLOS") {
+                selectVeiculo.innerHTML = '<option value="poliguindaste">Poliguindaste (Meta 4 Cx)</option>';
+                selectVeiculo.value = "poliguindaste";
+            }
             else { 
                 selectVeiculo.innerHTML = '<option value="poliguindaste">Poliguindaste (Meta 8 Cx)</option>';
                 selectVeiculo.value = "poliguindaste"; 
@@ -544,7 +552,8 @@
             const isDomingo = diaSemana === 0;
             const isSabado = diaSemana === 6;
             
-            const metaBase = (tipoVeiculo === 'cacamba') ? 4 : 8;
+            const metaBaseDia = getMetaDiaria(motoristaSelecionado);
+            const metaBaseLancamento = (tipoVeiculo === 'cacamba') ? 4 : metaBaseDia;
             const multiplicadorExtra = (tipoVeiculo === 'cacamba') ? 20 : 10;
 
             let valorNormalBase = 0;
@@ -577,7 +586,7 @@
 
                 // Normaliza tudo para PONTOS DE META (1 vg = 2 cx) para saber se bateu a meta da semana
                 let pontosFeitosSemana = caixasSegSex + (viagensSegSex * 2);
-                let metaSemanalPontos = (5 - qtdFeriadosSemana) * 8; // 8 pontos por dia
+                let metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseDia; // 8 ou 4 pontos por dia
                 let pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
 
                 let pontosDesteSabado = (tipoVeiculo === 'cacamba') ? servicos * 2 : servicos;
@@ -585,10 +594,10 @@
                 let pontosBonus = Math.max(0, pontosDesteSabado - pontosFaltantes);
 
                 let calcServicosNormais = 0;
-                if (pontosParaMeta >= 8) { // Bateu uma meta diária no sábado pra cobrir buraco
+                if (pontosParaMeta >= metaBaseDia) { 
                     // Converte de volta pro tipo atual pra pagar
                     let equivalenciaReal = (tipoVeiculo === 'cacamba') ? (pontosParaMeta / 2) : pontosParaMeta;
-                    calcServicosNormais = 50 + ((equivalenciaReal - metaBase) * multiplicadorExtra);
+                    calcServicosNormais = 50 + ((equivalenciaReal - metaBaseLancamento) * multiplicadorExtra);
                 }
                 
                 let calcServicosBonus = 0;
@@ -602,8 +611,8 @@
                 bateuMetaSemana = pontosBonus > 0;
             } 
             else {
-                if (servicos >= metaBase) { 
-                    valorNormalBase = 50 + ((servicos - metaBase) * multiplicadorExtra); 
+                if (servicos >= metaBaseLancamento) { 
+                    valorNormalBase = 50 + ((servicos - metaBaseLancamento) * multiplicadorExtra); 
                 }
             }
             
@@ -736,15 +745,22 @@
                 }
             }
 
+            let metaDiaria = getMetaDiaria(motoristaSelecionado);
             let diasUteisConf = carregarDiasUteis(anoMesFiltro);
-            let metaMensalPontos = diasUteisConf * 8; 
+            let metaMensalPontos = diasUteisConf * metaDiaria; 
 
-            document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx | ${totalViagensMes} vg`;
-            document.getElementById('motoristaMetaMes').innerText = `Meta Mensal: ${metaMensalPontos} pt | Fat: R$ ${totalFatMes.toFixed(2).replace('.', ',')}`;
-            
             let previsaoCaixas = calcularPrevisao(totalCaixasMes, anoMesFiltro);
             let previsaoViagens = calcularPrevisao(totalViagensMes, anoMesFiltro);
-            document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoCaixas} cx | ${previsaoViagens} vg`;
+
+            if (motoristaSelecionado === "CLOVIS" || motoristaSelecionado === "RODRIGO") {
+                document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx | ${totalViagensMes} vg`;
+                document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoCaixas} cx | ${previsaoViagens} vg`;
+            } else {
+                document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx`;
+                document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoCaixas} cx`;
+            }
+            
+            document.getElementById('motoristaMetaMes').innerText = `Meta Mensal: ${metaMensalPontos} pt | Fat: R$ ${totalFatMes.toFixed(2).replace('.', ',')}`;
         }
 
         function atualizarResumosGlobais() {
@@ -792,7 +808,6 @@
 
             for (const data in bancoDados) {
                 if (bancoDados[data][motoristaSelecionado]) {
-                    // Converter pra pontos pra o gráfico não ficar esquisito se misturar caçamba e poli
                     let pts = bancoDados[data][motoristaSelecionado].tipoVeiculo === 'cacamba' ? 
                               bancoDados[data][motoristaSelecionado].servicos * 2 : 
                               bancoDados[data][motoristaSelecionado].servicos;
@@ -868,7 +883,7 @@
 
             rankArray.forEach((mot, index) => {
                 let pontosFeitos = mot.caixas + (mot.viagens * 2);
-                let metaTotalPeriodo = 8 * mot.diasTrab; // 8 pontos por dia
+                let metaTotalPeriodo = getMetaDiaria(mot.nome) * mot.diasTrab;
                 let porcentagem = metaTotalPeriodo > 0 ? (pontosFeitos / metaTotalPeriodo) * 100 : 0;
                 
                 let porcentagemStr = porcentagem.toFixed(2).replace('.', ',');
@@ -881,9 +896,13 @@
                 let extraBadge = mot.extra > 0 ? `<span style="font-size:10px; background:#f3e8ff; color:#7e22ce; padding:2px 6px; border-radius:4px; margin-left:8px;">+ Extra R$ ${mot.extra}</span>` : '';
                 
                 let textoQtd = "";
-                if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
-                else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx`;
-                else textoQtd = `${mot.viagens} vg`;
+                if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
+                    if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
+                    else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`;
+                    else textoQtd = `0 cx | ${mot.viagens} vg`;
+                } else {
+                    textoQtd = `${mot.caixas} cx`;
+                }
 
                 const linha = document.createElement('div');
                 linha.className = 'diario-row';
@@ -904,7 +923,6 @@
         }
 
         function obterRankElo(pontos) {
-            // Ajustado para Pontos de Meta
             if (pontos >= 200) return { nome: 'Radiante', classe: 'elo-radiante' };
             if (pontos >= 160) return { nome: 'Imortal', classe: 'elo-imortal' };
             if (pontos >= 130) return { nome: 'Ascendente', classe: 'elo-ascendente' };
@@ -971,9 +989,11 @@
             }
 
             rankFinal.forEach((mot, index) => {
-                const eloInfo = obterRankElo(mot.pontos);
+                // Normalizar pontos do Roberto Carlos para o Elo ser justo na mesma escala de 8 pts/dia
+                let pontosElo = mot.nome === 'ROBERTO CARLOS' ? mot.pontos * 2 : mot.pontos;
+                const eloInfo = obterRankElo(pontosElo);
                 
-                let metaMensalPontos = diasUteisGlobais * 8; // 8 Pontos
+                let metaMensalPontos = diasUteisGlobais * getMetaDiaria(mot.nome);
                 let percentualMeta = metaMensalPontos > 0 ? ((mot.pontos / metaMensalPontos) * 100) : 0;
                 let percentualStr = percentualMeta.toFixed(2).replace('.', ',');
                 
@@ -982,9 +1002,13 @@
                 let borderPercent = percentualMeta >= 100 ? '#a7f3d0' : '#d8b4fe';
 
                 let textoQtd = "";
-                if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
-                else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx`;
-                else textoQtd = `${mot.viagens} vg`;
+                if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
+                    if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
+                    else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`;
+                    else textoQtd = `0 cx | ${mot.viagens} vg`;
+                } else {
+                    textoQtd = `${mot.caixas} cx`;
+                }
 
                 const linha = document.createElement('div');
                 linha.className = 'elo-row';
@@ -1054,9 +1078,13 @@
 
             rankFinal.forEach((mot, index) => {
                 let textoQtd = "";
-                if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
-                else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx`;
-                else textoQtd = `${mot.viagens} vg`;
+                if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
+                    if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
+                    else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`;
+                    else textoQtd = `0 cx | ${mot.viagens} vg`;
+                } else {
+                    textoQtd = `${mot.caixas} cx`;
+                }
 
                 const linha = document.createElement('div');
                 linha.className = 'diario-row';
