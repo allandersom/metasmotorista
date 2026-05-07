@@ -327,7 +327,7 @@
                         <input type="month" id="mesFiltro" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter';" onchange="sincronizarMesFiltro(); gerarRankingMensal();">
                     </div>
                 </div>
-                <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;"></div>
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;">* O cálculo de Elo e Progresso unifica 1 Viagem = 2 Caixas (Pontos de Meta). A ordem é baseada na Porcentagem.</div>
                 <div id="listaLeaderboard"></div>
             </div>
 
@@ -339,11 +339,15 @@
             <h2>Painel de Domingos & Feriados</h2>
             <div class="global-controls">
                 <div>
-                    <label style="margin-bottom: 6px; font-size: 12px; display:block;">Selecione o Mês:</label>
-                    <input type="month" id="mesFiltroDom" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter';" onchange="gerarPainelFeriados()">
+                    <label style="margin-bottom: 6px; font-size: 12px; display:block;">Selecione o Período:</label>
+                    <div class="date-range-container">
+                        <input type="date" id="dataDomInicio" onchange="gerarPainelFeriados()" style="border-color:#fca5a5;">
+                        <span>até</span>
+                        <input type="date" id="dataDomFim" onchange="gerarPainelFeriados()" style="border-color:#fca5a5;">
+                    </div>
                 </div>
                 <div class="resumo-badge feriado">
-                    <span class="resumo-titulo">Total Extra (Mês)</span>
+                    <span class="resumo-titulo">Total Extra (Período)</span>
                     <span class="resumo-valor" id="totalFatDomGlobal">R$ 0,00</span>
                     <span class="resumo-subtext" id="totalCxDomGlobal">0 cx</span>
                 </div>
@@ -390,13 +394,17 @@
             
             const hojeStr = dataLocal.toISOString().split('T')[0];
             const anoMesAtual = hojeStr.substring(0, 7);
+            const startStr = `${anoMesAtual}-01`;
 
             document.getElementById('dataGlobal').value = hojeStr;
             document.getElementById('dataLancamento').value = hojeStr;
+            
             document.getElementById('dataRankingInicio').value = hojeStr;
             document.getElementById('dataRankingFim').value = hojeStr;
             document.getElementById('mesFiltro').value = anoMesAtual;
-            document.getElementById('mesFiltroDom').value = anoMesAtual;
+            
+            document.getElementById('dataDomInicio').value = startStr;
+            document.getElementById('dataDomFim').value = hojeStr;
             
             carregarDiasUteis(anoMesAtual);
             renderizarSidebar();
@@ -420,7 +428,7 @@
                 inRank.removeAttribute('readonly');
                 btnLanc.innerText = '🔓';
                 btnRank.innerText = '🔓';
-                // Focus on the visible one
+                
                 if(document.getElementById('viewLancamentos').style.display !== 'none') {
                     inLanc.focus();
                 } else {
@@ -626,7 +634,7 @@
 
                 // Normaliza tudo para PONTOS DE META (1 vg = 2 cx) para saber se bateu a meta da semana
                 let pontosFeitosSemana = caixasSegSex + (viagensSegSex * 2);
-                let metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseDia; // 8 ou 4 pontos por dia
+                let metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseDia; 
                 let pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
 
                 let pontosDesteSabado = (tipoVeiculo === 'cacamba') ? servicos * 2 : servicos;
@@ -642,9 +650,9 @@
                 
                 let calcServicosBonus = 0;
                 if(tipoVeiculo === 'cacamba'){
-                    calcServicosBonus = (pontosBonus / 2) * 20; // 20 por viagem extra
+                    calcServicosBonus = (pontosBonus / 2) * 20; 
                 } else {
-                    calcServicosBonus = pontosBonus * 20; // 20 por caixa extra
+                    calcServicosBonus = pontosBonus * 20; 
                 }
 
                 valorNormalBase = calcServicosNormais + calcServicosBonus;
@@ -902,7 +910,7 @@
                 if (dataStr >= inicio && dataStr <= fim) {
                     const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
                     for (const [mot, dados] of Object.entries(dadosDia)) {
-                        // Não contabiliza domingos e feriados nos rankings por período
+                        // Ignora domingos e feriados
                         if (isDomingo || dados.isFeriado) continue;
 
                         if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0 };
@@ -993,6 +1001,7 @@
                 if (dataStr.startsWith(mesFiltro)) {
                     const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
                     for (const [mot, dados] of Object.entries(dadosDia)) {
+                        // Ignora domingos e feriados no leaderboard mensal
                         if (!isDomingo && !dados.isFeriado) {
                             if (acumuladoMes[mot]) {
                                 if(dados.tipoVeiculo === 'cacamba') {
@@ -1093,36 +1102,35 @@
         // PAINEL DOMINGOS E FERIADOS
         // =====================================
         function gerarPainelFeriados() {
-            const mesFiltro = document.getElementById('mesFiltroDom').value; 
-            if (!mesFiltro) return;
+            const inicio = document.getElementById('dataDomInicio').value; 
+            const fim = document.getElementById('dataDomFim').value; 
+            if (!inicio || !fim) return;
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
-            let acumuladoDom = {};
-            let acumuladoFer = {};
+            let registrosDom = [];
+            let registrosFer = [];
             let fatTotalGlobal = 0, cxTotalGlobal = 0;
 
             for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-                if (dataStr.startsWith(mesFiltro)) {
+                if (dataStr >= inicio && dataStr <= fim) {
                     const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
                     for (const [mot, dados] of Object.entries(dadosDia)) {
                         if (isDomingo || dados.isFeriado) {
-                            
-                            let targetAcc;
+                            let obj = {
+                                dataStr: dataStr,
+                                nome: mot,
+                                caixas: dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0,
+                                viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0,
+                                valor: dados.valor
+                            };
+
                             if (dados.isFeriado) {
-                                if (!acumuladoFer[mot]) acumuladoFer[mot] = { caixas: 0, viagens: 0, valor: 0 };
-                                targetAcc = acumuladoFer[mot];
+                                registrosFer.push(obj);
                             } else {
-                                if (!acumuladoDom[mot]) acumuladoDom[mot] = { caixas: 0, viagens: 0, valor: 0 };
-                                targetAcc = acumuladoDom[mot];
+                                registrosDom.push(obj);
                             }
-                            
-                            if(dados.tipoVeiculo === 'cacamba') {
-                                targetAcc.viagens += dados.servicos;
-                            } else {
-                                targetAcc.caixas += dados.servicos;
-                                cxTotalGlobal += dados.servicos;
-                            }
-                            targetAcc.valor += dados.valor;
+
+                            if (dados.tipoVeiculo !== 'cacamba') cxTotalGlobal += dados.servicos;
                             fatTotalGlobal += dados.valor;
                         }
                     }
@@ -1132,21 +1140,22 @@
             document.getElementById('totalFatDomGlobal').innerText = `R$ ${fatTotalGlobal.toFixed(2).replace('.', ',')}`;
             document.getElementById('totalCxDomGlobal').innerText = `${cxTotalGlobal} cx`;
 
-            function renderizarLista(acumulado, idElemento, msgVazia) {
-                let rank = Object.keys(acumulado)
-                    .map(mot => ({ nome: mot, caixas: acumulado[mot].caixas, viagens: acumulado[mot].viagens, valor: acumulado[mot].valor }))
-                    .filter(item => (item.caixas > 0 || item.viagens > 0))
-                    .sort((a, b) => b.valor - a.valor);
+            function renderizarLista(listaRegistros, idElemento, msgVazia) {
+                // Ordenar por data (mais recente primeiro) e depois por valor
+                listaRegistros.sort((a, b) => {
+                    if(a.dataStr !== b.dataStr) return new Date(b.dataStr) - new Date(a.dataStr);
+                    return b.valor - a.valor;
+                });
 
                 const divLista = document.getElementById(idElemento);
                 divLista.innerHTML = '';
 
-                if(rank.length === 0) {
+                if(listaRegistros.length === 0) {
                     divLista.innerHTML = `<div style="text-align: center; padding: 40px; color: #94a3b8; font-weight: 500;">${msgVazia}</div>`;
                     return;
                 }
 
-                rank.forEach((mot, index) => {
+                listaRegistros.forEach((mot) => {
                     let textoQtd = "";
                     if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
                         if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
@@ -1156,11 +1165,16 @@
                         textoQtd = `${mot.caixas} cx`;
                     }
 
+                    let dataFormatada = formatarDataParaExibicao(mot.dataStr);
+
                     const linha = document.createElement('div');
                     linha.className = 'diario-row';
                     linha.innerHTML = `
                         <div class="diario-top" style="margin:0;">
-                            <span class="diario-nome">#${index + 1} - ${mot.nome} (${textoQtd})</span>
+                            <span class="diario-nome" style="display:flex; align-items:center; gap:8px;">
+                                <span style="background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:6px; font-size:12px; font-weight:800;">${dataFormatada}</span>
+                                ${mot.nome} (${textoQtd})
+                            </span>
                             <span class="diario-faturamento" style="color: #ef4444;">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
                         </div>
                     `;
@@ -1168,8 +1182,8 @@
                 });
             }
 
-            renderizarLista(acumuladoDom, 'listaDomingos', 'Nenhum serviço em domingos neste mês. 😴');
-            renderizarLista(acumuladoFer, 'listaFeriados', 'Nenhum serviço em feriados neste mês. 😴');
+            renderizarLista(registrosDom, 'listaDomingos', 'Nenhum serviço em domingos no período selecionado. 😴');
+            renderizarLista(registrosFer, 'listaFeriados', 'Nenhum serviço em feriados no período selecionado. 😴');
         }
     </script>
 </body>
