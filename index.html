@@ -119,7 +119,6 @@
         .progress-bar-fill { height: 100%; background: linear-gradient(135deg, #3b82f6, #06b6d4); border-radius: 10px; transition: width 0.5s ease; }
         .progress-bar-fill.meta-batida { background: linear-gradient(135deg, #10b981, #34d399); } 
         .progress-bar-fill.meta-excedida { background: linear-gradient(135deg, #f59e0b, #fbbf24); } 
-        /* Aumentei a largura pra caber "100,00%" sem quebrar */
         .progress-text { font-size: 13px; font-weight: 700; color: #64748b; width: 75px; text-align: right; }
 
         .posicao { font-size: 20px; font-weight: 800; color: #94a3b8; }
@@ -173,12 +172,12 @@
                 <div class="resumo-badge dia">
                     <span class="resumo-titulo">Total Frota (Dia)</span>
                     <span class="resumo-valor" id="totalDiaGlobal">R$ 0,00</span>
-                    <span class="resumo-subtext" id="caixasDiaGlobal">0 Caixas</span>
+                    <span class="resumo-subtext" id="caixasDiaGlobal">0 cx | 0 vg</span>
                 </div>
                 <div class="resumo-badge semana">
                     <span class="resumo-titulo">Total Frota (Semana)</span>
                     <span class="resumo-valor" id="totalSemanaGlobal">R$ 0,00</span>
-                    <span class="resumo-subtext" id="caixasSemanaGlobal">0 Caixas</span>
+                    <span class="resumo-subtext" id="caixasSemanaGlobal">0 cx | 0 vg</span>
                 </div>
             </div>
         </div>
@@ -218,14 +217,14 @@
                             <div class="resumo-motorista-box mes" title="Não contabiliza Domingos e Feriados">
                                 <div>
                                     <span>Resultados no Mês (Úteis)</span>
-                                    <strong id="motoristaCaixasMes">0 Caixas</strong>
-                                    <span class="resumo-detalhe" id="motoristaMetaMes">Meta Mensal: 0 cx | Fat: R$ 0,00</span>
+                                    <strong id="motoristaCaixasMes">0 cx | 0 vg</strong>
+                                    <span class="resumo-detalhe" id="motoristaMetaMes">Meta Mensal: 0 pt | Fat: R$ 0,00</span>
                                 </div>
                             </div>
                             <div class="resumo-motorista-box previsao">
                                 <div>
                                     <span>Previsão Final (Mês)</span>
-                                    <strong id="motoristaPrevisaoMes">0 Caixas</strong>
+                                    <strong id="motoristaPrevisaoMes">0 cx | 0 vg</strong>
                                     <span class="resumo-detalhe" style="color:#b45309;"></span>
                                 </div>
                             </div>
@@ -244,12 +243,12 @@
                         <div>
                             <label for="tipoVeiculo">Veículo Operado:</label>
                             <select id="tipoVeiculo">
-                                <option value="poliguindaste">Poliguindaste (Meta 8)</option>
-                                <option value="cacamba">Caminhão Caçamba (Meta 4)</option>
+                                <option value="poliguindaste">Poliguindaste (Meta 8 Cx)</option>
+                                <option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>
                             </select>
                         </div>
                         <div>
-                            <label for="servicos">Qtd de Caixas:</label>
+                            <label for="servicos">Qtd (Caixas/Viagens):</label>
                             <input type="number" id="servicos" min="0" placeholder="Ex: 10">
                         </div>
                         <div>
@@ -271,7 +270,7 @@
                             <tr>
                                 <th>Data</th>
                                 <th>Veículo / Dia</th>
-                                <th>Caixas</th>
+                                <th>Qtd</th>
                                 <th>Serviço Extra</th>
                                 <th>Valor a Pagar</th>
                                 <th>Ação</th>
@@ -294,12 +293,12 @@
                 </div>
 
                 <div class="resumo-badge mes">
-                    <span class="resumo-titulo">Caixas Úteis Frota (Mês)</span>
-                    <span class="resumo-valor" id="totalCaixasMesGlobal">0</span>
+                    <span class="resumo-titulo">Volume Útil Frota (Mês)</span>
+                    <span class="resumo-valor" id="totalCaixasMesGlobal" style="font-size: 16px;">0 cx | 0 vg</span>
                 </div>
                 <div class="resumo-badge previsao">
                     <span class="resumo-titulo">Previsão Frota (Mês)</span>
-                    <span class="resumo-valor" id="previsaoMesGlobal">0</span>
+                    <span class="resumo-valor" id="previsaoMesGlobal" style="font-size: 16px;">0 cx | 0 vg</span>
                 </div>
             </div>
         </div>
@@ -325,6 +324,7 @@
                         <input type="month" id="mesFiltro" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter';" onchange="sincronizarMesFiltro(); gerarRankingMensal();">
                     </div>
                 </div>
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;">* O cálculo de Elo e Progresso unifica 1 Viagem = 2 Caixas (Pontos de Meta).</div>
                 <div id="listaLeaderboard"></div>
             </div>
 
@@ -342,7 +342,7 @@
                 <div class="resumo-badge feriado">
                     <span class="resumo-titulo">Total Extra (Mês)</span>
                     <span class="resumo-valor" id="totalFatDomGlobal">R$ 0,00</span>
-                    <span class="resumo-subtext" id="totalCxDomGlobal">0 Caixas</span>
+                    <span class="resumo-subtext" id="totalCxDomGlobal">0 cx | 0 vg</span>
                 </div>
             </div>
         </div>
@@ -422,8 +422,8 @@
             carregarDiasUteis(anoMesStr);
         }
 
-        function calcularPrevisao(totalCaixasUteis, anoMesStr) {
-            if (totalCaixasUteis === 0) return 0;
+        function calcularPrevisao(totalSoma, anoMesStr) {
+            if (totalSoma === 0) return 0;
             
             const dataAtual = new Date();
             const anoAtual = dataAtual.getFullYear();
@@ -446,7 +446,7 @@
                 diasUteisCorridos = Math.max(1, Math.round(diasUteisTotais * progresso));
             }
 
-            return Math.round((totalCaixasUteis / diasUteisCorridos) * diasUteisTotais);
+            return Math.round((totalSoma / diasUteisCorridos) * diasUteisTotais);
         }
 
         function mudarAba(aba) {
@@ -530,7 +530,7 @@
             const isFeriado = document.getElementById('feriado').checked;
 
             if (!dataStr || (servicos === 0 && valorExtra === 0)) { 
-                alert("Preencha caixas realizadas ou um valor extra."); return; 
+                alert("Preencha serviços realizados ou um valor extra."); return; 
             }
 
             const dataObj = new Date(dataStr + 'T00:00:00');
@@ -550,6 +550,7 @@
             } 
             else if (isSabado) {
                 let caixasSegSex = 0;
+                let viagensSegSex = 0;
                 let qtdFeriadosSemana = 0;
                 
                 for (let i = 1; i <= 5; i++) {
@@ -559,25 +560,40 @@
                     let lancamentoDia = bancoDados[dStr]?.[motoristaSelecionado];
                     
                     if (lancamentoDia) {
-                        if (lancamentoDia.isFeriado) { qtdFeriadosSemana++; } 
-                        else { caixasSegSex += lancamentoDia.servicos; }
+                        if (lancamentoDia.isFeriado) { 
+                            qtdFeriadosSemana++; 
+                        } else { 
+                            if(lancamentoDia.tipoVeiculo === 'cacamba') viagensSegSex += lancamentoDia.servicos;
+                            else caixasSegSex += lancamentoDia.servicos;
+                        }
                     }
                 }
 
-                let metaSemanal = (5 - qtdFeriadosSemana) * metaBase;
-                let caixasFaltantes = Math.max(0, metaSemanal - caixasSegSex);
+                // Normaliza tudo para PONTOS DE META (1 vg = 2 cx) para saber se bateu a meta da semana
+                let pontosFeitosSemana = caixasSegSex + (viagensSegSex * 2);
+                let metaSemanalPontos = (5 - qtdFeriadosSemana) * 8; // 8 pontos por dia
+                let pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
 
-                let caixasParaMeta = Math.min(servicos, caixasFaltantes);
-                let caixasBonus = Math.max(0, servicos - caixasFaltantes);
+                let pontosDesteSabado = (tipoVeiculo === 'cacamba') ? servicos * 2 : servicos;
+                let pontosParaMeta = Math.min(pontosDesteSabado, pontosFaltantes);
+                let pontosBonus = Math.max(0, pontosDesteSabado - pontosFaltantes);
 
-                let calcCaixasNormais = 0;
-                if (caixasParaMeta >= metaBase) {
-                    calcCaixasNormais = 50 + ((caixasParaMeta - metaBase) * multiplicadorExtra);
+                let calcServicosNormais = 0;
+                if (pontosParaMeta >= 8) { // Bateu uma meta diária no sábado pra cobrir buraco
+                    // Converte de volta pro tipo atual pra pagar
+                    let equivalenciaReal = (tipoVeiculo === 'cacamba') ? (pontosParaMeta / 2) : pontosParaMeta;
+                    calcServicosNormais = 50 + ((equivalenciaReal - metaBase) * multiplicadorExtra);
                 }
                 
-                let calcCaixasBonus = caixasBonus * 20; 
-                valorNormalBase = calcCaixasNormais + calcCaixasBonus;
-                bateuMetaSemana = caixasBonus > 0;
+                let calcServicosBonus = 0;
+                if(tipoVeiculo === 'cacamba'){
+                    calcServicosBonus = (pontosBonus / 2) * 20; // 20 por viagem extra
+                } else {
+                    calcServicosBonus = pontosBonus * 20; // 20 por caixa extra
+                }
+
+                valorNormalBase = calcServicosNormais + calcServicosBonus;
+                bateuMetaSemana = pontosBonus > 0;
             } 
             else {
                 if (servicos >= metaBase) { 
@@ -640,12 +656,13 @@
                 if (tagsDia === '') tagsDia = 'Normal';
 
                 let tagVeiculo = item.dados.tipoVeiculo === 'cacamba' ? 'CAÇAMBA' : 'POLIGUINDASTE';
+                let qtdText = item.dados.tipoVeiculo === 'cacamba' ? `${item.dados.servicos} vg` : `${item.dados.servicos} cx`;
                 let extraTxt = item.dados.valorExtra > 0 ? `+ R$ ${item.dados.valorExtra.toFixed(2).replace('.',',')}` : '-';
 
                 tr.innerHTML = `
                     <td><strong>${formatarDataParaExibicao(item.data)}</strong></td>
                     <td><span class="badge-veiculo">${tagVeiculo}</span><br><span style="font-size:11px; margin-top:3px; display:block;">${tagsDia}</span></td>
-                    <td><strong>${item.dados.servicos}</strong></td>
+                    <td><strong>${qtdText}</strong></td>
                     <td style="color: #8b5cf6; font-weight:600;">${extraTxt}</td>
                     <td style="color: #10b981; font-weight: 700; font-size:16px;">R$ ${item.dados.valor.toFixed(2).replace('.', ',')}</td>
                     <td><button class="btn-delete" onclick="deletarLancamentoEspecifico('${item.data}')">Excluir</button></td>
@@ -697,6 +714,7 @@
 
             const anoMesFiltro = dataRefStr.substring(0, 7);
             let totalCaixasMes = 0;
+            let totalViagensMes = 0;
             let totalFatMes = 0;
 
             for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
@@ -704,7 +722,8 @@
                     const dObj = new Date(dataStr + 'T00:00:00');
                     if (dadosDia[motoristaSelecionado]) {
                         if (dObj.getDay() !== 0 && !dadosDia[motoristaSelecionado].isFeriado) {
-                            totalCaixasMes += dadosDia[motoristaSelecionado].servicos;
+                            if(dadosDia[motoristaSelecionado].tipoVeiculo === 'cacamba') totalViagensMes += dadosDia[motoristaSelecionado].servicos;
+                            else totalCaixasMes += dadosDia[motoristaSelecionado].servicos;
                             totalFatMes += dadosDia[motoristaSelecionado].valor;
                         }
                     }
@@ -712,13 +731,14 @@
             }
 
             let diasUteisConf = carregarDiasUteis(anoMesFiltro);
-            let metaMensal = diasUteisConf * (motoristaSelecionado === 'ROBERTO CARLOS' ? 4 : 8);
+            let metaMensalPontos = diasUteisConf * 8; 
 
-            document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} Caixas`;
-            document.getElementById('motoristaMetaMes').innerText = `Meta: ${metaMensal} cx | Fat: R$ ${totalFatMes.toFixed(2).replace('.', ',')}`;
+            document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx | ${totalViagensMes} vg`;
+            document.getElementById('motoristaMetaMes').innerText = `Meta Mensal: ${metaMensalPontos} pt | Fat: R$ ${totalFatMes.toFixed(2).replace('.', ',')}`;
             
-            let previsao = calcularPrevisao(totalCaixasMes, anoMesFiltro);
-            document.getElementById('motoristaPrevisaoMes').innerText = `${previsao} Caixas`;
+            let previsaoCaixas = calcularPrevisao(totalCaixasMes, anoMesFiltro);
+            let previsaoViagens = calcularPrevisao(totalViagensMes, anoMesFiltro);
+            document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoCaixas} cx | ${previsaoViagens} vg`;
         }
 
         function atualizarResumosGlobais() {
@@ -727,17 +747,18 @@
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             
             let totalDiaGlobal = 0;
-            let caixasDiaGlobal = 0;
+            let caixasDia = 0, viagensDia = 0;
             const dadosDoDia = bancoDados[dataGlobalStr] || {};
             for (const mot in dadosDoDia) { 
                 totalDiaGlobal += dadosDoDia[mot].valor; 
-                caixasDiaGlobal += dadosDoDia[mot].servicos;
+                if(dadosDoDia[mot].tipoVeiculo === 'cacamba') viagensDia += dadosDoDia[mot].servicos;
+                else caixasDia += dadosDoDia[mot].servicos;
             }
             document.getElementById('totalDiaGlobal').innerText = `R$ ${totalDiaGlobal.toFixed(2).replace('.', ',')}`;
-            document.getElementById('caixasDiaGlobal').innerText = `${caixasDiaGlobal} Caixas`;
+            document.getElementById('caixasDiaGlobal').innerText = `${caixasDia} cx | ${viagensDia} vg`;
 
             let totalSemanaGlobal = 0;
-            let caixasSemanaGlobal = 0;
+            let caixasSemana = 0, viagensSemana = 0;
             const dataObj = new Date(dataGlobalStr + 'T00:00:00');
             const diffParaSegunda = (dataObj.getDay() === 0) ? -6 : 1 - dataObj.getDay();
             const dataSegunda = new Date(dataObj);
@@ -750,11 +771,12 @@
                 const dadosDia = bancoDados[diaCheckStr] || {};
                 for (const mot in dadosDia) { 
                     totalSemanaGlobal += dadosDia[mot].valor; 
-                    caixasSemanaGlobal += dadosDia[mot].servicos;
+                    if(dadosDia[mot].tipoVeiculo === 'cacamba') viagensSemana += dadosDia[mot].servicos;
+                    else caixasSemana += dadosDia[mot].servicos;
                 }
             }
             document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalSemanaGlobal.toFixed(2).replace('.', ',')}`;
-            document.getElementById('caixasSemanaGlobal').innerText = `${caixasSemanaGlobal} Caixas`;
+            document.getElementById('caixasSemanaGlobal').innerText = `${caixasSemana} cx | ${viagensSemana} vg`;
         }
 
         function atualizarGraficoEvolucao() {
@@ -764,13 +786,17 @@
 
             for (const data in bancoDados) {
                 if (bancoDados[data][motoristaSelecionado]) {
-                    dadosEvolucao.push({ dataStr: data, servicos: bancoDados[data][motoristaSelecionado].servicos });
+                    // Converter pra pontos pra o gráfico não ficar esquisito se misturar caçamba e poli
+                    let pts = bancoDados[data][motoristaSelecionado].tipoVeiculo === 'cacamba' ? 
+                              bancoDados[data][motoristaSelecionado].servicos * 2 : 
+                              bancoDados[data][motoristaSelecionado].servicos;
+                    dadosEvolucao.push({ dataStr: data, pontos: pts });
                 }
             }
             dadosEvolucao.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
 
             const labels = dadosEvolucao.map(d => formatarDataParaExibicao(d.dataStr).substring(0, 5));
-            const dataPoints = dadosEvolucao.map(d => d.servicos);
+            const dataPoints = dadosEvolucao.map(d => d.pontos);
 
             if (chartInstanciaEvolucao) chartInstanciaEvolucao.destroy();
             const ctx = document.getElementById('chartEvolucao').getContext('2d');
@@ -781,7 +807,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Caixas Realizadas',
+                        label: 'Volume (Pontos de Meta)',
                         data: dataPoints,
                         borderColor: '#0d6efd',
                         backgroundColor: 'rgba(13, 110, 253, 0.1)',
@@ -812,8 +838,10 @@
             for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
                 if (dataStr >= inicio && dataStr <= fim) {
                     for (const [mot, dados] of Object.entries(dadosDia)) {
-                        if (!rankPeriodo[mot]) rankPeriodo[mot] = { servicos: 0, valor: 0, extra: 0, diasTrab: 0, tipoVeiculo: dados.tipoVeiculo || 'poliguindaste' };
-                        rankPeriodo[mot].servicos += dados.servicos;
+                        if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0 };
+                        if(dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += dados.servicos;
+                        else rankPeriodo[mot].caixas += dados.servicos;
+                        
                         rankPeriodo[mot].valor += dados.valor;
                         rankPeriodo[mot].extra += dados.valorExtra || 0;
                         rankPeriodo[mot].diasTrab += 1;
@@ -833,11 +861,10 @@
             }
 
             rankArray.forEach((mot, index) => {
-                const metaBase = (mot.tipoVeiculo === 'cacamba') ? 4 : 8;
-                let metaTotalPeriodo = metaBase * mot.diasTrab;
-                let porcentagem = metaTotalPeriodo > 0 ? (mot.servicos / metaTotalPeriodo) * 100 : 0;
+                let pontosFeitos = mot.caixas + (mot.viagens * 2);
+                let metaTotalPeriodo = 8 * mot.diasTrab; // 8 pontos por dia
+                let porcentagem = metaTotalPeriodo > 0 ? (pontosFeitos / metaTotalPeriodo) * 100 : 0;
                 
-                // NOVIDADE: As duas casas decimais no ranking de período
                 let porcentagemStr = porcentagem.toFixed(2).replace('.', ',');
 
                 let classeBarra = '';
@@ -847,11 +874,16 @@
                 let larguraBarra = porcentagem > 100 ? 100 : porcentagem; 
                 let extraBadge = mot.extra > 0 ? `<span style="font-size:10px; background:#f3e8ff; color:#7e22ce; padding:2px 6px; border-radius:4px; margin-left:8px;">+ Extra R$ ${mot.extra}</span>` : '';
                 
+                let textoQtd = "";
+                if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
+                else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx`;
+                else textoQtd = `${mot.viagens} vg`;
+
                 const linha = document.createElement('div');
                 linha.className = 'diario-row';
                 linha.innerHTML = `
                     <div class="diario-top">
-                        <span class="diario-nome">#${index + 1} - ${mot.nome} (${mot.servicos} cx) ${extraBadge}</span>
+                        <span class="diario-nome">#${index + 1} - ${mot.nome} (${textoQtd}) ${extraBadge}</span>
                         <span class="diario-faturamento">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
                     </div>
                     <div class="progress-wrapper">
@@ -865,15 +897,16 @@
             });
         }
 
-        function obterRankElo(qtdServicos) {
-            if (qtdServicos >= 200) return { nome: 'Radiante', classe: 'elo-radiante' };
-            if (qtdServicos >= 160) return { nome: 'Imortal', classe: 'elo-imortal' };
-            if (qtdServicos >= 130) return { nome: 'Ascendente', classe: 'elo-ascendente' };
-            if (qtdServicos >= 110) return { nome: 'Diamante', classe: 'elo-diamante' };
-            if (qtdServicos >= 90)  return { nome: 'Platina', classe: 'elo-platina' };
-            if (qtdServicos >= 60)  return { nome: 'Ouro', classe: 'elo-ouro' };
-            if (qtdServicos >= 30)  return { nome: 'Prata', classe: 'elo-prata' };
-            if (qtdServicos >= 15)  return { nome: 'Bronze', classe: 'elo-bronze' };
+        function obterRankElo(pontos) {
+            // Ajustado para Pontos de Meta
+            if (pontos >= 200) return { nome: 'Radiante', classe: 'elo-radiante' };
+            if (pontos >= 160) return { nome: 'Imortal', classe: 'elo-imortal' };
+            if (pontos >= 130) return { nome: 'Ascendente', classe: 'elo-ascendente' };
+            if (pontos >= 110) return { nome: 'Diamante', classe: 'elo-diamante' };
+            if (pontos >= 90)  return { nome: 'Platina', classe: 'elo-platina' };
+            if (pontos >= 60)  return { nome: 'Ouro', classe: 'elo-ouro' };
+            if (pontos >= 30)  return { nome: 'Prata', classe: 'elo-prata' };
+            if (pontos >= 15)  return { nome: 'Bronze', classe: 'elo-bronze' };
             return { nome: 'Ferro', classe: 'elo-ferro' };
         }
 
@@ -885,9 +918,9 @@
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             let acumuladoMes = {};
-            let totalCaixasFrotaMes = 0;
+            let totalCaixasFrota = 0, totalViagensFrota = 0;
 
-            motoristas.forEach(m => acumuladoMes[m] = { servicos: 0, valor: 0 });
+            motoristas.forEach(m => acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0 });
 
             for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
                 if (dataStr.startsWith(mesFiltro)) {
@@ -895,23 +928,33 @@
                     for (const [mot, dados] of Object.entries(dadosDia)) {
                         if (!isDomingo && !dados.isFeriado) {
                             if (acumuladoMes[mot]) {
-                                acumuladoMes[mot].servicos += dados.servicos;
+                                if(dados.tipoVeiculo === 'cacamba') {
+                                    acumuladoMes[mot].viagens += dados.servicos;
+                                    totalViagensFrota += dados.servicos;
+                                } else {
+                                    acumuladoMes[mot].caixas += dados.servicos;
+                                    totalCaixasFrota += dados.servicos; 
+                                }
                                 acumuladoMes[mot].valor += dados.valor;
-                                totalCaixasFrotaMes += dados.servicos; 
                             }
                         }
                     }
                 }
             }
 
-            document.getElementById('totalCaixasMesGlobal').innerText = totalCaixasFrotaMes;
-            let previsaoGlobal = calcularPrevisao(totalCaixasFrotaMes, mesFiltro);
-            document.getElementById('previsaoMesGlobal').innerText = previsaoGlobal;
+            document.getElementById('totalCaixasMesGlobal').innerText = `${totalCaixasFrota} cx | ${totalViagensFrota} vg`;
+            
+            let prevCx = calcularPrevisao(totalCaixasFrota, mesFiltro);
+            let prevVg = calcularPrevisao(totalViagensFrota, mesFiltro);
+            document.getElementById('previsaoMesGlobal').innerText = `${prevCx} cx | ${prevVg} vg`;
 
             let rankFinal = Object.keys(acumuladoMes)
-                .map(mot => ({ nome: mot, servicos: acumuladoMes[mot].servicos, valor: acumuladoMes[mot].valor }))
-                .filter(item => item.servicos > 0)
-                .sort((a, b) => b.servicos - a.servicos);
+                .map(mot => {
+                    let pts = acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
+                    return { nome: mot, caixas: acumuladoMes[mot].caixas, viagens: acumuladoMes[mot].viagens, valor: acumuladoMes[mot].valor, pontos: pts };
+                })
+                .filter(item => item.pontos > 0)
+                .sort((a, b) => b.pontos - a.pontos);
 
             const divLista = document.getElementById('listaLeaderboard');
             divLista.innerHTML = '';
@@ -922,15 +965,20 @@
             }
 
             rankFinal.forEach((mot, index) => {
-                const eloInfo = obterRankElo(mot.servicos);
+                const eloInfo = obterRankElo(mot.pontos);
                 
-                let metaMensalMot = diasUteisGlobais * (mot.nome === "ROBERTO CARLOS" ? 4 : 8);
-                let percentualMeta = metaMensalMot > 0 ? ((mot.servicos / metaMensalMot) * 100) : 0;
+                let metaMensalPontos = diasUteisGlobais * 8; // 8 Pontos
+                let percentualMeta = metaMensalPontos > 0 ? ((mot.pontos / metaMensalPontos) * 100) : 0;
                 let percentualStr = percentualMeta.toFixed(2).replace('.', ',');
                 
                 let corPercent = percentualMeta >= 100 ? '#10b981' : '#7e22ce';
                 let bgPercent = percentualMeta >= 100 ? '#d1fae5' : '#f3e8ff';
                 let borderPercent = percentualMeta >= 100 ? '#a7f3d0' : '#d8b4fe';
+
+                let textoQtd = "";
+                if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
+                else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx`;
+                else textoQtd = `${mot.viagens} vg`;
 
                 const linha = document.createElement('div');
                 linha.className = 'elo-row';
@@ -942,8 +990,8 @@
                     </div>
                     <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
                     <div class="valor-destaque" style="color: #3b82f6; display:flex; align-items:center;">
-                        ${mot.servicos} / ${metaMensalMot} cx
-                        <span class="badge-percent" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};" title="Meta Atingida">${percentualStr}%</span>
+                        ${textoQtd}
+                        <span class="badge-percent" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};" title="Meta Atingida (Em Pontos)">${percentualStr}%</span>
                     </div>
                 `;
                 divLista.appendChild(linha);
@@ -959,18 +1007,23 @@
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             let acumuladoDom = {};
-            let fatTotalDom = 0;
-            let cxTotalDom = 0;
+            let fatTotalDom = 0, cxTotalDom = 0, vgTotalDom = 0;
 
             for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
                 if (dataStr.startsWith(mesFiltro)) {
                     const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
                     for (const [mot, dados] of Object.entries(dadosDia)) {
                         if (isDomingo || dados.isFeriado) {
-                            if (!acumuladoDom[mot]) acumuladoDom[mot] = { servicos: 0, valor: 0 };
-                            acumuladoDom[mot].servicos += dados.servicos;
+                            if (!acumuladoDom[mot]) acumuladoDom[mot] = { caixas: 0, viagens: 0, valor: 0 };
+                            
+                            if(dados.tipoVeiculo === 'cacamba') {
+                                acumuladoDom[mot].viagens += dados.servicos;
+                                vgTotalDom += dados.servicos;
+                            } else {
+                                acumuladoDom[mot].caixas += dados.servicos;
+                                cxTotalDom += dados.servicos;
+                            }
                             acumuladoDom[mot].valor += dados.valor;
-                            cxTotalDom += dados.servicos;
                             fatTotalDom += dados.valor;
                         }
                     }
@@ -978,11 +1031,11 @@
             }
 
             document.getElementById('totalFatDomGlobal').innerText = `R$ ${fatTotalDom.toFixed(2).replace('.', ',')}`;
-            document.getElementById('totalCxDomGlobal').innerText = `${cxTotalDom} Caixas`;
+            document.getElementById('totalCxDomGlobal').innerText = `${cxTotalDom} cx | ${vgTotalDom} vg`;
 
             let rankFinal = Object.keys(acumuladoDom)
-                .map(mot => ({ nome: mot, servicos: acumuladoDom[mot].servicos, valor: acumuladoDom[mot].valor }))
-                .filter(item => item.servicos > 0)
+                .map(mot => ({ nome: mot, caixas: acumuladoDom[mot].caixas, viagens: acumuladoDom[mot].viagens, valor: acumuladoDom[mot].valor }))
+                .filter(item => (item.caixas > 0 || item.viagens > 0))
                 .sort((a, b) => b.valor - a.valor);
 
             const divLista = document.getElementById('listaDomFeriados');
@@ -994,11 +1047,16 @@
             }
 
             rankFinal.forEach((mot, index) => {
+                let textoQtd = "";
+                if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
+                else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx`;
+                else textoQtd = `${mot.viagens} vg`;
+
                 const linha = document.createElement('div');
                 linha.className = 'diario-row';
                 linha.innerHTML = `
                     <div class="diario-top" style="margin:0;">
-                        <span class="diario-nome">#${index + 1} - ${mot.nome} (${mot.servicos} cx)</span>
+                        <span class="diario-nome">#${index + 1} - ${mot.nome} (${textoQtd})</span>
                         <span class="diario-faturamento" style="color: #ef4444;">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
                     </div>
                 `;
