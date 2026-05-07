@@ -243,8 +243,7 @@
                         <div>
                             <label for="tipoVeiculo">Veículo Operado:</label>
                             <select id="tipoVeiculo">
-                                <option value="poliguindaste">Poliguindaste (Meta 8 Cx)</option>
-                                <option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>
+                                <!-- Opções serão carregadas dinamicamente via JS -->
                             </select>
                         </div>
                         <div>
@@ -500,8 +499,15 @@
             document.getElementById('nomeMotoristaDisplay').textContent = nome;
             document.getElementById('dataLancamento').value = document.getElementById('dataGlobal').value;
             
-            if(nome === "ROBERTO CARLOS") { document.getElementById('tipoVeiculo').value = "cacamba"; } 
-            else { document.getElementById('tipoVeiculo').value = "poliguindaste"; }
+            const selectVeiculo = document.getElementById('tipoVeiculo');
+            if(nome === "CLOVIS" || nome === "RODRIGO") { 
+                selectVeiculo.innerHTML = '<option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>';
+                selectVeiculo.value = "cacamba"; 
+            } 
+            else { 
+                selectVeiculo.innerHTML = '<option value="poliguindaste">Poliguindaste (Meta 8 Cx)</option>';
+                selectVeiculo.value = "poliguindaste"; 
+            }
             
             carregarHistoricoMotorista();
             atualizarResumosDoMotorista();
