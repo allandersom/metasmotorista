@@ -24,6 +24,12 @@
         .topbar.feriado-theme h2::before { background: #ef4444; }
 
         .global-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap;}
+        
+        .box-dias-uteis { display: flex; flex-direction: column; background: #fef2f2; padding: 8px 15px; border-radius: 10px; border: 1px solid #fca5a5; }
+        .box-dias-uteis label { font-size: 11px; font-weight: 800; color: #ef4444; text-transform: uppercase; margin-bottom: 4px; }
+        .box-dias-uteis input { width: 60px; padding: 4px; border: 1px solid #f87171; border-radius: 6px; font-weight: bold; color: #b91c1c; text-align: center; background: #fff; font-family: 'Inter';}
+        .box-dias-uteis input:focus { outline: none; box-shadow: 0 0 0 3px rgba(239,68,68,0.2); }
+
         .resumo-badge { padding: 12px 20px; border-radius: 12px; display: flex; flex-direction: column; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.2s ease; min-width: 140px;}
         .resumo-badge:hover { transform: translateY(-3px); }
         .resumo-badge.dia { background: linear-gradient(135deg, #11998e, #38ef7d); }
@@ -91,16 +97,15 @@
         .badge-veiculo { background-color: #f1f5f9; color: #475569; font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 700; border: 1px solid #cbd5e1; }
         .badge-meta { background-color: #fef3c7; color: #d97706; font-size: 10px; padding: 4px 8px; border-radius: 6px; margin-left: 8px; font-weight: 700; border: 1px solid #fde68a; }
         .badge-feriado { background-color: #e0f2fe; color: #0284c7; font-size: 10px; padding: 4px 8px; border-radius: 6px; margin-left: 8px; font-weight: 700; border: 1px solid #bae6fd; }
-        .badge-percent { background-color: #f3e8ff; color: #7e22ce; font-size: 11px; padding: 4px 8px; border-radius: 6px; margin-left: 10px; font-weight: 700; border: 1px solid #d8b4fe; }
+        .badge-percent { background-color: #f3e8ff; color: #7e22ce; font-size: 12px; padding: 4px 8px; border-radius: 6px; margin-left: 10px; font-weight: 800; border: 1px solid #d8b4fe; }
 
-        /* ABA DE RANKINGS E DOMINGOS */
         #viewRankings, #viewDomFeriados { display: none; }
         .rankings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: start; }
         .ranking-panel { background: #fff; border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
         .panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; }
         .panel-header h3 { margin: 0; font-size: 20px; color: #1e293b; font-weight: 800; display: flex; align-items: center; gap: 8px;}
         
-        .elo-row { display: grid; grid-template-columns: 50px 2.5fr 1fr 1fr; padding: 15px; background: #f8fafc; margin-bottom: 10px; border-radius: 12px; align-items: center; transition: transform 0.2s; border: 1px solid transparent; }
+        .elo-row { display: grid; grid-template-columns: 50px 2.5fr 1fr 1.5fr; padding: 15px; background: #f8fafc; margin-bottom: 10px; border-radius: 12px; align-items: center; transition: transform 0.2s; border: 1px solid transparent; }
         .elo-row:hover { transform: scale(1.02); background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-color: #e2e8f0; }
         
         .diario-row { display: flex; flex-direction: column; padding: 15px; background: #f8fafc; margin-bottom: 12px; border-radius: 12px; border: 1px solid #e2e8f0; transition: transform 0.2s;}
@@ -114,7 +119,8 @@
         .progress-bar-fill { height: 100%; background: linear-gradient(135deg, #3b82f6, #06b6d4); border-radius: 10px; transition: width 0.5s ease; }
         .progress-bar-fill.meta-batida { background: linear-gradient(135deg, #10b981, #34d399); } 
         .progress-bar-fill.meta-excedida { background: linear-gradient(135deg, #f59e0b, #fbbf24); } 
-        .progress-text { font-size: 13px; font-weight: 700; color: #64748b; width: 60px; text-align: right; }
+        /* Aumentei a largura pra caber "100,00%" sem quebrar */
+        .progress-text { font-size: 13px; font-weight: 700; color: #64748b; width: 75px; text-align: right; }
 
         .posicao { font-size: 20px; font-weight: 800; color: #94a3b8; }
         .elo-row:nth-child(1) .posicao { color: #eab308; } 
@@ -154,10 +160,16 @@
         <div class="topbar">
             <h2>Gestão Diária da Frota</h2>
             <div class="global-controls">
-                <div>
-                    <label for="dataGlobal" style="margin-bottom: 6px; font-size: 12px;">Data de Referência:</label>
-                    <input type="date" id="dataGlobal" onchange="atualizarResumosGlobais()">
+                <div class="box-dias-uteis">
+                    <label>Dias Úteis (Mês):</label>
+                    <input type="number" id="inputDiasUteisLanc" min="1" max="31" onchange="salvarDiasUteis('lanc')">
                 </div>
+
+                <div>
+                    <label style="margin-bottom: 6px; font-size: 12px; display:block;">Data de Referência:</label>
+                    <input type="date" id="dataGlobal" onchange="sincronizarMesData(); atualizarResumosGlobais();" style="padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'Inter';">
+                </div>
+                
                 <div class="resumo-badge dia">
                     <span class="resumo-titulo">Total Frota (Dia)</span>
                     <span class="resumo-valor" id="totalDiaGlobal">R$ 0,00</span>
@@ -207,14 +219,14 @@
                                 <div>
                                     <span>Resultados no Mês (Úteis)</span>
                                     <strong id="motoristaCaixasMes">0 Caixas</strong>
-                                    <span class="resumo-detalhe" id="motoristaFatMes">Fat: R$ 0,00</span>
+                                    <span class="resumo-detalhe" id="motoristaMetaMes">Meta Mensal: 0 cx | Fat: R$ 0,00</span>
                                 </div>
                             </div>
                             <div class="resumo-motorista-box previsao">
                                 <div>
                                     <span>Previsão Final (Mês)</span>
                                     <strong id="motoristaPrevisaoMes">0 Caixas</strong>
-                                    <span class="resumo-detalhe" style="color:#b45309;"></span>
+                                    <span class="resumo-detalhe" style="color:#b45309;">Base: Dias Úteis Configuráveis</span>
                                 </div>
                             </div>
                         </div>
@@ -276,6 +288,11 @@
         <div class="topbar">
             <h2>Central de Rankings SGC</h2>
             <div class="global-controls">
+                <div class="box-dias-uteis">
+                    <label>Dias Úteis (Mês):</label>
+                    <input type="number" id="inputDiasUteisRank" min="1" max="31" onchange="salvarDiasUteis('rank')">
+                </div>
+
                 <div class="resumo-badge mes">
                     <span class="resumo-titulo">Caixas Úteis Frota (Mês)</span>
                     <span class="resumo-valor" id="totalCaixasMesGlobal">0</span>
@@ -305,7 +322,7 @@
                 <div class="panel-header">
                     <h3>⚔️ Leaderboard Mensal (Elo)</h3>
                     <div>
-                        <input type="month" id="mesFiltro" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter';" onchange="gerarRankingMensal()">
+                        <input type="month" id="mesFiltro" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter';" onchange="sincronizarMesFiltro(); gerarRankingMensal();">
                     </div>
                 </div>
                 <div id="listaLeaderboard"></div>
@@ -319,7 +336,7 @@
             <h2>Painel de Domingos & Feriados</h2>
             <div class="global-controls">
                 <div>
-                    <label for="mesFiltroDom" style="margin-bottom: 6px; font-size: 12px;">Selecione o Mês:</label>
+                    <label style="margin-bottom: 6px; font-size: 12px; display:block;">Selecione o Mês:</label>
                     <input type="month" id="mesFiltroDom" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter';" onchange="gerarPainelFeriados()">
                 </div>
                 <div class="resumo-badge feriado">
@@ -364,11 +381,47 @@
             document.getElementById('mesFiltro').value = anoMesAtual;
             document.getElementById('mesFiltroDom').value = anoMesAtual;
             
+            carregarDiasUteis(anoMesAtual);
             renderizarSidebar();
             atualizarResumosGlobais();
         };
 
-        // Algoritmo de Previsão Mágica Refatorado (Apenas dias Úteis + Sábados)
+        function carregarDiasUteis(anoMesStr) {
+            let config = JSON.parse(localStorage.getItem('config_meses')) || {};
+            let dias = config[anoMesStr] || 22; 
+            document.getElementById('inputDiasUteisLanc').value = dias;
+            document.getElementById('inputDiasUteisRank').value = dias;
+            return dias;
+        }
+
+        function salvarDiasUteis(origem) {
+            let valor = origem === 'lanc' ? document.getElementById('inputDiasUteisLanc').value : document.getElementById('inputDiasUteisRank').value;
+            document.getElementById('inputDiasUteisLanc').value = valor;
+            document.getElementById('inputDiasUteisRank').value = valor;
+            
+            let isLancamento = document.getElementById('viewLancamentos').style.display !== 'none';
+            let anoMesStr = isLancamento ? document.getElementById('dataGlobal').value.substring(0,7) : document.getElementById('mesFiltro').value;
+            
+            let config = JSON.parse(localStorage.getItem('config_meses')) || {};
+            config[anoMesStr] = parseInt(valor) || 22;
+            localStorage.setItem('config_meses', JSON.stringify(config));
+            
+            atualizarResumosGlobais();
+            atualizarResumosDoMotorista();
+            if(!isLancamento) gerarRankingMensal();
+        }
+
+        function sincronizarMesData() {
+            let anoMesStr = document.getElementById('dataGlobal').value.substring(0,7);
+            document.getElementById('mesFiltro').value = anoMesStr;
+            carregarDiasUteis(anoMesStr);
+        }
+
+        function sincronizarMesFiltro() {
+            let anoMesStr = document.getElementById('mesFiltro').value;
+            carregarDiasUteis(anoMesStr);
+        }
+
         function calcularPrevisao(totalCaixasUteis, anoMesStr) {
             if (totalCaixasUteis === 0) return 0;
             
@@ -377,26 +430,22 @@
             const mesAtual = String(dataAtual.getMonth() + 1).padStart(2, '0');
             const strAtual = `${anoAtual}-${mesAtual}`;
             
-            const [anoRef, mesRef] = anoMesStr.split('-');
-            const diasNoMes = new Date(anoRef, mesRef, 0).getDate();
-            
-            let diasUteisTotais = 0;
+            let diasUteisTotais = carregarDiasUteis(anoMesStr);
             let diasUteisCorridos = 0;
 
-            for(let i = 1; i <= diasNoMes; i++) {
-                let d = new Date(anoRef, mesRef - 1, i);
-                if (d.getDay() !== 0) { // Não é domingo
-                    diasUteisTotais++;
-                    if (anoMesStr === strAtual && i <= dataAtual.getDate()) {
-                        diasUteisCorridos++;
-                    }
-                }
+            const [anoRef, mesRef] = anoMesStr.split('-');
+
+            if (anoMesStr < strAtual) {
+                diasUteisCorridos = diasUteisTotais; 
+            } else if (anoMesStr > strAtual) {
+                return 0; 
+            } else {
+                let diaHoje = dataAtual.getDate();
+                let diasNoMes = new Date(anoAtual, mesAtual, 0).getDate();
+                let progresso = diaHoje / diasNoMes; 
+                diasUteisCorridos = Math.max(1, Math.round(diasUteisTotais * progresso));
             }
 
-            if (anoMesStr < strAtual) diasUteisCorridos = diasUteisTotais;
-            else if (anoMesStr > strAtual) return 0;
-
-            if (diasUteisCorridos === 0) return 0;
             return Math.round((totalCaixasUteis / diasUteisCorridos) * diasUteisTotais);
         }
 
@@ -471,9 +520,6 @@
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
-        // =====================================
-        // NOVA LÓGICA DE CÁLCULO (INCLUINDO SÁBADO)
-        // =====================================
         function salvarLancamento() {
             if (!motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
             const dataStr = document.getElementById('dataLancamento').value;
@@ -503,7 +549,6 @@
                 valorNormalBase = servicos * 30; 
             } 
             else if (isSabado) {
-                // LÓGICA DE SÁBADO: RECUPERAÇÃO DE META
                 let caixasSegSex = 0;
                 let qtdFeriadosSemana = 0;
                 
@@ -530,12 +575,11 @@
                     calcCaixasNormais = 50 + ((caixasParaMeta - metaBase) * multiplicadorExtra);
                 }
                 
-                let calcCaixasBonus = caixasBonus * 20; // R$ 20 por caixa extra no Sábado
+                let calcCaixasBonus = caixasBonus * 20; 
                 valorNormalBase = calcCaixasNormais + calcCaixasBonus;
                 bateuMetaSemana = caixasBonus > 0;
             } 
             else {
-                // LÓGICA DE SEG A SEX
                 if (servicos >= metaBase) { 
                     valorNormalBase = 50 + ((servicos - metaBase) * multiplicadorExtra); 
                 }
@@ -655,7 +699,6 @@
             let totalCaixasMes = 0;
             let totalFatMes = 0;
 
-            // Filtro para ignorar Domingos e Feriados no mês
             for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
                 if (dataStr.startsWith(anoMesFiltro)) {
                     const dObj = new Date(dataStr + 'T00:00:00');
@@ -668,8 +711,11 @@
                 }
             }
 
+            let diasUteisConf = carregarDiasUteis(anoMesFiltro);
+            let metaMensal = diasUteisConf * (motoristaSelecionado === 'ROBERTO CARLOS' ? 4 : 8);
+
             document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} Caixas`;
-            document.getElementById('motoristaFatMes').innerText = `Fat: R$ ${totalFatMes.toFixed(2).replace('.', ',')}`;
+            document.getElementById('motoristaMetaMes').innerText = `Meta: ${metaMensal} cx | Fat: R$ ${totalFatMes.toFixed(2).replace('.', ',')}`;
             
             let previsao = calcularPrevisao(totalCaixasMes, anoMesFiltro);
             document.getElementById('motoristaPrevisaoMes').innerText = `${previsao} Caixas`;
@@ -753,7 +799,7 @@
         }
 
         // =====================================
-        // RANKINGS E RELATÓRIOS
+        // RANKINGS
         // =====================================
         function gerarRankingPeriodo() {
             const inicio = document.getElementById('dataRankingInicio').value;
@@ -791,6 +837,9 @@
                 let metaTotalPeriodo = metaBase * mot.diasTrab;
                 let porcentagem = metaTotalPeriodo > 0 ? (mot.servicos / metaTotalPeriodo) * 100 : 0;
                 
+                // NOVIDADE: As duas casas decimais no ranking de período
+                let porcentagemStr = porcentagem.toFixed(2).replace('.', ',');
+
                 let classeBarra = '';
                 if(porcentagem >= 100 && porcentagem <= 125) classeBarra = 'meta-batida';
                 else if(porcentagem > 125) classeBarra = 'meta-excedida';
@@ -809,7 +858,7 @@
                         <div class="progress-bar-bg">
                             <div class="progress-bar-fill ${classeBarra}" style="width: ${larguraBarra}%;"></div>
                         </div>
-                        <span class="progress-text" title="Baseado nos dias trabalhados">${porcentagem.toFixed(0)}%</span>
+                        <span class="progress-text" title="Baseado nos dias trabalhados">${porcentagemStr}%</span>
                     </div>
                 `;
                 divLista.appendChild(linha);
@@ -832,6 +881,8 @@
             const mesFiltro = document.getElementById('mesFiltro').value; 
             if (!mesFiltro) return;
 
+            let diasUteisGlobais = carregarDiasUteis(mesFiltro);
+
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             let acumuladoMes = {};
             let totalCaixasFrotaMes = 0;
@@ -842,7 +893,6 @@
                 if (dataStr.startsWith(mesFiltro)) {
                     const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
                     for (const [mot, dados] of Object.entries(dadosDia)) {
-                        // Ignora domingos e feriados pro ranking de Elo Principal
                         if (!isDomingo && !dados.isFeriado) {
                             if (acumuladoMes[mot]) {
                                 acumuladoMes[mot].servicos += dados.servicos;
@@ -873,8 +923,15 @@
 
             rankFinal.forEach((mot, index) => {
                 const eloInfo = obterRankElo(mot.servicos);
-                const percentual = totalCaixasFrotaMes > 0 ? ((mot.servicos / totalCaixasFrotaMes) * 100).toFixed(1) : 0;
                 
+                let metaMensalMot = diasUteisGlobais * (mot.nome === "ROBERTO CARLOS" ? 4 : 8);
+                let percentualMeta = metaMensalMot > 0 ? ((mot.servicos / metaMensalMot) * 100) : 0;
+                let percentualStr = percentualMeta.toFixed(2).replace('.', ',');
+                
+                let corPercent = percentualMeta >= 100 ? '#10b981' : '#7e22ce';
+                let bgPercent = percentualMeta >= 100 ? '#d1fae5' : '#f3e8ff';
+                let borderPercent = percentualMeta >= 100 ? '#a7f3d0' : '#d8b4fe';
+
                 const linha = document.createElement('div');
                 linha.className = 'elo-row';
                 linha.innerHTML = `
@@ -885,8 +942,8 @@
                     </div>
                     <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
                     <div class="valor-destaque" style="color: #3b82f6; display:flex; align-items:center;">
-                        ${mot.servicos} cx
-                        <span class="badge-percent">${percentual}%</span>
+                        ${mot.servicos} / ${metaMensalMot} cx
+                        <span class="badge-percent" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};" title="Meta Atingida">${percentualStr}%</span>
                     </div>
                 `;
                 divLista.appendChild(linha);
@@ -909,7 +966,6 @@
                 if (dataStr.startsWith(mesFiltro)) {
                     const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
                     for (const [mot, dados] of Object.entries(dadosDia)) {
-                        // SÓ ENTRA DOMINGOS E FERIADOS
                         if (isDomingo || dados.isFeriado) {
                             if (!acumuladoDom[mot]) acumuladoDom[mot] = { servicos: 0, valor: 0 };
                             acumuladoDom[mot].servicos += dados.servicos;
