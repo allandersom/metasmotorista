@@ -20,7 +20,7 @@
         .topbar h2::before { content: ''; display: inline-block; width: 5px; height: 24px; background: #0d6efd; border-radius: 5px; }
 
         .global-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap;}
-        .resumo-badge { padding: 12px 20px; border-radius: 12px; display: flex; flex-direction: column; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.2s ease; min-width: 130px;}
+        .resumo-badge { padding: 12px 20px; border-radius: 12px; display: flex; flex-direction: column; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.2s ease; min-width: 140px;}
         .resumo-badge:hover { transform: translateY(-3px); }
         .resumo-badge.dia { background: linear-gradient(135deg, #11998e, #38ef7d); }
         .resumo-badge.semana { background: linear-gradient(135deg, #2F80ED, #56CCF2); }
@@ -28,6 +28,7 @@
         .resumo-badge.previsao { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #78350f;} 
         .resumo-titulo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; }
         .resumo-valor { font-size: 20px; font-weight: 800; margin-top: 4px; }
+        .resumo-subtext { font-size: 13px; font-weight: 600; opacity: 0.85; margin-top: 2px; } /* Novo detalhe das caixas */
 
         .app-layout { display: flex; gap: 25px; align-items: flex-start; }
 
@@ -62,7 +63,6 @@
 
         .grafico-motorista-container { width: 100%; height: 250px; background: #f8fafc; border-radius: 12px; padding: 15px; margin-bottom: 30px; border: 1px solid #e2e8f0; box-sizing: border-box; }
 
-        /* FORMULÁRIO ATUALIZADO */
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px; }
         label { font-weight: 600; font-size: 0.85em; margin-bottom: 8px; display: block; color: #475569; }
         input[type="date"], input[type="number"], input[type="month"], select { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; width: 100%; box-sizing: border-box; transition: all 0.2s ease; font-family: 'Inter', sans-serif; background: #fff;}
@@ -83,9 +83,9 @@
         tr:hover { background-color: #f1f5f9; }
         .btn-delete { background-color: #fee2e2; color: #ef4444; padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s ease; }
         .btn-delete:hover { background-color: #ef4444; color: #fff; }
+        .badge-veiculo { background-color: #f1f5f9; color: #475569; font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 700; border: 1px solid #cbd5e1; }
         .badge-meta { background-color: #fef3c7; color: #d97706; font-size: 10px; padding: 4px 8px; border-radius: 6px; margin-left: 8px; font-weight: 700; border: 1px solid #fde68a; }
         .badge-feriado { background-color: #e0f2fe; color: #0284c7; font-size: 10px; padding: 4px 8px; border-radius: 6px; margin-left: 8px; font-weight: 700; border: 1px solid #bae6fd; }
-        .badge-veiculo { background-color: #f1f5f9; color: #475569; font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 700; border: 1px solid #cbd5e1; }
 
         /* ABA DE RANKINGS */
         #viewRankings { display: none; }
@@ -148,12 +148,14 @@
                     <input type="date" id="dataGlobal" onchange="atualizarResumosGlobais()">
                 </div>
                 <div class="resumo-badge dia">
-                    <span class="resumo-titulo">Custo Frota (Dia)</span>
+                    <span class="resumo-titulo">Total Frota (Dia)</span>
                     <span class="resumo-valor" id="totalDiaGlobal">R$ 0,00</span>
+                    <span class="resumo-subtext" id="caixasDiaGlobal">0 Caixas</span>
                 </div>
                 <div class="resumo-badge semana">
-                    <span class="resumo-titulo">Custo Frota (Semana)</span>
+                    <span class="resumo-titulo">Total Frota (Semana)</span>
                     <span class="resumo-valor" id="totalSemanaGlobal">R$ 0,00</span>
+                    <span class="resumo-subtext" id="caixasSemanaGlobal">0 Caixas</span>
                 </div>
             </div>
         </div>
@@ -201,7 +203,7 @@
                                 <div>
                                     <span>Previsão Final (Mês)</span>
                                     <strong id="motoristaPrevisaoMes">0 Caixas</strong>
-                                    <span class="resumo-detalhe" style="color:#b45309;" title="Baseado na média diária"></span>
+                                    <span class="resumo-detalhe" style="color:#b45309;" title="Baseado na média diária">Algoritmo Ativo ⚡</span>
                                 </div>
                             </div>
                         </div>
@@ -327,7 +329,6 @@
             atualizarResumosGlobais();
         };
 
-        // Algoritmo de Previsão Mágica
         function calcularPrevisao(totalCaixas, anoMesStr) {
             if (totalCaixas === 0) return 0;
             
@@ -341,9 +342,9 @@
             
             let diasCorridos = diasNoMes;
             if (anoMesStr === strAtual) {
-                diasCorridos = dataAtual.getDate(); // Pega o dia de hoje
+                diasCorridos = dataAtual.getDate(); 
             } else if (anoMesStr > strAtual) {
-                return 0; // Mês futuro
+                return 0; 
             }
             
             return Math.round((totalCaixas / diasCorridos) * diasNoMes);
@@ -396,7 +397,6 @@
             document.getElementById('nomeMotoristaDisplay').textContent = nome;
             document.getElementById('dataLancamento').value = document.getElementById('dataGlobal').value;
             
-            // Auto seleciona caçamba se for o RC
             if(nome === "ROBERTO CARLOS") {
                 document.getElementById('tipoVeiculo').value = "cacamba";
             } else {
@@ -438,7 +438,6 @@
             const isDomingo = diaSemana === 0;
             const isSabado = diaSemana === 6;
             
-            // Lógica dos Veículos
             const metaBase = (tipoVeiculo === 'cacamba') ? 4 : 8;
             const multiplicadorExtra = (tipoVeiculo === 'cacamba') ? 20 : 10;
 
@@ -453,22 +452,19 @@
                     dataCheck.setDate(dataObj.getDate() - (6 - i));
                     let dataCheckStr = formatarDataParaBusca(dataCheck);
                     let lancamentoDia = bancoDados[dataCheckStr]?.[motoristaSelecionado];
-                    // O sistema vai considerar a meta do dia baseado no que ele rodou na semana
                     let metaDoDiaPassado = (lancamentoDia && lancamentoDia.tipoVeiculo === 'cacamba') ? 4 : 8;
                     if (!lancamentoDia || lancamentoDia.servicos < metaDoDiaPassado) { bateuMetaSemana = false; break; }
                 }
             }
 
-            // Calculo de Caixas base
             if (isDomingo || isFeriado || (isSabado && bateuMetaSemana)) {
-                valor = servicos * 30; // Especial continua 30 pra tudo
+                valor = servicos * 30; 
             } else {
                 if (servicos >= metaBase) { 
                     valor = 50 + ((servicos - metaBase) * multiplicadorExtra); 
                 }
             }
             
-            // Adiciona o valor feito por fora
             valor += valorExtra;
             
             if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
@@ -557,14 +553,12 @@
             if (!dataRefStr) return;
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             
-            // Dia
             let totalDia = 0;
             if (bancoDados[dataRefStr] && bancoDados[dataRefStr][motoristaSelecionado]) {
                 totalDia = bancoDados[dataRefStr][motoristaSelecionado].valor;
             }
             document.getElementById('motoristaTotalDia').innerText = `R$ ${totalDia.toFixed(2).replace('.', ',')}`;
 
-            // Semana
             let totalSemana = 0;
             const dataObj = new Date(dataRefStr + 'T00:00:00');
             const diffParaSegunda = (dataObj.getDay() === 0) ? -6 : 1 - dataObj.getDay();
@@ -581,7 +575,6 @@
             }
             document.getElementById('motoristaTotalSemana').innerText = `R$ ${totalSemana.toFixed(2).replace('.', ',')}`;
 
-            // Mês (Faturamento e Caixas e Previsao)
             const anoMesFiltro = dataRefStr.substring(0, 7);
             let totalCaixasMes = 0;
             let totalFatMes = 0;
@@ -602,19 +595,28 @@
             document.getElementById('motoristaPrevisaoMes').innerText = `${previsao} Caixas`;
         }
 
+        // =====================================
+        // ATUALIZAÇÃO DOS CARDS GLOBAIS (CAIXAS + DINHEIRO)
+        // =====================================
         function atualizarResumosGlobais() {
             const dataGlobalStr = document.getElementById('dataGlobal').value;
             if(!dataGlobalStr) return;
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             
-            // Dia Global
+            // DIA GLOBAL
             let totalDiaGlobal = 0;
+            let caixasDiaGlobal = 0;
             const dadosDoDia = bancoDados[dataGlobalStr] || {};
-            for (const mot in dadosDoDia) { totalDiaGlobal += dadosDoDia[mot].valor; }
+            for (const mot in dadosDoDia) { 
+                totalDiaGlobal += dadosDoDia[mot].valor; 
+                caixasDiaGlobal += dadosDoDia[mot].servicos;
+            }
             document.getElementById('totalDiaGlobal').innerText = `R$ ${totalDiaGlobal.toFixed(2).replace('.', ',')}`;
+            document.getElementById('caixasDiaGlobal').innerText = `${caixasDiaGlobal} Caixas`;
 
-            // Semana Global
+            // SEMANA GLOBAL
             let totalSemanaGlobal = 0;
+            let caixasSemanaGlobal = 0;
             const dataObj = new Date(dataGlobalStr + 'T00:00:00');
             const diffParaSegunda = (dataObj.getDay() === 0) ? -6 : 1 - dataObj.getDay();
             const dataSegunda = new Date(dataObj);
@@ -625,9 +627,13 @@
                 diaCheck.setDate(dataSegunda.getDate() + i);
                 const diaCheckStr = formatarDataParaBusca(diaCheck);
                 const dadosDia = bancoDados[diaCheckStr] || {};
-                for (const mot in dadosDia) { totalSemanaGlobal += dadosDia[mot].valor; }
+                for (const mot in dadosDia) { 
+                    totalSemanaGlobal += dadosDia[mot].valor; 
+                    caixasSemanaGlobal += dadosDia[mot].servicos;
+                }
             }
             document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalSemanaGlobal.toFixed(2).replace('.', ',')}`;
+            document.getElementById('caixasSemanaGlobal').innerText = `${caixasSemanaGlobal} Caixas`;
         }
 
         function atualizarGraficoEvolucao() {
@@ -767,7 +773,6 @@
 
             document.getElementById('totalCaixasMesGlobal').innerText = totalCaixasFrotaMes;
             
-            // Aplica o algoritmo de previsão pra frota toda também
             let previsaoGlobal = calcularPrevisao(totalCaixasFrotaMes, mesFiltro);
             document.getElementById('previsaoMesGlobal').innerText = previsaoGlobal;
 
