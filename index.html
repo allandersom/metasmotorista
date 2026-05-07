@@ -303,6 +303,14 @@
                     <span class="resumo-titulo">Previsão Frota (Mês)</span>
                     <span class="resumo-valor" id="previsaoMesGlobal" style="font-size: 16px;">0 cx</span>
                 </div>
+                <div class="resumo-badge" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                    <span class="resumo-titulo">Meta Rayanna (Mês)</span>
+                    <span class="resumo-valor" id="metaRayannaGlobal" style="font-size: 16px;">0 pts</span>
+                </div>
+                <div class="resumo-badge" style="background: linear-gradient(135deg, #6366f1, #4338ca);">
+                    <span class="resumo-titulo">Meta Júlia (Mês)</span>
+                    <span class="resumo-valor" id="metaJuliaGlobal" style="font-size: 16px;">0 pts</span>
+                </div>
             </div>
         </div>
 
@@ -327,7 +335,7 @@
                         <input type="month" id="mesFiltro" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter';" onchange="sincronizarMesFiltro(); gerarRankingMensal();">
                     </div>
                 </div>
-                <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;"></div>
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;">* O cálculo de Elo e Progresso unifica 1 Viagem = 2 Caixas (Pontos de Meta). A ordem é baseada na Porcentagem.</div>
                 <div id="listaLeaderboard"></div>
             </div>
 
@@ -585,15 +593,16 @@
         function salvarLancamento() {
             if (!motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
             const dataStr = document.getElementById('dataLancamento').value;
+            
+            if (!dataStr) { 
+                alert("Preencha a data do serviço."); return; 
+            }
+
             const tipoVeiculo = document.getElementById('tipoVeiculo').value;
             const servicos = parseInt(document.getElementById('servicos').value) || 0;
             const valorExtraInput = document.getElementById('valorExtra').value;
             const valorExtra = valorExtraInput ? parseFloat(valorExtraInput.replace(',','.')) : 0;
             const isFeriado = document.getElementById('feriado').checked;
-
-            if (!dataStr || (servicos === 0 && valorExtra === 0)) { 
-                alert("Preencha serviços realizados ou um valor extra."); return; 
-            }
 
             const dataObj = new Date(dataStr + 'T00:00:00');
             const diaSemana = dataObj.getDay(); 
@@ -1021,6 +1030,17 @@
             
             let prevCx = calcularPrevisao(totalCaixasFrota, mesFiltro);
             document.getElementById('previsaoMesGlobal').innerText = `${prevCx} cx`;
+
+            // Calcular metas das operadoras
+            const motRayanna = ["MARIO", "JACKSON", "JONES", "MARCELO ANDRE", "RÉGIO", "JAMERSON", "MATHEUS", "LUIZ RODRIGUES", "JOAO VICTOR", "EMERSON", "MANSUETO", "ADRIELSON", "ROBERTO CARLOS", "JOELITON"];
+            const motJulia = ["ELCIDES", "MARCONI", "MAYKEL", "LUIZ RODRIGO", "BRUNO", "PLATINIS"];
+
+            let ptsRayanna = motRayanna.reduce((acc, curr) => acc + getMetaDiaria(curr), 0);
+            let ptsJulia = motJulia.reduce((acc, curr) => acc + getMetaDiaria(curr), 0);
+
+            document.getElementById('metaRayannaGlobal').innerText = (ptsRayanna * diasUteisGlobais) + ' pts';
+            document.getElementById('metaJuliaGlobal').innerText = (ptsJulia * diasUteisGlobais) + ' pts';
+
 
             let rankFinal = Object.keys(acumuladoMes)
                 .map(mot => {
