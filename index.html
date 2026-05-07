@@ -27,8 +27,11 @@
         
         .box-dias-uteis { display: flex; flex-direction: column; background: #fef2f2; padding: 8px 15px; border-radius: 10px; border: 1px solid #fca5a5; }
         .box-dias-uteis label { font-size: 11px; font-weight: 800; color: #ef4444; text-transform: uppercase; margin-bottom: 4px; }
-        .box-dias-uteis input { width: 60px; padding: 4px; border: 1px solid #f87171; border-radius: 6px; font-weight: bold; color: #b91c1c; text-align: center; background: #fff; font-family: 'Inter';}
+        .box-dias-uteis input { width: 60px; padding: 4px; border: 1px solid #f87171; border-radius: 6px; font-weight: bold; color: #b91c1c; text-align: center; background: #fff; font-family: 'Inter'; transition: all 0.2s;}
         .box-dias-uteis input:focus { outline: none; box-shadow: 0 0 0 3px rgba(239,68,68,0.2); }
+        .box-dias-uteis input[readonly] { background: #f1f5f9; color: #94a3b8; border-color: #cbd5e1; cursor: not-allowed; }
+        .btn-lock { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 0; outline: none; transition: transform 0.2s; }
+        .btn-lock:hover { transform: scale(1.15); }
 
         .resumo-badge { padding: 12px 20px; border-radius: 12px; display: flex; flex-direction: column; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.2s ease; min-width: 140px;}
         .resumo-badge:hover { transform: translateY(-3px); }
@@ -156,7 +159,10 @@
             <div class="global-controls">
                 <div class="box-dias-uteis">
                     <label>Dias Úteis (Mês):</label>
-                    <input type="number" id="inputDiasUteisLanc" min="1" max="31" onchange="salvarDiasUteis('lanc')">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="number" id="inputDiasUteisLanc" min="1" max="31" onchange="salvarDiasUteis('lanc')" readonly>
+                        <button class="btn-lock" id="btnTravaLanc" onclick="toggleTravaGlobais()" title="Destravar/Travar">🔒</button>
+                    </div>
                 </div>
 
                 <div>
@@ -283,7 +289,10 @@
             <div class="global-controls">
                 <div class="box-dias-uteis">
                     <label>Dias Úteis (Mês):</label>
-                    <input type="number" id="inputDiasUteisRank" min="1" max="31" onchange="salvarDiasUteis('rank')">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="number" id="inputDiasUteisRank" min="1" max="31" onchange="salvarDiasUteis('rank')" readonly>
+                        <button class="btn-lock" id="btnTravaRank" onclick="toggleTravaGlobais()" title="Destravar/Travar">🔒</button>
+                    </div>
                 </div>
 
                 <div class="resumo-badge mes">
@@ -318,7 +327,7 @@
                         <input type="month" id="mesFiltro" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter';" onchange="sincronizarMesFiltro(); gerarRankingMensal();">
                     </div>
                 </div>
-                <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;"></div>
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;">* O cálculo de Elo e Progresso unifica 1 Viagem = 2 Caixas (Pontos de Meta). A ordem é baseada na Porcentagem.</div>
                 <div id="listaLeaderboard"></div>
             </div>
 
@@ -341,11 +350,20 @@
             </div>
         </div>
 
-        <div class="ranking-panel" style="max-width: 800px; margin: 0 auto;">
-            <div class="panel-header">
-                <h3>🛑 Relatório de Serviços Especiais</h3>
+        <div class="rankings-grid" style="margin-top: 20px;">
+            <div class="ranking-panel">
+                <div class="panel-header">
+                    <h3>☀️ Domingos</h3>
+                </div>
+                <div id="listaDomingos"></div>
             </div>
-            <div id="listaDomFeriados"></div>
+            
+            <div class="ranking-panel">
+                <div class="panel-header">
+                    <h3>🎉 Feriados</h3>
+                </div>
+                <div id="listaFeriados"></div>
+            </div>
         </div>
     </div>
 
@@ -359,6 +377,7 @@
 
         let motoristaSelecionado = null;
         let chartInstanciaEvolucao = null;
+        let diasUteisTravado = true;
 
         function getMetaDiaria(nome) {
             return nome === "ROBERTO CARLOS" ? 4 : 8;
@@ -383,6 +402,32 @@
             renderizarSidebar();
             atualizarResumosGlobais();
         };
+
+        function toggleTravaGlobais() {
+            diasUteisTravado = !diasUteisTravado;
+            const inLanc = document.getElementById('inputDiasUteisLanc');
+            const inRank = document.getElementById('inputDiasUteisRank');
+            const btnLanc = document.getElementById('btnTravaLanc');
+            const btnRank = document.getElementById('btnTravaRank');
+            
+            if(diasUteisTravado) {
+                inLanc.setAttribute('readonly', 'true');
+                inRank.setAttribute('readonly', 'true');
+                btnLanc.innerText = '🔒';
+                btnRank.innerText = '🔒';
+            } else {
+                inLanc.removeAttribute('readonly');
+                inRank.removeAttribute('readonly');
+                btnLanc.innerText = '🔓';
+                btnRank.innerText = '🔓';
+                // Focus on the visible one
+                if(document.getElementById('viewLancamentos').style.display !== 'none') {
+                    inLanc.focus();
+                } else {
+                    inRank.focus();
+                }
+            }
+        }
 
         function carregarDiasUteis(anoMesStr) {
             let config = JSON.parse(localStorage.getItem('config_meses')) || {};
@@ -855,7 +900,11 @@
             
             for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
                 if (dataStr >= inicio && dataStr <= fim) {
+                    const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
                     for (const [mot, dados] of Object.entries(dadosDia)) {
+                        // Não contabiliza domingos e feriados nos rankings por período
+                        if (isDomingo || dados.isFeriado) continue;
+
                         if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0 };
                         if(dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += dados.servicos;
                         else rankPeriodo[mot].caixas += dados.servicos;
@@ -874,14 +923,13 @@
                 return { nome: mot, ...rankPeriodo[mot], porcentagem: porcentagem };
             });
             
-            // Ordenar por porcentagem ao invés do valor financeiro
             rankArray.sort((a,b) => b.porcentagem - a.porcentagem);
             
             const divLista = document.getElementById('listaRankingDiario');
             divLista.innerHTML = '';
 
             if(rankArray.length === 0) {
-                divLista.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 40px; font-weight: 500;">Nenhuma caixa no período. 😴</div>';
+                divLista.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 40px; font-weight: 500;">Nenhum serviço normal no período. 😴</div>';
                 return;
             }
 
@@ -890,8 +938,8 @@
 
                 let classeBarra = '';
                 if(mot.porcentagem >= 100) classeBarra = 'meta-batida';
-                else if (mot.porcentagem >= 80) classeBarra = 'meta-excedida'; // Usa a cor amarela (excedida antes, agora para 80 a 99)
-                else classeBarra = 'meta-ruim'; // Usa vermelho para abaixo de 80
+                else if (mot.porcentagem >= 80) classeBarra = 'meta-excedida'; 
+                else classeBarra = 'meta-ruim'; 
 
                 let larguraBarra = mot.porcentagem > 100 ? 100 : mot.porcentagem; 
                 let extraBadge = mot.extra > 0 ? `<span style="font-size:10px; background:#f3e8ff; color:#7e22ce; padding:2px 6px; border-radius:4px; margin-left:8px;">+ Extra R$ ${mot.extra}</span>` : '';
@@ -973,7 +1021,7 @@
                     return { nome: mot, caixas: acumuladoMes[mot].caixas, viagens: acumuladoMes[mot].viagens, valor: acumuladoMes[mot].valor, pontos: pts, percentual: percentualMeta };
                 })
                 .filter(item => item.pontos > 0)
-                .sort((a, b) => b.percentual - a.percentual); // Ordenar por porcentagem
+                .sort((a, b) => b.percentual - a.percentual); 
 
             const divLista = document.getElementById('listaLeaderboard');
             divLista.innerHTML = '';
@@ -1050,64 +1098,78 @@
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             let acumuladoDom = {};
-            let fatTotalDom = 0, cxTotalDom = 0;
+            let acumuladoFer = {};
+            let fatTotalGlobal = 0, cxTotalGlobal = 0;
 
             for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
                 if (dataStr.startsWith(mesFiltro)) {
                     const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
                     for (const [mot, dados] of Object.entries(dadosDia)) {
                         if (isDomingo || dados.isFeriado) {
-                            if (!acumuladoDom[mot]) acumuladoDom[mot] = { caixas: 0, viagens: 0, valor: 0 };
+                            
+                            let targetAcc;
+                            if (dados.isFeriado) {
+                                if (!acumuladoFer[mot]) acumuladoFer[mot] = { caixas: 0, viagens: 0, valor: 0 };
+                                targetAcc = acumuladoFer[mot];
+                            } else {
+                                if (!acumuladoDom[mot]) acumuladoDom[mot] = { caixas: 0, viagens: 0, valor: 0 };
+                                targetAcc = acumuladoDom[mot];
+                            }
                             
                             if(dados.tipoVeiculo === 'cacamba') {
-                                acumuladoDom[mot].viagens += dados.servicos;
+                                targetAcc.viagens += dados.servicos;
                             } else {
-                                acumuladoDom[mot].caixas += dados.servicos;
-                                cxTotalDom += dados.servicos;
+                                targetAcc.caixas += dados.servicos;
+                                cxTotalGlobal += dados.servicos;
                             }
-                            acumuladoDom[mot].valor += dados.valor;
-                            fatTotalDom += dados.valor;
+                            targetAcc.valor += dados.valor;
+                            fatTotalGlobal += dados.valor;
                         }
                     }
                 }
             }
 
-            document.getElementById('totalFatDomGlobal').innerText = `R$ ${fatTotalDom.toFixed(2).replace('.', ',')}`;
-            document.getElementById('totalCxDomGlobal').innerText = `${cxTotalDom} cx`;
+            document.getElementById('totalFatDomGlobal').innerText = `R$ ${fatTotalGlobal.toFixed(2).replace('.', ',')}`;
+            document.getElementById('totalCxDomGlobal').innerText = `${cxTotalGlobal} cx`;
 
-            let rankFinal = Object.keys(acumuladoDom)
-                .map(mot => ({ nome: mot, caixas: acumuladoDom[mot].caixas, viagens: acumuladoDom[mot].viagens, valor: acumuladoDom[mot].valor }))
-                .filter(item => (item.caixas > 0 || item.viagens > 0))
-                .sort((a, b) => b.valor - a.valor);
+            function renderizarLista(acumulado, idElemento, msgVazia) {
+                let rank = Object.keys(acumulado)
+                    .map(mot => ({ nome: mot, caixas: acumulado[mot].caixas, viagens: acumulado[mot].viagens, valor: acumulado[mot].valor }))
+                    .filter(item => (item.caixas > 0 || item.viagens > 0))
+                    .sort((a, b) => b.valor - a.valor);
 
-            const divLista = document.getElementById('listaDomFeriados');
-            divLista.innerHTML = '';
+                const divLista = document.getElementById(idElemento);
+                divLista.innerHTML = '';
 
-            if(rankFinal.length === 0) {
-                divLista.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8; font-weight: 500;">Nenhum serviço extra em domingos ou feriados neste mês. 😴</div>';
-                return;
-            }
-
-            rankFinal.forEach((mot, index) => {
-                let textoQtd = "";
-                if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
-                    if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
-                    else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`;
-                    else textoQtd = `0 cx | ${mot.viagens} vg`;
-                } else {
-                    textoQtd = `${mot.caixas} cx`;
+                if(rank.length === 0) {
+                    divLista.innerHTML = `<div style="text-align: center; padding: 40px; color: #94a3b8; font-weight: 500;">${msgVazia}</div>`;
+                    return;
                 }
 
-                const linha = document.createElement('div');
-                linha.className = 'diario-row';
-                linha.innerHTML = `
-                    <div class="diario-top" style="margin:0;">
-                        <span class="diario-nome">#${index + 1} - ${mot.nome} (${textoQtd})</span>
-                        <span class="diario-faturamento" style="color: #ef4444;">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                `;
-                divLista.appendChild(linha);
-            });
+                rank.forEach((mot, index) => {
+                    let textoQtd = "";
+                    if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
+                        if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
+                        else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`;
+                        else textoQtd = `0 cx | ${mot.viagens} vg`;
+                    } else {
+                        textoQtd = `${mot.caixas} cx`;
+                    }
+
+                    const linha = document.createElement('div');
+                    linha.className = 'diario-row';
+                    linha.innerHTML = `
+                        <div class="diario-top" style="margin:0;">
+                            <span class="diario-nome">#${index + 1} - ${mot.nome} (${textoQtd})</span>
+                            <span class="diario-faturamento" style="color: #ef4444;">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                    `;
+                    divLista.appendChild(linha);
+                });
+            }
+
+            renderizarLista(acumuladoDom, 'listaDomingos', 'Nenhum serviço em domingos neste mês. 😴');
+            renderizarLista(acumuladoFer, 'listaFeriados', 'Nenhum serviço em feriados neste mês. 😴');
         }
     </script>
 </body>
