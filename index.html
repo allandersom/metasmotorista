@@ -172,12 +172,12 @@
                 <div class="resumo-badge dia">
                     <span class="resumo-titulo">Total Frota (Dia)</span>
                     <span class="resumo-valor" id="totalDiaGlobal">R$ 0,00</span>
-                    <span class="resumo-subtext" id="caixasDiaGlobal">0 cx | 0 vg</span>
+                    <span class="resumo-subtext" id="caixasDiaGlobal">0 cx</span>
                 </div>
                 <div class="resumo-badge semana">
                     <span class="resumo-titulo">Total Frota (Semana)</span>
                     <span class="resumo-valor" id="totalSemanaGlobal">R$ 0,00</span>
-                    <span class="resumo-subtext" id="caixasSemanaGlobal">0 cx | 0 vg</span>
+                    <span class="resumo-subtext" id="caixasSemanaGlobal">0 cx</span>
                 </div>
             </div>
         </div>
@@ -293,11 +293,11 @@
 
                 <div class="resumo-badge mes">
                     <span class="resumo-titulo">Volume Útil Frota (Mês)</span>
-                    <span class="resumo-valor" id="totalCaixasMesGlobal" style="font-size: 16px;">0 cx | 0 vg</span>
+                    <span class="resumo-valor" id="totalCaixasMesGlobal" style="font-size: 16px;">0 cx</span>
                 </div>
                 <div class="resumo-badge previsao">
                     <span class="resumo-titulo">Previsão Frota (Mês)</span>
-                    <span class="resumo-valor" id="previsaoMesGlobal" style="font-size: 16px;">0 cx | 0 vg</span>
+                    <span class="resumo-valor" id="previsaoMesGlobal" style="font-size: 16px;">0 cx</span>
                 </div>
             </div>
         </div>
@@ -341,7 +341,7 @@
                 <div class="resumo-badge feriado">
                     <span class="resumo-titulo">Total Extra (Mês)</span>
                     <span class="resumo-valor" id="totalFatDomGlobal">R$ 0,00</span>
-                    <span class="resumo-subtext" id="totalCxDomGlobal">0 cx | 0 vg</span>
+                    <span class="resumo-subtext" id="totalCxDomGlobal">0 cx</span>
                 </div>
             </div>
         </div>
@@ -769,18 +769,19 @@
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             
             let totalDiaGlobal = 0;
-            let caixasDia = 0, viagensDia = 0;
+            let caixasDia = 0;
             const dadosDoDia = bancoDados[dataGlobalStr] || {};
             for (const mot in dadosDoDia) { 
                 totalDiaGlobal += dadosDoDia[mot].valor; 
-                if(dadosDoDia[mot].tipoVeiculo === 'cacamba') viagensDia += dadosDoDia[mot].servicos;
-                else caixasDia += dadosDoDia[mot].servicos;
+                if(dadosDoDia[mot].tipoVeiculo !== 'cacamba') {
+                    caixasDia += dadosDoDia[mot].servicos;
+                }
             }
             document.getElementById('totalDiaGlobal').innerText = `R$ ${totalDiaGlobal.toFixed(2).replace('.', ',')}`;
-            document.getElementById('caixasDiaGlobal').innerText = `${caixasDia} cx | ${viagensDia} vg`;
+            document.getElementById('caixasDiaGlobal').innerText = `${caixasDia} cx`;
 
             let totalSemanaGlobal = 0;
-            let caixasSemana = 0, viagensSemana = 0;
+            let caixasSemana = 0;
             const dataObj = new Date(dataGlobalStr + 'T00:00:00');
             const diffParaSegunda = (dataObj.getDay() === 0) ? -6 : 1 - dataObj.getDay();
             const dataSegunda = new Date(dataObj);
@@ -793,12 +794,13 @@
                 const dadosDia = bancoDados[diaCheckStr] || {};
                 for (const mot in dadosDia) { 
                     totalSemanaGlobal += dadosDia[mot].valor; 
-                    if(dadosDia[mot].tipoVeiculo === 'cacamba') viagensSemana += dadosDia[mot].servicos;
-                    else caixasSemana += dadosDia[mot].servicos;
+                    if(dadosDia[mot].tipoVeiculo !== 'cacamba') {
+                        caixasSemana += dadosDia[mot].servicos;
+                    }
                 }
             }
             document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalSemanaGlobal.toFixed(2).replace('.', ',')}`;
-            document.getElementById('caixasSemanaGlobal').innerText = `${caixasSemana} cx | ${viagensSemana} vg`;
+            document.getElementById('caixasSemanaGlobal').innerText = `${caixasSemana} cx`;
         }
 
         function atualizarGraficoEvolucao() {
@@ -942,7 +944,7 @@
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             let acumuladoMes = {};
-            let totalCaixasFrota = 0, totalViagensFrota = 0;
+            let totalCaixasFrota = 0;
 
             motoristas.forEach(m => acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0 });
 
@@ -954,7 +956,6 @@
                             if (acumuladoMes[mot]) {
                                 if(dados.tipoVeiculo === 'cacamba') {
                                     acumuladoMes[mot].viagens += dados.servicos;
-                                    totalViagensFrota += dados.servicos;
                                 } else {
                                     acumuladoMes[mot].caixas += dados.servicos;
                                     totalCaixasFrota += dados.servicos; 
@@ -966,11 +967,10 @@
                 }
             }
 
-            document.getElementById('totalCaixasMesGlobal').innerText = `${totalCaixasFrota} cx | ${totalViagensFrota} vg`;
+            document.getElementById('totalCaixasMesGlobal').innerText = `${totalCaixasFrota} cx`;
             
             let prevCx = calcularPrevisao(totalCaixasFrota, mesFiltro);
-            let prevVg = calcularPrevisao(totalViagensFrota, mesFiltro);
-            document.getElementById('previsaoMesGlobal').innerText = `${prevCx} cx | ${prevVg} vg`;
+            document.getElementById('previsaoMesGlobal').innerText = `${prevCx} cx`;
 
             let rankFinal = Object.keys(acumuladoMes)
                 .map(mot => {
@@ -1037,7 +1037,7 @@
 
             const bancoDados = JSON.parse(localStorage.getItem('metas_logistica')) || {};
             let acumuladoDom = {};
-            let fatTotalDom = 0, cxTotalDom = 0, vgTotalDom = 0;
+            let fatTotalDom = 0, cxTotalDom = 0;
 
             for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
                 if (dataStr.startsWith(mesFiltro)) {
@@ -1048,7 +1048,6 @@
                             
                             if(dados.tipoVeiculo === 'cacamba') {
                                 acumuladoDom[mot].viagens += dados.servicos;
-                                vgTotalDom += dados.servicos;
                             } else {
                                 acumuladoDom[mot].caixas += dados.servicos;
                                 cxTotalDom += dados.servicos;
@@ -1061,7 +1060,7 @@
             }
 
             document.getElementById('totalFatDomGlobal').innerText = `R$ ${fatTotalDom.toFixed(2).replace('.', ',')}`;
-            document.getElementById('totalCxDomGlobal').innerText = `${cxTotalDom} cx | ${vgTotalDom} vg`;
+            document.getElementById('totalCxDomGlobal').innerText = `${cxTotalDom} cx`;
 
             let rankFinal = Object.keys(acumuladoDom)
                 .map(mot => ({ nome: mot, caixas: acumuladoDom[mot].caixas, viagens: acumuladoDom[mot].viagens, valor: acumuladoDom[mot].valor }))
