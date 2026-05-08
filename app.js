@@ -347,7 +347,7 @@ window.mudarAba = function(aba) {
     } else if (aba === 'projecao') {
         if(document.getElementById('btnTabProjecao')) document.getElementById('btnTabProjecao').classList.add('active');
         if(document.getElementById('viewProjecao')) document.getElementById('viewProjecao').style.display = 'block';
-        window.atualizarGraficoEvolucao();
+        window.atualizarGraficosProjecao();
     }
 }
 window.filtrarMotoristas = function() {
@@ -690,50 +690,96 @@ window.atualizarResumosGlobais = function() {
     if(document.getElementById('caixasSemanaGlobal')) document.getElementById('caixasSemanaGlobal').innerText = `${caixasSemana} cx`;
 }
 
-window.atualizarGraficoEvolucao = function() {
-    if (!window.motoristaSelecionado) return;
+window.chartInstanciaInd = null;
+window.chartInstanciaGeral = null;
+
+window.atualizarGraficosProjecao = function() {
     const bancoDados = window.bancoDadosCloud;
-    let dadosEvolucao = [];
+    let dadosEvolucaoInd = [];
+    let mapGeral = {};
 
-    for (const data in bancoDados) {
-        if (bancoDados[data][window.motoristaSelecionado]) {
-            let pts = bancoDados[data][window.motoristaSelecionado].tipoVeiculo === 'cacamba' ? 
-                      bancoDados[data][window.motoristaSelecionado].servicos * 2 : 
-                      bancoDados[data][window.motoristaSelecionado].servicos;
-            dadosEvolucao.push({ dataStr: data, pontos: pts });
+    // 1. Processar dados da nuvem
+    for (const [data, motoristasDia] of Object.entries(bancoDados)) {
+        let pontosDiaGeral = 0;
+        
+        for (const [mot, dados] of Object.entries(motoristasDia)) {
+            let pts = dados.tipoVeiculo === 'cacamba' ? dados.servicos * 2 : dados.servicos;
+            
+            // Se for o motorista selecionado na tela de lançamentos, guarda pro gráfico dele
+            if (mot === window.motoristaSelecionado) {
+                dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
+            }
+            // Soma pro gráfico da frota inteira
+            pontosDiaGeral += pts;
         }
+        mapGeral[data] = pontosDiaGeral;
     }
-    dadosEvolucao.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
 
-    const labels = dadosEvolucao.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
-    const dataPoints = dadosEvolucao.map(d => d.pontos);
+    // 2. Prepara os dados pro gráfico Individual
+    dadosEvolucaoInd.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
+    const labelsInd = dadosEvolucaoInd.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
+    const dataInd = dadosEvolucaoInd.map(d => d.pontos);
 
-    if (window.chartInstanciaEvolucao) window.chartInstanciaEvolucao.destroy();
-    const cvs = document.getElementById('chartEvolucao');
-    if(!cvs) return;
-    const ctx = cvs.getContext('2d');
+    // 3. Prepara os dados pro gráfico Geral
+    let arrayGeral = Object.keys(mapGeral).map(k => ({ dataStr: k, pontos: mapGeral[k] }));
+    arrayGeral.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
+    const labelsGeral = arrayGeral.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
+    const dataGeral = arrayGeral.map(d => d.pontos);
+
     Chart.defaults.font.family = "'Inter', sans-serif";
-    
-    window.chartInstanciaEvolucao = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Volume (Pontos de Meta)',
-                data: dataPoints,
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                borderWidth: 3,
-                pointBackgroundColor: '#fff',
-                pointBorderColor: '#2563eb',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                fill: true,
-                tension: 0.3 
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, border: { dash: [4, 4] }, grid: { color: '#e2e8f0' } } } }
-    });
+
+    // 4. Desenha o Gráfico Individual (Azul)
+    const ctxInd = document.getElementById('chartEvolucaoIndividual');
+    if (ctxInd) {
+        if (window.chartInstanciaInd) window.chartInstanciaInd.destroy();
+        window.chartInstanciaInd = new Chart(ctxInd.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labelsInd,
+                datasets: [{
+                    label: 'Pontos - ' + (window.motoristaSelecionado || 'Nenhum'),
+                    data: dataInd,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#2563eb',
+                    fill: true,
+                    tension: 0.3 
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+        });
+    }
+
+    // 5. Desenha o Gráfico Geral (Verde)
+    const ctxGeral = document.getElementById('chartEvolucaoGeral');
+    if (ctxGeral) {
+        if (window.chartInstanciaGeral) window.chartInstanciaGeral.destroy();
+        window.chartInstanciaGeral = new Chart(ctxGeral.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labelsGeral,
+                datasets: [{
+                    label: 'Pontos Totais da Frota',
+                    data: dataGeral,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#10b981',
+                    fill: true,
+                    tension: 0.3 
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+        });
+    }
+}
+
+// Isso aqui evita dar erro quando você clica em um motorista na lista
+window.atualizarGraficoEvolucao = function() {
+    window.atualizarGraficosProjecao();
 }
 
 window.gerarRankingPeriodo = function() {
@@ -951,14 +997,11 @@ window.gerarRankingMensal = function() {
 
       let htmlFaltam = "";
         let metaMensalPontos = mot.diasBase * window.getMetaDiaria(mot.nome);
-        
-        // Faltam para bater 100% da meta do mês
         let faltam = metaMensalPontos - mot.pontos;
         
         if (faltam > 0) {
             let txtFaltam = "";
             if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
-                // Caçamba: Divide os pontos por 2 para mostrar Viagens (vg)
                 txtFaltam = `Faltam ${Math.ceil(faltam / 2)} vg`;
             } else {
                 txtFaltam = `Faltam ${faltam} cx`;
