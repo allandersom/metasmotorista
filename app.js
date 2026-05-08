@@ -330,6 +330,7 @@ window.mudarAba = function(aba) {
     if(document.getElementById('viewLancamentos')) document.getElementById('viewLancamentos').style.display = 'none';
     if(document.getElementById('viewRankings')) document.getElementById('viewRankings').style.display = 'none';
     if(document.getElementById('viewDomFeriados')) document.getElementById('viewDomFeriados').style.display = 'none';
+    if(document.getElementById('viewProjecao')) document.getElementById('viewProjecao').style.display = 'none';
 
     if (aba === 'lancamentos') {
         if(document.getElementById('btnTabLancamentos')) document.getElementById('btnTabLancamentos').classList.add('active');
@@ -343,9 +344,12 @@ window.mudarAba = function(aba) {
         if(document.getElementById('btnTabDomFeriados')) document.getElementById('btnTabDomFeriados').classList.add('active');
         if(document.getElementById('viewDomFeriados')) document.getElementById('viewDomFeriados').style.display = 'block';
         window.gerarPainelFeriados();
+    } else if (aba === 'projecao') {
+        if(document.getElementById('btnTabProjecao')) document.getElementById('btnTabProjecao').classList.add('active');
+        if(document.getElementById('viewProjecao')) document.getElementById('viewProjecao').style.display = 'block';
+        window.atualizarGraficoEvolucao();
     }
 }
-
 window.filtrarMotoristas = function() {
     const busca = document.getElementById('buscaMotorista');
     if(!busca) return;
@@ -945,20 +949,23 @@ window.gerarRankingMensal = function() {
             textoQtd = `${mot.caixas} cx`;
         }
 
-        let htmlFaltam = "";
-        if (mot.percentual < 80) {
-            let metaMensalPontos = mot.diasBase * window.getMetaDiaria(mot.nome);
-            let pontosPara80 = Math.ceil(metaMensalPontos * 0.8);
-            let faltam = pontosPara80 - mot.pontos;
-            if (faltam > 0) {
-                let txtFaltam = "";
-                if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
-                    txtFaltam = `Faltam ${Math.ceil(faltam / 2)} vg`;
-                } else {
-                    txtFaltam = `Faltam ${faltam} cx`;
-                }
-                htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
+      let htmlFaltam = "";
+        let metaMensalPontos = mot.diasBase * window.getMetaDiaria(mot.nome);
+        
+        // Faltam para bater 100% da meta do mês
+        let faltam = metaMensalPontos - mot.pontos;
+        
+        if (faltam > 0) {
+            let txtFaltam = "";
+            if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
+                // Caçamba: Divide os pontos por 2 para mostrar Viagens (vg)
+                txtFaltam = `Faltam ${Math.ceil(faltam / 2)} vg`;
+            } else {
+                txtFaltam = `Faltam ${faltam} cx`;
             }
+            htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
+        } else {
+            htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta Batida!</span>`;
         }
 
         const linha = document.createElement('div');
