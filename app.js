@@ -535,15 +535,19 @@ window.atualizarResumosDoMotorista = function() {
     let previsaoCaixas = window.calcularPrevisao(totalCaixasMes, anoMesFiltro, diasUteisMotorista);
     let previsaoViagens = window.calcularPrevisao(totalViagensMes, anoMesFiltro, diasUteisMotorista);
 
+    // Ajuste de texto visual 
+    let textoMeta = "";
     if (window.motoristaSelecionado === "CLOVIS" || window.motoristaSelecionado === "RODRIGO") {
+        textoMeta = `${metaMensalPontos / 2} vg`;
         if(document.getElementById('motoristaCaixasMes')) document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx | ${totalViagensMes} vg`;
         if(document.getElementById('motoristaPrevisaoMes')) document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoCaixas} cx | ${previsaoViagens} vg`;
     } else {
+        textoMeta = `${metaMensalPontos} cx`;
         if(document.getElementById('motoristaCaixasMes')) document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx`;
         if(document.getElementById('motoristaPrevisaoMes')) document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoCaixas} cx`;
     }
     
-    if(document.getElementById('motoristaMetaMes')) document.getElementById('motoristaMetaMes').innerText = `Meta Mensal: ${metaMensalPontos} pt | Fat: R$ ${totalFatMes.toFixed(2).replace('.', ',')}`;
+    if(document.getElementById('motoristaMetaMes')) document.getElementById('motoristaMetaMes').innerText = `Meta Mensal: ${textoMeta} | Fat: R$ ${totalFatMes.toFixed(2).replace('.', ',')}`;
 }
 
 window.atualizarResumosGlobais = function() {
@@ -836,7 +840,14 @@ window.gerarRankingMensal = function() {
             let pontosPara80 = Math.ceil(metaMensalPontos * 0.8);
             let faltam = pontosPara80 - mot.pontos;
             if (faltam > 0) {
-                htmlFaltam = `<span style="font-size: 10px; color: #ef4444; margin-left: 8px; font-weight: 700; white-space: nowrap; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">Faltam ${faltam} cx</span>`;
+                let txtFaltam = "";
+                // MUDANÇA AQUI: Se for caçamba, mostra "vg" em vez de "cx"
+                if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
+                    txtFaltam = `Faltam ${Math.ceil(faltam / 2)} vg`;
+                } else {
+                    txtFaltam = `Faltam ${faltam} cx`;
+                }
+                htmlFaltam = `<span style="font-size: 10px; color: #ef4444; margin-left: 8px; font-weight: 700; white-space: nowrap; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">${txtFaltam}</span>`;
             }
         }
 
