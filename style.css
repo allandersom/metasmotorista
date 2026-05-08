@@ -42,7 +42,6 @@ body { font-family: 'Inter', sans-serif; }
 #viewRankings, #viewDomFeriados { display: none; }
 
 /* --- LISTA DE MOTORISTAS --- */
-/* Título dos Grupos (Ex: DIA (RAYANNA)) */
 #listaMotoristas div {
     font-size: 10px;
     font-weight: 800;
@@ -52,7 +51,6 @@ body { font-family: 'Inter', sans-serif; }
     letter-spacing: 0.5px;
 }
 
-/* Item do Motorista na Lista */
 .driver-item {
     display: flex;
     align-items: center;
@@ -67,7 +65,6 @@ body { font-family: 'Inter', sans-serif; }
     margin-bottom: 2px;
 }
 
-/* Ícone do Caminhão via CSS SVG */
 .driver-item::before {
     content: '';
     display: inline-block;
@@ -79,7 +76,6 @@ body { font-family: 'Inter', sans-serif; }
     opacity: 0.7;
 }
 
-/* Ícone da Setinha (Chevron Right) via CSS SVG */
 .driver-item::after {
     content: '';
     position: absolute;
@@ -109,16 +105,7 @@ body { font-family: 'Inter', sans-serif; }
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 18 15 12 9 6'/%3E%3C/svg%3E");
 }
 
-/* --- FORMULÁRIO PROPORCIONAL LADO A LADO --- */
-.form-grid { 
-    display: grid; 
-    grid-template-columns: 1fr 1.2fr 1fr 1fr 1.5fr; /* Proporções de largura das colunas */
-    gap: 15px; 
-    align-items: start; 
-}
-.col-input, .col-obs { display: flex; flex-direction: column; }
-.form-grid label { font-weight: 700; font-size: 11px; margin-bottom: 6px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;}
-
+/* --- ELEMENTOS GERAIS DE FORMULÁRIO --- */
 .input-base { 
     padding: 10px 12px; 
     border: 1px solid #cbd5e1; 
@@ -132,7 +119,6 @@ body { font-family: 'Inter', sans-serif; }
     font-weight: 500;
 }
 .input-base:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-.col-obs textarea { resize: vertical; min-height: 40px; }
 
 .btn-primary { 
     background: linear-gradient(135deg, #2563eb, #1d4ed8); 
@@ -140,7 +126,6 @@ body { font-family: 'Inter', sans-serif; }
     border: none; 
     cursor: pointer; 
     font-weight: 700; 
-    padding: 10px 24px; 
     border-radius: 8px; 
     transition: all 0.2s ease; 
 }
@@ -182,8 +167,3 @@ tr:hover { background-color: #f8fafc; }
 .elo-radiante { background: linear-gradient(135deg, #fef08a, #f59e0b); color: #713f12; }
 .elo-diamante { background: linear-gradient(135deg, #c084fc, #7e22ce); }
 .elo-bronze { background: linear-gradient(135deg, #d97706, #92400e); }
-
-/* Responsividade */
-@media (max-width: 1280px) {
-    .form-grid { grid-template-columns: 1fr 1fr; }
-}
