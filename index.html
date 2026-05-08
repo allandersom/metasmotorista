@@ -79,9 +79,12 @@
                     <div class="header-motorista">
                         <h3 id="nomeMotoristaDisplay">Nome do Motorista</h3>
                         
-                        <div class="sla-config" title="Altere apenas se este motorista trabalhou uma quantidade de dias úteis diferente da frota geral neste mês.">
-                            <label>SLA (Dias Úteis no Mês):</label>
-                            <input type="number" id="inputSlaMotorista" min="1" max="31" onchange="window.salvarSlaMotorista()">
+                        <div class="sla-config" title="Altere apenas se este motorista trabalhou uma quantidade de dias diferente.">
+                            <label>SLA (Dias Úteis):</label>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <input type="number" id="inputSlaMotorista" min="1" max="31" onchange="window.salvarSlaMotorista()" readonly>
+                                <button class="btn-lock" id="btnTravaSla" onclick="window.toggleTravaSla()" title="Destravar/Travar">🔒</button>
+                            </div>
                         </div>
 
                         <div class="resumos-grid">
@@ -119,34 +122,32 @@
                     </div>
 
                     <div class="form-grid">
-                        <div>
+                        <div class="col-input">
                             <label for="dataLancamento">Data do Serviço:</label>
                             <input type="date" id="dataLancamento" onchange="window.atualizarResumosDoMotorista(); window.atualizarSlaInput();">
-                            <div class="checkbox-group" style="margin-top: 8px;">
+                            <div class="checkbox-group" style="margin-top: 8px; padding: 0;">
                                 <input type="checkbox" id="feriado">
-                                <label for="feriado" style="margin:0; font-size: 13px; font-weight: 700; color: #ef4444;">É Feriado?</label>
+                                <label for="feriado" style="margin:0; font-size: 13px; font-weight: 800; color: #ef4444;">É Feriado?</label>
                             </div>
                         </div>
-                        <div>
+                        <div class="col-input">
                             <label for="tipoVeiculo">Veículo Operado:</label>
                             <select id="tipoVeiculo">
                                 </select>
                         </div>
-                        <div>
-                            <label for="servicos">Qtd (Caixas/Viagens):</label>
+                        <div class="col-input">
+                            <label for="servicos">Qtd (Cx/Vg):</label>
                             <input type="number" id="servicos" min="0" placeholder="Ex: 0 = presença">
                         </div>
-                        <div>
+                        <div class="col-input">
                             <label for="valorExtra">Serviço Extra (R$):</label>
                             <input type="number" id="valorExtra" step="0.01" min="0" placeholder="Por fora (Ex: 50)">
                         </div>
-                        
-                        <div style="grid-column: 1 / -1;">
+                        <div class="col-obs">
                             <label for="observacao">Observações do Serviço:</label>
-                            <textarea id="observacao" rows="2" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter', sans-serif; resize: vertical;" placeholder="Opcional (Ex: Caminhão quebrou na BR, teve que voltar mais cedo...)"></textarea>
+                            <textarea id="observacao" rows="2" placeholder="Opcional (Ex: Caminhão quebrou, atestado...)"></textarea>
                         </div>
-
-                        <div style="grid-column: 1 / -1;">
+                        <div style="grid-column: 1 / -1; margin-top: 5px;">
                             <button class="btn-primary" onclick="window.salvarLancamento()">Lançar Serviço</button>
                         </div>
                     </div>
