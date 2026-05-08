@@ -71,7 +71,8 @@
                     <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border shadow-sm">
                         <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
                         <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Data de Referência:</span>
-<input type="month" id="dataGlobal" onchange="window.sincronizarMesData(); window.atualizarResumosGlobais(); window.carregarHistoricoMotorista(); window.atualizarResumosDoMotorista();" class="bg-transparent text-sm font-bold text-slate-800 outline-none cursor-pointer border-none">                    </div>
+                        <input type="month" id="dataGlobal" onchange="window.sincronizarMesData(); window.atualizarResumosGlobais(); window.carregarHistoricoMotorista(); window.atualizarResumosDoMotorista();" class="bg-transparent text-sm font-bold text-slate-800 outline-none cursor-pointer border-none">
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -93,7 +94,7 @@
                             <i data-lucide="truck" class="w-6 h-6 text-white"></i>
                         </div>
                         <div>
-                            <p class="text-[10px] font-black text-emerald-100 uppercase tracking-widest mb-1 whitespace-nowrap">Total Frota (Dia)</p>
+                            <p class="text-[10px] font-black text-emerald-100 uppercase tracking-widest mb-1 whitespace-nowrap">TOTAL FROTA (MÊS)</p>
                             <p class="text-2xl font-black tracking-tight leading-none whitespace-nowrap" id="totalDiaGlobal">R$ 0,00</p>
                             <p class="text-xs font-bold text-emerald-100 mt-2 whitespace-nowrap" id="caixasDiaGlobal">0 cx</p>
                         </div>
@@ -104,7 +105,7 @@
                             <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
                         </div>
                         <div>
-                            <p class="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-1 whitespace-nowrap">Total Frota (Semana)</p>
+                            <p class="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-1 whitespace-nowrap">TOTAL FROTA (MÊS)</p>
                             <p class="text-2xl font-black tracking-tight leading-none whitespace-nowrap" id="totalSemanaGlobal">R$ 0,00</p>
                             <p class="text-xs font-bold text-blue-200 mt-2 whitespace-nowrap" id="caixasSemanaGlobal">0 cx</p>
                         </div>
@@ -251,7 +252,7 @@
                 </div>
             </div>
 
-            <div id="viewRankings" class="w-full space-y-6">
+            <div id="viewRankings" class="w-full space-y-6" style="display: none;">
                 <div class="flex justify-between items-end mb-8">
                     <div>
                         <h2 class="text-2xl font-black text-slate-900 tracking-tight">Central de Rankings</h2>
@@ -319,7 +320,7 @@
                 </div>
             </div>
 
-            <div id="viewDomFeriados" class="w-full space-y-6">
+            <div id="viewDomFeriados" class="w-full space-y-6" style="display: none;">
                 <div class="flex justify-between items-center mb-8 w-full border-b pb-4">
                     <h2 class="text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap">Domingos & Feriados</h2>
                     <div class="flex items-center gap-4">
@@ -399,23 +400,6 @@
                     </div>
                     <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
                         <h3 class="text-lg font-black text-slate-800 mb-4">Volume Geral da Frota (Mês Atual)</h3>
-                        <div class="h-64 w-full relative">
-                            <canvas id="chartEvolucaoGeral"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
-                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
-                        <h3 class="text-lg font-black text-slate-800 mb-4">Evolução do Motorista Selecionado</h3>
-                        <div class="h-64 w-full relative">
-                            <canvas id="chartEvolucaoIndividual"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
-                        <h3 class="text-lg font-black text-slate-800 mb-4">Volume Geral (Frota no Mês)</h3>
                         <div class="h-64 w-full relative">
                             <canvas id="chartEvolucaoGeral"></canvas>
                         </div>
