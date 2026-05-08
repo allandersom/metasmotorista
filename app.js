@@ -22,10 +22,11 @@ const motoristas = [...motRayanna, ...motJulia, ...motOutros].sort();
 window.motoristaSelecionado = null;
 window.chartInstanciaEvolucao = null;
 window.diasUteisTravado = true;
+window.slaTravado = true; // Nova trava do SLA individual
 
 window.bancoDadosCloud = {}; 
 window.configMesesCloud = {};
-window.configSlaCloud = {}; 
+window.configSlaCloud = {}; // Agora salva permanente: configSlaCloud["ADRIELSON"] = 15
 
 onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
@@ -170,6 +171,27 @@ window.toggleTravaGlobais = function() {
     }
 }
 
+// NOVA FUNÇÃO: TRAVA DO SLA INDIVIDUAL
+window.toggleTravaSla = function() {
+    if(!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
+    
+    window.slaTravado = !window.slaTravado;
+    const inSla = document.getElementById('inputSlaMotorista');
+    const btnSla = document.getElementById('btnTravaSla');
+    
+    if(!inSla || !btnSla) return;
+
+    if(window.slaTravado) {
+        inSla.setAttribute('readonly', 'true');
+        btnSla.innerText = '🔒';
+        window.salvarSlaMotorista(); // Salva quando ele clica no cadeado para fechar
+    } else {
+        inSla.removeAttribute('readonly');
+        btnSla.innerText = '🔓';
+        inSla.focus();
+    }
+}
+
 window.carregarDiasUteis = function(anoMesStr) {
     let dias = window.configMesesCloud[anoMesStr] || 22; 
     if(document.getElementById('inputDiasUteisLanc')) document.getElementById('inputDiasUteisLanc').value = dias;
@@ -194,31 +216,36 @@ window.atualizarSlaInput = function() {
     if(!dtLanc) return;
     let anoMesStr = dtLanc.value.substring(0,7);
     let globalSla = window.carregarDiasUteis(anoMesStr);
-    let customSla = window.configSlaCloud?.[anoMesStr]?.[window.motoristaSelecionado];
-    if(document.getElementById('inputSlaMotorista')) document.getElementById('inputSlaMotorista').value = customSla || globalSla;
+    
+    // Agora o SLA é Permanente por motorista, não perde ao mudar o mês
+    let customSla = window.configSlaCloud[window.motoristaSelecionado];
+    
+    if(document.getElementById('inputSlaMotorista')) {
+        document.getElementById('inputSlaMotorista').value = customSla || globalSla;
+        document.getElementById('inputSlaMotorista').setAttribute('readonly', 'true');
+    }
+    if(document.getElementById('btnTravaSla')) {
+        document.getElementById('btnTravaSla').innerText = '🔒';
+    }
+    window.slaTravado = true;
 }
 
 window.salvarSlaMotorista = function() {
     if(!window.motoristaSelecionado) return;
-    const dtLanc = document.getElementById('dataLancamento');
-    if(!dtLanc) return;
-    let anoMesStr = dtLanc.value.substring(0,7);
-    if(!anoMesStr) return;
     
     const inputSla = document.getElementById('inputSlaMotorista');
     if(!inputSla) return;
     
     let val = parseInt(inputSla.value);
-    let globalSla = window.carregarDiasUteis(anoMesStr);
-
-    if(!window.configSlaCloud[anoMesStr]) window.configSlaCloud[anoMesStr] = {};
-
-    if(val > 0 && val !== globalSla) {
-        window.configSlaCloud[anoMesStr][window.motoristaSelecionado] = val;
+    
+    // Se digitou um valor, salva permanentemente para o motorista
+    if(val > 0) {
+        window.configSlaCloud[window.motoristaSelecionado] = val;
     } else {
-        delete window.configSlaCloud[anoMesStr][window.motoristaSelecionado];
+        delete window.configSlaCloud[window.motoristaSelecionado];
     }
     window.syncToFirebase();
+    window.atualizarResumosDoMotorista(); // Recalcula a meta na hora
 }
 
 window.sincronizarMesData = function() {
@@ -304,7 +331,7 @@ window.selecionarMotorista = function(nome, elementoLista) {
     const dtG = document.getElementById('dataGlobal');
     if(dtG && document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = dtG.value;
     
-    // QUALQUER MOTORISTA PODE ESCOLHER QUALQUER CARRO (SÓ MUDA O PADRÃO QUE JÁ VEM SELECIONADO)
+    // AGORA TEM AS DUAS OPÇÕES PARA QUALQUER UM
     const selectVeiculo = document.getElementById('tipoVeiculo');
     if(selectVeiculo) {
         let metaPoli = window.getMetaDiaria(nome);
@@ -313,6 +340,7 @@ window.selecionarMotorista = function(nome, elementoLista) {
             <option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>
         `;
         
+        // Ele apenas sugere o padrão baseado no motorista para agilizar
         if(nome === "CLOVIS" || nome === "RODRIGO") { 
             selectVeiculo.value = "cacamba"; 
         } else {
@@ -559,7 +587,7 @@ window.atualizarResumosDoMotorista = function() {
 
     let metaDiaria = window.getMetaDiaria(window.motoristaSelecionado);
     let diasUteisGlobais = window.carregarDiasUteis(anoMesFiltro);
-    let diasUteisMotorista = window.configSlaCloud?.[anoMesFiltro]?.[window.motoristaSelecionado] || diasUteisGlobais;
+    let diasUteisMotorista = window.configSlaCloud[window.motoristaSelecionado] || diasUteisGlobais;
     
     let metaMensalPontos = diasUteisMotorista * metaDiaria; 
 
@@ -797,14 +825,14 @@ window.gerarRankingMensal = function() {
 
     let ptsRayanna = 0, feitasRayanna = 0;
     motRayanna.forEach(mot => {
-        let diasUteisMotorista = window.configSlaCloud?.[mesFiltro]?.[mot] || diasUteisGlobais;
+        let diasUteisMotorista = window.configSlaCloud[mot] || diasUteisGlobais;
         ptsRayanna += window.getMetaDiaria(mot) * diasUteisMotorista;
         if(acumuladoMes[mot]) feitasRayanna += acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
     });
 
     let ptsJulia = 0, feitasJulia = 0;
     motJulia.forEach(mot => {
-        let diasUteisMotorista = window.configSlaCloud?.[mesFiltro]?.[mot] || diasUteisGlobais;
+        let diasUteisMotorista = window.configSlaCloud[mot] || diasUteisGlobais;
         ptsJulia += window.getMetaDiaria(mot) * diasUteisMotorista;
         if(acumuladoMes[mot]) feitasJulia += acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
     });
@@ -826,7 +854,7 @@ window.gerarRankingMensal = function() {
     let rankFinal = Object.keys(acumuladoMes)
         .map(mot => {
             let pts = acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
-            let diasUteisMotorista = window.configSlaCloud?.[mesFiltro]?.[mot] || diasUteisGlobais;
+            let diasUteisMotorista = window.configSlaCloud[mot] || diasUteisGlobais;
             let metaMensalPontos = diasUteisMotorista * window.getMetaDiaria(mot);
             let percentualMeta = metaMensalPontos > 0 ? ((pts / metaMensalPontos) * 100) : 0;
             
