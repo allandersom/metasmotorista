@@ -71,8 +71,7 @@
                     <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border shadow-sm">
                         <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
                         <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Data de Referência:</span>
-                        <input type="date" id="dataGlobal" onchange="window.sincronizarMesData(); window.atualizarResumosGlobais();" class="bg-transparent text-sm font-bold text-slate-800 outline-none cursor-pointer border-none">
-                    </div>
+<input type="month" id="dataGlobal" onchange="window.sincronizarMesData(); window.atualizarResumosGlobais(); window.carregarHistoricoMotorista(); window.atualizarResumosDoMotorista();" class="bg-transparent text-sm font-bold text-slate-800 outline-none cursor-pointer border-none">                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
