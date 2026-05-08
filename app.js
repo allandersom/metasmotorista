@@ -14,13 +14,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const docRef = doc(db, "sistema", "dados_logistica");
 
-const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO ROSALVES", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
+const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
 const motJulia = ["BRUNO", "ELCIDES", "LUIZ RODRIGO", "MARCONI", "MAYKEL", "PLATINIS"];
 const motOutros = ["CLOVIS", "RODRIGO"]; 
 const motoristas = [...motRayanna, ...motJulia, ...motOutros].sort();
 
 window.motoristaSelecionado = null;
-window.chartInstanciaEvolucao = null;
+window.chartInstanciaInd = null;
+window.chartInstanciaGeral = null;
 window.diasUteisTravado = true;
 
 window.bancoDadosCloud = {}; 
@@ -54,7 +55,7 @@ onSnapshot(docRef, (docSnap) => {
     if(window.motoristaSelecionado) {
         window.carregarHistoricoMotorista();
         window.atualizarResumosDoMotorista();
-        window.atualizarGraficoEvolucao();
+        window.atualizarGraficosProjecao();
         window.atualizarSlaInput();
     }
     window.sincronizarMesFiltro();
@@ -83,6 +84,7 @@ window.getMetaDiaria = function(nome) {
     return nome === "ROBERTO CARLOS" ? 4 : 8;
 }
 
+// Configuração das datas iniciais
 const dataHoje = new Date();
 const offset = dataHoje.getTimezoneOffset() * 60000;
 const dataLocal = new Date(dataHoje.getTime() - offset);
@@ -90,7 +92,7 @@ const hojeStr = dataLocal.toISOString().split('T')[0];
 const anoMesAtual = hojeStr.substring(0, 7);
 const startStr = `${anoMesAtual}-01`;
 
-if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual;
+if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual; // Agora é input type="month"
 if(document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = hojeStr;
 if(document.getElementById('dataRankingInicio')) document.getElementById('dataRankingInicio').value = hojeStr;
 if(document.getElementById('dataRankingFim')) document.getElementById('dataRankingFim').value = hojeStr;
@@ -99,7 +101,7 @@ if(document.getElementById('dataDomInicio')) document.getElementById('dataDomIni
 if(document.getElementById('dataDomFim')) document.getElementById('dataDomFim').value = hojeStr;
 if(document.getElementById('dataFerInicio')) document.getElementById('dataFerInicio').value = startStr;
 if(document.getElementById('dataFerFim')) document.getElementById('dataFerFim').value = hojeStr;
-// NOVA FUNÇÃO: MENU HAMBURGUER (Abre/Fecha barra esquerda)
+
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('sidebar');
     if(sidebar.classList.contains('w-[280px]')) {
@@ -183,6 +185,7 @@ window.toggleTravaGlobais = function() {
     lucide.createIcons();
 }
 
+// LOGICA NOVA DE SLA: TRAVA ESPECIFICA POR MES
 window.toggleTravaSla = function() {
     if(!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
     
@@ -190,25 +193,21 @@ window.toggleTravaSla = function() {
     const btnSla = document.getElementById('btnTravaSla');
     if(!inSla || !btnSla) return;
 
+    const elMes = document.getElementById('dataGlobal');
+    let mesFiltroStr = elMes && elMes.value ? elMes.value : new Date().toISOString().substring(0, 7);
+    let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
+
     if(inSla.hasAttribute('readonly')) {
-        // DESTRANCA: Apaga a exceção e volta para o padrão Global (Amarelinho)
         inSla.removeAttribute('readonly');
         btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>';
         btnSla.className = 'text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0';
         
-        // Remove da nuvem pra seguir o global de novo
-        const elMes = document.getElementById('dataGlobal');
-    let anoMesStr = elMes ? elMes.value : new Date().toISOString().substring(0, 7);
-    delete window.configSlaCloud[window.motoristaSelecionado + "_" + anoMesStr];
+        delete window.configSlaCloud[chaveComMes];
         window.syncToFirebase();
         
-        // Atualiza a tela com o valor global
-        const dtLanc = document.getElementById('dataLancamento');
-        let anoMesStr = dtLanc ? dtLanc.value.substring(0,7) : '';
-        inSla.value = window.carregarDiasUteis(anoMesStr);
+        inSla.value = window.carregarDiasUteis(mesFiltroStr);
         window.atualizarResumosDoMotorista();
     } else {
-        // TRANCA: Salva o valor só pra ele (Fica Vermelho)
         inSla.setAttribute('readonly', 'true');
         btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
         btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0';
@@ -216,14 +215,15 @@ window.toggleTravaSla = function() {
     }
     lucide.createIcons();
 }
+
 window.atualizarSlaInput = function() {
     if(!window.motoristaSelecionado) return;
+    
     const elMes = document.getElementById('dataGlobal');
-    let anoMesStr = elMes ? elMes.value : new Date().toISOString().substring(0, 7);
+    let mesFiltroStr = elMes && elMes.value ? elMes.value : new Date().toISOString().substring(0, 7);
     
-    let globalSla = window.carregarDiasUteis(anoMesStr);
-    
-    let chaveComMes = window.motoristaSelecionado + "_" + anoMesStr;
+    let globalSla = window.carregarDiasUteis(mesFiltroStr);
+    let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
     let customSla = window.configSlaCloud[chaveComMes];
     
     const inSla = document.getElementById('inputSlaMotorista');
@@ -244,19 +244,18 @@ window.atualizarSlaInput = function() {
     }
     lucide.createIcons();
 }
+
 window.salvarSlaMotorista = function() {
     if(!window.motoristaSelecionado) return;
     
     const inSla = document.getElementById('inputSlaMotorista');
     const btnSla = document.getElementById('btnTravaSla');
-    const elMes = document.getElementById('dataGlobal'); // Pega o mês ativo
-    let anoMesStr = elMes ? elMes.value : new Date().toISOString().substring(0, 7);
+    const elMes = document.getElementById('dataGlobal');
+    let mesFiltroStr = elMes && elMes.value ? elMes.value : new Date().toISOString().substring(0, 7);
 
     if(!inSla) return;
     let val = parseInt(inSla.value);
-    
-    // A chave salva agora é "NOME_MOTORISTA_2026-05" pra valer só pra esse mês
-    let chaveComMes = window.motoristaSelecionado + "_" + anoMesStr;
+    let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
     
     if(val > 0) {
         window.configSlaCloud[chaveComMes] = val;
@@ -285,7 +284,7 @@ window.salvarDiasUteis = function(origem) {
     let inputRef = isLancamento ? document.getElementById('dataGlobal') : document.getElementById('mesFiltro');
     
     if(!inputRef) return;
-    let anoMesStr = isLancamento ? inputRef.value.substring(0,7) : inputRef.value;
+    let anoMesStr = isLancamento ? inputRef.value : inputRef.value;
     window.configMesesCloud[anoMesStr] = parseInt(valor) || 22;
     window.syncToFirebase();
 }
@@ -294,7 +293,7 @@ window.sincronizarMesData = function() {
     const dtG = document.getElementById('dataGlobal');
     const msF = document.getElementById('mesFiltro');
     if(!dtG || !msF) return;
-    let anoMesStr = dtG.value.substring(0,7);
+    let anoMesStr = dtG.value;
     msF.value = anoMesStr;
     window.carregarDiasUteis(anoMesStr);
 }
@@ -329,6 +328,7 @@ window.calcularPrevisao = function(totalSoma, anoMesStr, diasUteisAlvo) {
     return Math.round((totalSoma / diasUteisCorridos) * diasUteisTotais);
 }
 
+// NOVA FUNÇÃO DAS ABAS (INCLUI PROJEÇÃO)
 window.mudarAba = function(aba) {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
     if(document.getElementById('viewLancamentos')) document.getElementById('viewLancamentos').style.display = 'none';
@@ -354,6 +354,7 @@ window.mudarAba = function(aba) {
         window.atualizarGraficosProjecao();
     }
 }
+
 window.filtrarMotoristas = function() {
     const busca = document.getElementById('buscaMotorista');
     if(!busca) return;
@@ -374,9 +375,7 @@ window.selecionarMotorista = function(nome, elementoLista) {
     if(document.getElementById('conteudoMotorista')) document.getElementById('conteudoMotorista').style.display = 'block';
     if(document.getElementById('nomeMotoristaDisplay')) document.getElementById('nomeMotoristaDisplay').textContent = nome;
     
-    const dtG = document.getElementById('dataGlobal');
-    if(dtG && document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = dtG.value;
-    
+    // Deixa data de lancamento como Hoje mesmo
     const selectVeiculo = document.getElementById('tipoVeiculo');
     if(selectVeiculo) {
         let metaPoli = window.getMetaDiaria(nome);
@@ -395,7 +394,7 @@ window.selecionarMotorista = function(nome, elementoLista) {
     window.atualizarSlaInput();
     window.carregarHistoricoMotorista();
     window.atualizarResumosDoMotorista();
-    window.atualizarGraficoEvolucao();
+    window.atualizarGraficosProjecao();
 }
 
 window.formatarDataParaBusca = function(data) {
@@ -531,14 +530,13 @@ window.carregarHistoricoMotorista = function() {
     tbody.innerHTML = ''; 
     const bancoDados = window.bancoDadosCloud;
     
-    // NOVO: Pega o mês selecionado no cabeçalho
     const elMes = document.getElementById('dataGlobal');
-    const mesFiltroStr = elMes ? elMes.value : new Date().toISOString().substring(0, 7);
+    const mesFiltroStr = elMes && elMes.value ? elMes.value : new Date().toISOString().substring(0, 7);
 
     let historico = [];
 
     for (const data in bancoDados) {
-        // NOVO: Filtra para mostrar apenas os lançamentos do mês selecionado
+        // Exibe histórico só do mês selecionado
         if (data.startsWith(mesFiltroStr) && bancoDados[data][window.motoristaSelecionado]) {
             historico.push({ data: data, dados: bancoDados[data][window.motoristaSelecionado] });
         }
@@ -617,7 +615,9 @@ window.atualizarResumosDoMotorista = function() {
     }
     if(document.getElementById('motoristaTotalSemana')) document.getElementById('motoristaTotalSemana').innerText = `R$ ${totalSemana.toFixed(2).replace('.', ',')}`;
 
-    const anoMesFiltro = dataRefStr.substring(0, 7);
+    const elMes = document.getElementById('dataGlobal');
+    const anoMesFiltro = elMes && elMes.value ? elMes.value : dataRefStr.substring(0, 7);
+    
     let totalCaixasMes = 0;
     let totalViagensMes = 0;
     let totalFatMes = 0;
@@ -637,7 +637,8 @@ window.atualizarResumosDoMotorista = function() {
 
     let metaDiaria = window.getMetaDiaria(window.motoristaSelecionado);
     let diasUteisGlobais = window.carregarDiasUteis(anoMesFiltro);
-    let diasUteisMotorista = window.configSlaCloud[window.motoristaSelecionado] || diasUteisGlobais;
+    let chaveComMes = window.motoristaSelecionado + "_" + anoMesFiltro;
+    let diasUteisMotorista = window.configSlaCloud[chaveComMes] || diasUteisGlobais;
     
     let metaMensalPontos = diasUteisMotorista * metaDiaria; 
 
@@ -661,16 +662,14 @@ window.atualizarResumosDoMotorista = function() {
 window.atualizarResumosGlobais = function() {
     const elGlobal = document.getElementById('dataGlobal');
     if(!elGlobal) return;
-    const mesGlobalStr = elGlobal.value; // Agora pega ex: 2026-05
+    const mesGlobalStr = elGlobal.value; 
     if(!mesGlobalStr) return;
     const bancoDados = window.bancoDadosCloud;
     
     let totalMesGlobal = 0;
     let caixasMesGlobal = 0;
 
-    // Loop por todos os dias do banco de dados
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-        // Só entra na conta se o dia começar com o ano-mês que você escolheu
         if (dataStr.startsWith(mesGlobalStr)) {
             for (const mot in dadosDia) { 
                 totalMesGlobal += dadosDia[mot].valor; 
@@ -681,18 +680,14 @@ window.atualizarResumosGlobais = function() {
         }
     }
     
-    // Atualiza as caixinhas verdes e azuis do topo da Gestão Diária
     if(document.getElementById('totalDiaGlobal')) {
         document.getElementById('totalDiaGlobal').innerText = `R$ ${totalMesGlobal.toFixed(2).replace('.', ',')}`;
-        // Para fazer sentido na tela, mudei o texto interno aqui pra refletir que agora é Mês
         document.getElementById('totalDiaGlobal').previousElementSibling.innerText = "TOTAL FROTA (MÊS)";
     }
     if(document.getElementById('caixasDiaGlobal')) {
         document.getElementById('caixasDiaGlobal').innerText = `${caixasMesGlobal} cx`;
     }
 
-    // Como o filtro agora é mensal, podemos zerar/esconder a caixinha de Semana,
-    // ou se quiser, eu deixei ela espelhando o mês pra não bugar o visual
     if(document.getElementById('totalSemanaGlobal')) {
         document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalMesGlobal.toFixed(2).replace('.', ',')}`;
         document.getElementById('totalSemanaGlobal').previousElementSibling.innerText = "TOTAL FROTA (MÊS)";
@@ -702,141 +697,99 @@ window.atualizarResumosGlobais = function() {
     }
 }
 
-window.chartInstanciaInd = null;
-window.chartInstanciaGeral = null;
+// Mantem alias pro caso de clique no menu
+window.atualizarGraficoEvolucao = function() {
+    window.atualizarGraficosProjecao();
+}
 
-window.atualizarGraficosProjecao = function() {
+window.gerarRankingPeriodo = function() {
+    const elInicio = document.getElementById('dataRankingInicio');
+    const elFim = document.getElementById('dataRankingFim');
+    if(!elInicio || !elFim) return;
+    const inicio = elInicio.value;
+    const fim = elFim.value;
+    if(!inicio || !fim) return;
+
     const bancoDados = window.bancoDadosCloud;
-    const elFiltro = document.getElementById('mesFiltro');
-    const mesAtualStr = elFiltro ? elFiltro.value : new Date().toISOString().substring(0, 7);
+    let rankPeriodo = {};
     
-    let [ano, mes] = mesAtualStr.split('-');
-    let dataPassado = new Date(ano, parseInt(mes) - 2, 1);
-    let mesPassadoStr = dataPassado.getFullYear() + "-" + String(dataPassado.getMonth() + 1).padStart(2, '0');
+    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        if (dataStr >= inicio && dataStr <= fim) {
+            const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
+            for (const [mot, dados] of Object.entries(dadosDia)) {
+                if (isDomingo || dados.isFeriado) continue;
 
-    let dadosEvolucaoInd = [];
-    let mapGeral = {};
-    let stats = { atual: 0, passado: 0 };
-
-    if(document.getElementById('projecaoNomeMotorista')) {
-        document.getElementById('projecaoNomeMotorista').innerText = window.motoristaSelecionado || "Ninguém Selecionado";
+                if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0 };
+                if(dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += dados.servicos;
+                else rankPeriodo[mot].caixas += dados.servicos;
+                
+                rankPeriodo[mot].valor += dados.valor;
+                rankPeriodo[mot].extra += dados.valorExtra || 0;
+                rankPeriodo[mot].diasTrab += 1;
+            }
+        }
     }
 
-    for (const [data, motoristasDia] of Object.entries(bancoDados)) {
-        let isMesAtual = data.startsWith(mesAtualStr);
-        let isMesPassado = data.startsWith(mesPassadoStr);
-        let pontosDiaGeral = 0;
+    let rankArray = Object.keys(rankPeriodo).map(mot => {
+        let pontosFeitos = rankPeriodo[mot].caixas + (rankPeriodo[mot].viagens * 2);
+        let metaTotalPeriodo = window.getMetaDiaria(mot) * rankPeriodo[mot].diasTrab;
+        let porcentagem = metaTotalPeriodo > 0 ? (pontosFeitos / metaTotalPeriodo) * 100 : 0;
+        return { nome: mot, ...rankPeriodo[mot], porcentagem: porcentagem };
+    });
+    
+    rankArray.sort((a,b) => b.porcentagem - a.porcentagem);
+    
+    const divLista = document.getElementById('listaRankingDiario');
+    if(!divLista) return;
+    divLista.innerHTML = '';
+
+    if(rankArray.length === 0) {
+        divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Nenhum serviço normal no período. 😴</div>';
+        return;
+    }
+
+    rankArray.forEach((mot, index) => {
+        let porcentagemStr = mot.porcentagem.toFixed(2).replace('.', ',');
+
+        let classeBarra = '';
+        if(mot.porcentagem >= 100) classeBarra = 'meta-batida';
+        else if (mot.porcentagem >= 80) classeBarra = 'meta-excedida'; 
+        else classeBarra = 'meta-ruim'; 
+
+        let larguraBarra = mot.porcentagem > 100 ? 100 : mot.porcentagem; 
+        let extraBadge = mot.extra > 0 ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded ml-2">+ Extra R$ ${mot.extra}</span>` : '';
         
-        for (const [mot, dados] of Object.entries(motoristasDia)) {
-            let pts = dados.tipoVeiculo === 'cacamba' ? dados.servicos * 2 : dados.servicos;
-            let qtdReal = dados.servicos;
-            
-            if (mot === window.motoristaSelecionado) {
-                if (isMesAtual && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
-                    stats.atual += qtdReal;
-                }
-                if (isMesPassado && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
-                    stats.passado += qtdReal;
-                }
-                if (isMesAtual) {
-                    dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
-                }
-            }
-            if (isMesAtual) {
-                pontosDiaGeral += pts;
-            }
-        }
-        if (isMesAtual) {
-            mapGeral[data] = pontosDiaGeral;
-        }
-    }
-
-    let txtSufixo = (window.motoristaSelecionado === "CLOVIS" || window.motoristaSelecionado === "RODRIGO") ? " vg" : " cx";
-    
-    if(document.getElementById('statMesAtual')) document.getElementById('statMesAtual').innerText = stats.atual + txtSufixo;
-    if(document.getElementById('statMesPassado')) document.getElementById('statMesPassado').innerText = stats.passado + txtSufixo;
-    
-    let elCrescimento = document.getElementById('statCrescimento');
-    if(elCrescimento) {
-        if (!window.motoristaSelecionado) {
-            elCrescimento.innerHTML = `<span class="text-slate-500 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Selecione na lista</span>`;
+        let textoQtd = "";
+        if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
+            if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
+            else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`;
+            else textoQtd = `0 cx | ${mot.viagens} vg`;
         } else {
-            let diff = stats.atual - stats.passado;
-            if (diff > 0) {
-                elCrescimento.innerHTML = `<span class="text-emerald-600 bg-emerald-100 px-3 py-1 rounded-xl text-sm font-bold">+${diff}${txtSufixo} a mais</span><span class="text-xs text-slate-500 font-medium">que o mês anterior</span>`;
-            } else if (diff < 0) {
-                let numeroPositivo = Math.abs(diff);
-                elCrescimento.innerHTML = `<span class="text-red-600 bg-red-100 px-3 py-1 rounded-xl text-sm font-bold">-${numeroPositivo}${txtSufixo} a menos</span><span class="text-xs text-slate-500 font-medium">que o mês anterior</span>`;
-            } else {
-                elCrescimento.innerHTML = `<span class="text-slate-600 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Empatado</span><span class="text-xs text-slate-500 font-medium">com o mês anterior</span>`;
-            }
+            textoQtd = `${mot.caixas} cx`;
         }
-    }
 
-    dadosEvolucaoInd.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
-    const labelsInd = dadosEvolucaoInd.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
-    const dataInd = dadosEvolucaoInd.map(d => d.pontos);
-
-    let arrayGeral = Object.keys(mapGeral).map(k => ({ dataStr: k, pontos: mapGeral[k] }));
-    arrayGeral.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
-    const labelsGeral = arrayGeral.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
-    const dataGeral = arrayGeral.map(d => d.pontos);
-
-    Chart.defaults.font.family = "'Inter', sans-serif";
-
-    const ctxInd = document.getElementById('chartEvolucaoIndividual');
-    if (ctxInd) {
-        if (window.chartInstanciaInd) window.chartInstanciaInd.destroy();
-        window.chartInstanciaInd = new Chart(ctxInd.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: labelsInd,
-                datasets: [{
-                    label: 'Volume (Pontos)',
-                    data: dataInd,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#2563eb',
-                    fill: true,
-                    tension: 0.3 
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
-        });
-    }
-
-    const ctxGeral = document.getElementById('chartEvolucaoGeral');
-    if (ctxGeral) {
-        if (window.chartInstanciaGeral) window.chartInstanciaGeral.destroy();
-        window.chartInstanciaGeral = new Chart(ctxGeral.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: labelsGeral,
-                datasets: [{
-                    label: 'Frota Geral (Pontos)',
-                    data: dataGeral,
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#10b981',
-                    fill: true,
-                    tension: 0.3 
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
-        });
-    }
+        const linha = document.createElement('div');
+        linha.className = 'diario-row';
+        linha.innerHTML = `
+            <div class="diario-top">
+                <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
+                <span class="diario-faturamento">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
+            </div>
+            <div class="progress-wrapper">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill ${classeBarra}" style="width: ${larguraBarra}%;"></div>
+                </div>
+                <span class="progress-text" title="Baseado nos dias trabalhados">${porcentagemStr}%</span>
+            </div>
+        `;
+        divLista.appendChild(linha);
+    });
 }
 
-window.atualizarGraficoEvolucao = function() {
-    window.atualizarGraficosProjecao();
-}
-// Isso aqui evita dar erro quando você clica em um motorista na lista
-window.atualizarGraficoEvolucao = function() {
-    window.atualizarGraficosProjecao();
+window.obterRankElo = function(percentual) {
+    if (percentual >= 100) return { nome: 'Radiante', classe: 'elo-radiante' };
+    if (percentual >= 80) return { nome: 'Diamante', classe: 'elo-diamante' };
+    return { nome: 'Bronze', classe: 'elo-bronze' };
 }
 
 window.gerarRankingMensal = function() {
@@ -881,14 +834,14 @@ window.gerarRankingMensal = function() {
 
     let ptsRayanna = 0, feitasRayanna = 0;
     motRayanna.forEach(mot => {
-        let diasUteisMotorista = window.configSlaCloud[mot] || diasUteisGlobais;
+        let diasUteisMotorista = window.configSlaCloud[mot + "_" + mesFiltro] || diasUteisGlobais;
         ptsRayanna += window.getMetaDiaria(mot) * diasUteisMotorista;
         if(acumuladoMes[mot]) feitasRayanna += acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
     });
 
     let ptsJulia = 0, feitasJulia = 0;
     motJulia.forEach(mot => {
-        let diasUteisMotorista = window.configSlaCloud[mot] || diasUteisGlobais;
+        let diasUteisMotorista = window.configSlaCloud[mot + "_" + mesFiltro] || diasUteisGlobais;
         ptsJulia += window.getMetaDiaria(mot) * diasUteisMotorista;
         if(acumuladoMes[mot]) feitasJulia += acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
     });
@@ -910,7 +863,7 @@ window.gerarRankingMensal = function() {
     let rankFinal = Object.keys(acumuladoMes)
         .map(mot => {
             let pts = acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
-            let diasUteisMotorista = window.configSlaCloud[mot] || diasUteisGlobais;
+            let diasUteisMotorista = window.configSlaCloud[mot + "_" + mesFiltro] || diasUteisGlobais;
             let metaMensalPontos = diasUteisMotorista * window.getMetaDiaria(mot);
             let percentualMeta = metaMensalPontos > 0 ? ((pts / metaMensalPontos) * 100) : 0;
             
@@ -1075,4 +1028,130 @@ window.gerarPainelFeriados = function() {
 
     renderizarLista(registrosDom, 'listaDomingos', 'Nenhum serviço em domingos no período selecionado. 😴');
     renderizarLista(registrosFer, 'listaFeriados', 'Nenhum serviço em feriados no período selecionado. 😴');
+}
+
+window.atualizarGraficosProjecao = function() {
+    const bancoDados = window.bancoDadosCloud;
+    const elFiltro = document.getElementById('mesFiltro');
+    const mesAtualStr = elFiltro ? elFiltro.value : new Date().toISOString().substring(0, 7);
+    
+    let [ano, mes] = mesAtualStr.split('-');
+    let dataPassado = new Date(ano, parseInt(mes) - 2, 1);
+    let mesPassadoStr = dataPassado.getFullYear() + "-" + String(dataPassado.getMonth() + 1).padStart(2, '0');
+
+    let dadosEvolucaoInd = [];
+    let mapGeral = {};
+    let stats = { atual: 0, passado: 0 };
+
+    if(document.getElementById('projecaoNomeMotorista')) {
+        document.getElementById('projecaoNomeMotorista').innerText = window.motoristaSelecionado || "Ninguém Selecionado";
+    }
+
+    for (const [data, motoristasDia] of Object.entries(bancoDados)) {
+        let isMesAtual = data.startsWith(mesAtualStr);
+        let isMesPassado = data.startsWith(mesPassadoStr);
+        let pontosDiaGeral = 0;
+        
+        for (const [mot, dados] of Object.entries(motoristasDia)) {
+            let pts = dados.tipoVeiculo === 'cacamba' ? dados.servicos * 2 : dados.servicos;
+            let qtdReal = dados.servicos;
+            
+            if (mot === window.motoristaSelecionado) {
+                if (isMesAtual && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
+                    stats.atual += qtdReal;
+                }
+                if (isMesPassado && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
+                    stats.passado += qtdReal;
+                }
+                if (isMesAtual) {
+                    dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
+                }
+            }
+            if (isMesAtual) {
+                pontosDiaGeral += pts;
+            }
+        }
+        if (isMesAtual) {
+            mapGeral[data] = pontosDiaGeral;
+        }
+    }
+
+    let txtSufixo = (window.motoristaSelecionado === "CLOVIS" || window.motoristaSelecionado === "RODRIGO") ? " vg" : " cx";
+    
+    if(document.getElementById('statMesAtual')) document.getElementById('statMesAtual').innerText = stats.atual + txtSufixo;
+    if(document.getElementById('statMesPassado')) document.getElementById('statMesPassado').innerText = stats.passado + txtSufixo;
+    
+    let elCrescimento = document.getElementById('statCrescimento');
+    if(elCrescimento) {
+        if (!window.motoristaSelecionado) {
+            elCrescimento.innerHTML = `<span class="text-slate-500 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Selecione na lista</span>`;
+        } else {
+            let diff = stats.atual - stats.passado;
+            if (diff > 0) {
+                elCrescimento.innerHTML = `<span class="text-emerald-600 bg-emerald-100 px-3 py-1 rounded-xl text-sm font-bold">+${diff}${txtSufixo} a mais</span><span class="text-xs text-slate-500 font-medium">que o mês anterior</span>`;
+            } else if (diff < 0) {
+                let numeroPositivo = Math.abs(diff);
+                elCrescimento.innerHTML = `<span class="text-red-600 bg-red-100 px-3 py-1 rounded-xl text-sm font-bold">-${numeroPositivo}${txtSufixo} a menos</span><span class="text-xs text-slate-500 font-medium">que o mês anterior</span>`;
+            } else {
+                elCrescimento.innerHTML = `<span class="text-slate-600 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Empatado</span><span class="text-xs text-slate-500 font-medium">com o mês anterior</span>`;
+            }
+        }
+    }
+
+    dadosEvolucaoInd.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
+    const labelsInd = dadosEvolucaoInd.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
+    const dataInd = dadosEvolucaoInd.map(d => d.pontos);
+
+    let arrayGeral = Object.keys(mapGeral).map(k => ({ dataStr: k, pontos: mapGeral[k] }));
+    arrayGeral.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
+    const labelsGeral = arrayGeral.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
+    const dataGeral = arrayGeral.map(d => d.pontos);
+
+    Chart.defaults.font.family = "'Inter', sans-serif";
+
+    const ctxInd = document.getElementById('chartEvolucaoIndividual');
+    if (ctxInd) {
+        if (window.chartInstanciaInd) window.chartInstanciaInd.destroy();
+        window.chartInstanciaInd = new Chart(ctxInd.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labelsInd,
+                datasets: [{
+                    label: 'Volume (Pontos)',
+                    data: dataInd,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#2563eb',
+                    fill: true,
+                    tension: 0.3 
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+        });
+    }
+
+    const ctxGeral = document.getElementById('chartEvolucaoGeral');
+    if (ctxGeral) {
+        if (window.chartInstanciaGeral) window.chartInstanciaGeral.destroy();
+        window.chartInstanciaGeral = new Chart(ctxGeral.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labelsGeral,
+                datasets: [{
+                    label: 'Frota Geral (Pontos)',
+                    data: dataGeral,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#10b981',
+                    fill: true,
+                    tension: 0.3 
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+        });
+    }
 }
