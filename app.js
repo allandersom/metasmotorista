@@ -694,84 +694,34 @@ window.atualizarResumosGlobais = function() {
 window.chartInstanciaInd = null;
 window.chartInstanciaGeral = null;
 
-window.chartInstanciaInd = null;
-window.chartInstanciaGeral = null;
-
 window.atualizarGraficosProjecao = function() {
     const bancoDados = window.bancoDadosCloud;
-    const elFiltro = document.getElementById('mesFiltro');
-    const mesAtualStr = elFiltro ? elFiltro.value : new Date().toISOString().substring(0, 7);
-    
-    // Calcula qual foi o mês passado para comparar
-    let [ano, mes] = mesAtualStr.split('-');
-    let dataPassado = new Date(ano, parseInt(mes) - 2, 1);
-    let mesPassadoStr = dataPassado.getFullYear() + "-" + String(dataPassado.getMonth() + 1).padStart(2, '0');
-
     let dadosEvolucaoInd = [];
     let mapGeral = {};
-    let stats = { atual: 0, passado: 0 };
 
-    if(document.getElementById('projecaoNomeMotorista')) {
-        document.getElementById('projecaoNomeMotorista').innerText = window.motoristaSelecionado || "Ninguém Selecionado";
-    }
-
+    // 1. Processar dados da nuvem
     for (const [data, motoristasDia] of Object.entries(bancoDados)) {
-        let isMesAtual = data.startsWith(mesAtualStr);
-        let isMesPassado = data.startsWith(mesPassadoStr);
         let pontosDiaGeral = 0;
         
         for (const [mot, dados] of Object.entries(motoristasDia)) {
             let pts = dados.tipoVeiculo === 'cacamba' ? dados.servicos * 2 : dados.servicos;
-            let qtdReal = dados.servicos;
             
+            // Se for o motorista selecionado na tela de lançamentos, guarda pro gráfico dele
             if (mot === window.motoristaSelecionado) {
-                if (isMesAtual && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
-                    stats.atual += qtdReal;
-                }
-                if (isMesPassado && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
-                    stats.passado += qtdReal;
-                }
-                if (isMesAtual) {
-                    dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
-                }
+                dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
             }
-            if (isMesAtual) {
-                pontosDiaGeral += pts;
-            }
+            // Soma pro gráfico da frota inteira
+            pontosDiaGeral += pts;
         }
-        if (isMesAtual) {
-            mapGeral[data] = pontosDiaGeral;
-        }
+        mapGeral[data] = pontosDiaGeral;
     }
 
-    // --- Atualiza as Caixas Fixas de Crescimento ---
-    let txtSufixo = (window.motoristaSelecionado === "CLOVIS" || window.motoristaSelecionado === "RODRIGO") ? " vg" : " cx";
-    
-    if(document.getElementById('statMesAtual')) document.getElementById('statMesAtual').innerText = stats.atual + txtSufixo;
-    if(document.getElementById('statMesPassado')) document.getElementById('statMesPassado').innerText = stats.passado + txtSufixo;
-    
-    let elCrescimento = document.getElementById('statCrescimento');
-    if(elCrescimento) {
-        if (!window.motoristaSelecionado) {
-            elCrescimento.innerHTML = `<span class="text-slate-500 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Selecione na lista</span>`;
-        } else {
-            let diff = stats.atual - stats.passado;
-            if (diff > 0) {
-                elCrescimento.innerHTML = `<span class="text-emerald-600 bg-emerald-100 px-3 py-1 rounded-xl text-sm font-bold">+${diff}${txtSufixo} a mais</span><span class="text-xs text-slate-500 font-medium">que o mês anterior</span>`;
-            } else if (diff < 0) {
-                let numeroPositivo = Math.abs(diff);
-                elCrescimento.innerHTML = `<span class="text-red-600 bg-red-100 px-3 py-1 rounded-xl text-sm font-bold">-${numeroPositivo}${txtSufixo} a menos</span><span class="text-xs text-slate-500 font-medium">que o mês anterior</span>`;
-            } else {
-                elCrescimento.innerHTML = `<span class="text-slate-600 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Empatado</span><span class="text-xs text-slate-500 font-medium">com o mês anterior</span>`;
-            }
-        }
-    }
-
-    // --- Renderiza Gráficos ---
+    // 2. Prepara os dados pro gráfico Individual
     dadosEvolucaoInd.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
     const labelsInd = dadosEvolucaoInd.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
     const dataInd = dadosEvolucaoInd.map(d => d.pontos);
 
+    // 3. Prepara os dados pro gráfico Geral
     let arrayGeral = Object.keys(mapGeral).map(k => ({ dataStr: k, pontos: mapGeral[k] }));
     arrayGeral.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
     const labelsGeral = arrayGeral.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
@@ -779,6 +729,7 @@ window.atualizarGraficosProjecao = function() {
 
     Chart.defaults.font.family = "'Inter', sans-serif";
 
+    // 4. Desenha o Gráfico Individual (Azul)
     const ctxInd = document.getElementById('chartEvolucaoIndividual');
     if (ctxInd) {
         if (window.chartInstanciaInd) window.chartInstanciaInd.destroy();
@@ -787,7 +738,7 @@ window.atualizarGraficosProjecao = function() {
             data: {
                 labels: labelsInd,
                 datasets: [{
-                    label: 'Volume (Pontos)',
+                    label: 'Pontos - ' + (window.motoristaSelecionado || 'Nenhum'),
                     data: dataInd,
                     borderColor: '#2563eb',
                     backgroundColor: 'rgba(37, 99, 235, 0.1)',
@@ -802,6 +753,7 @@ window.atualizarGraficosProjecao = function() {
         });
     }
 
+    // 5. Desenha o Gráfico Geral (Verde)
     const ctxGeral = document.getElementById('chartEvolucaoGeral');
     if (ctxGeral) {
         if (window.chartInstanciaGeral) window.chartInstanciaGeral.destroy();
@@ -810,7 +762,7 @@ window.atualizarGraficosProjecao = function() {
             data: {
                 labels: labelsGeral,
                 datasets: [{
-                    label: 'Frota Geral (Pontos)',
+                    label: 'Pontos Totais da Frota',
                     data: dataGeral,
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -826,6 +778,7 @@ window.atualizarGraficosProjecao = function() {
     }
 }
 
+// Isso aqui evita dar erro quando você clica em um motorista na lista
 window.atualizarGraficoEvolucao = function() {
     window.atualizarGraficosProjecao();
 }
