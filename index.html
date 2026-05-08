@@ -32,13 +32,13 @@
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto w-[280px]">
-            <button id="btnTabLancamentos" onclick="window.mudarAba('lancamentos')" class="nav-tab active">
+            <button id="btnTabLancamentos" onclick="window.mudarAba('lancamentos')" class="nav-tab active whitespace-nowrap">
                 <i data-lucide="truck" class="w-5 h-5 shrink-0"></i> Gestão da Frota
             </button>
-            <button id="btnTabRankings" onclick="window.mudarAba('rankings')" class="nav-tab">
+            <button id="btnTabRankings" onclick="window.mudarAba('rankings')" class="nav-tab whitespace-nowrap">
                 <i data-lucide="trophy" class="w-5 h-5 shrink-0"></i> Central de Rankings
             </button>
-            <button id="btnTabDomFeriados" onclick="window.mudarAba('domferiados')" class="nav-tab">
+            <button id="btnTabDomFeriados" onclick="window.mudarAba('domferiados')" class="nav-tab whitespace-nowrap">
                 <i data-lucide="calendar-off" class="w-5 h-5 shrink-0"></i> Domingos & Feriados
             </button>
         </nav>
@@ -57,9 +57,9 @@
             </button>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-8 relative">
+        <div class="flex-1 overflow-y-auto p-8 relative w-full">
             
-            <div id="viewLancamentos" class="max-w-[1400px] mx-auto space-y-6 relative">
+            <div id="viewLancamentos" class="w-full space-y-6 relative">
                 
                 <div class="flex justify-between items-end mb-8">
                     <div>
@@ -73,48 +73,48 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="bg-white rounded-3xl p-6 border shadow-sm flex items-center justify-between">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
                                 <i data-lucide="calendar-days" class="w-6 h-6"></i>
                             </div>
                             <div>
-                                <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Dias Úteis Globais (Mês):</p>
-                                <input type="number" id="inputDiasUteisLanc" min="1" max="31" onchange="window.salvarDiasUteis('lanc')" class="text-3xl font-black text-slate-800 w-16 bg-transparent outline-none p-0 border-none" readonly>
+                                <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 whitespace-nowrap">Dias Úteis Globais (Mês):</p>
+                                <input type="number" id="inputDiasUteisLanc" min="1" max="31" onchange="window.salvarDiasUteis('lanc')" class="text-3xl font-black text-slate-800 w-16 bg-transparent outline-none p-0 border-none whitespace-nowrap" readonly>
                             </div>
                         </div>
-                        <button id="btnTravaLanc" onclick="window.toggleTravaGlobais()" class="text-yellow-500 hover:scale-110 transition-transform bg-yellow-50 p-3 rounded-full"><i data-lucide="lock" class="w-5 h-5"></i></button>
+                        <button id="btnTravaLanc" onclick="window.toggleTravaGlobais()" class="text-yellow-500 hover:scale-110 transition-transform bg-yellow-50 p-3 rounded-full shrink-0"><i data-lucide="lock" class="w-5 h-5"></i></button>
                     </div>
                     
                     <div class="bg-emerald-500 rounded-3xl p-6 shadow-lg shadow-emerald-200 flex items-center gap-4 text-white transform hover:-translate-y-1 transition-transform">
-                        <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
+                        <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
                             <i data-lucide="truck" class="w-6 h-6 text-white"></i>
                         </div>
                         <div>
-                            <p class="text-[10px] font-black text-emerald-100 uppercase tracking-widest mb-1">Total Frota (Dia)</p>
-                            <p class="text-2xl font-black tracking-tight leading-none" id="totalDiaGlobal">R$ 0,00</p>
-                            <p class="text-xs font-bold text-emerald-100 mt-2" id="caixasDiaGlobal">0 cx</p>
+                            <p class="text-[10px] font-black text-emerald-100 uppercase tracking-widest mb-1 whitespace-nowrap">Total Frota (Dia)</p>
+                            <p class="text-2xl font-black tracking-tight leading-none whitespace-nowrap" id="totalDiaGlobal">R$ 0,00</p>
+                            <p class="text-xs font-bold text-emerald-100 mt-2 whitespace-nowrap" id="caixasDiaGlobal">0 cx</p>
                         </div>
                     </div>
 
                     <div class="bg-blue-600 rounded-3xl p-6 shadow-lg shadow-blue-200 flex items-center gap-4 text-white transform hover:-translate-y-1 transition-transform">
-                        <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
+                        <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
                             <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
                         </div>
                         <div>
-                            <p class="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-1">Total Frota (Semana)</p>
-                            <p class="text-2xl font-black tracking-tight leading-none" id="totalSemanaGlobal">R$ 0,00</p>
-                            <p class="text-xs font-bold text-blue-200 mt-2" id="caixasSemanaGlobal">0 cx</p>
+                            <p class="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-1 whitespace-nowrap">Total Frota (Semana)</p>
+                            <p class="text-2xl font-black tracking-tight leading-none whitespace-nowrap" id="totalSemanaGlobal">R$ 0,00</p>
+                            <p class="text-xs font-bold text-blue-200 mt-2 whitespace-nowrap" id="caixasSemanaGlobal">0 cx</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex gap-8 h-[750px]">
+                <div class="flex gap-8 h-[calc(100vh-270px)] w-full">
                     
                     <div class="w-[320px] bg-white rounded-[2rem] border shadow-sm flex flex-col shrink-0 overflow-hidden">
                         <div class="p-6 pb-2">
-                            <h3 class="font-black text-slate-800 mb-4">Selecionar Motorista</h3>
+                            <h3 class="font-black text-slate-800 mb-4 whitespace-nowrap">Selecionar Motorista</h3>
                             
                             <div class="relative mb-3">
                                 <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -140,122 +140,116 @@
                         </div>
                     </div>
 
-                    <div class="flex-1 bg-white rounded-[2rem] border shadow-sm relative overflow-hidden flex flex-col">
+                    <div class="flex-1 bg-white rounded-[2rem] border shadow-sm relative overflow-hidden flex flex-col w-full">
                         
-                        <div id="estadoVazio" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10">
+                        <div id="estadoVazio" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 p-8 text-center">
                             <div class="relative w-40 h-40 mb-6 flex items-center justify-center">
                                 <div class="absolute inset-0 bg-blue-50 rounded-full scale-150 opacity-50"></div>
                                 <i data-lucide="truck" class="w-20 h-20 text-blue-500 relative z-10 drop-shadow-md"></i>
                             </div>
-                            <h3 class="text-xl font-black text-slate-800 mb-4 z-10">Selecione um turno e clique em<br>um motorista na lista para iniciar.</h3>
+                            <h3 class="text-xl font-black text-slate-800 mb-4 z-10">Selecione um turno e clique em um motorista na lista para iniciar.</h3>
                             <div class="w-8 h-1 bg-yellow-400 rounded-full z-10"></div>
                         </div>
 
-                        <div id="conteudoMotorista" style="display: none;" class="flex-1 flex flex-col overflow-y-auto p-8 animate-fade-in">
+                        <div id="conteudoMotorista" style="display: none;" class="flex-1 flex flex-col overflow-y-auto p-8 animate-fade-in w-full">
                             
-                            <div class="flex justify-between items-start mb-6">
+                            <div class="flex justify-between items-start mb-6 w-full">
                                 <div>
                                     <h3 id="nomeMotoristaDisplay" class="text-3xl font-black text-slate-900 tracking-tight uppercase">Nome</h3>
                                 </div>
-                                <div class="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl flex items-center gap-3 shadow-sm">
+                                <div class="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl flex items-center gap-3 shadow-sm shrink-0">
                                     <div>
-                                        <p class="text-[9px] font-black text-amber-600 uppercase tracking-widest">SLA (Dias Úteis)</p>
+                                        <p class="text-[9px] font-black text-amber-600 uppercase tracking-widest whitespace-nowrap">SLA (Dias Úteis)</p>
                                         <input type="number" id="inputSlaMotorista" min="1" max="31" class="bg-transparent font-black text-amber-900 text-lg w-12 outline-none" readonly>
                                     </div>
-                                    <button id="btnTravaSla" onclick="window.toggleTravaSla()" class="text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors">
-                                        <i data-lucide="lock" class="w-4 h-4"></i>
-                                    </button>
+                                    <button id="btnTravaSla" onclick="window.toggleTravaSla()" class="text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0"><i data-lucide="lock" class="w-4 h-4"></i></button>
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-4 gap-4 mb-6 shrink-0">
-                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl border-b-4 border-b-emerald-500 shadow-sm">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Dia Selecionado</span>
+                            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6 shrink-0 w-full">
+                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl border-b-4 border-b-emerald-500 shadow-sm w-full">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 whitespace-nowrap">Dia Selecionado</span>
                                     <strong id="motoristaTotalDia" class="text-xl font-black text-slate-800">R$ 0,00</strong>
                                 </div>
-                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl border-b-4 border-b-blue-500 shadow-sm">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Semana Atual</span>
+                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl border-b-4 border-b-blue-500 shadow-sm w-full">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 whitespace-nowrap">Semana Atual</span>
                                     <strong id="motoristaTotalSemana" class="text-xl font-black text-slate-800">R$ 0,00</strong>
                                 </div>
-                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl border-b-4 border-b-indigo-500 shadow-sm col-span-2 flex justify-between items-center">
+                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl border-b-4 border-b-indigo-500 shadow-sm lg:col-span-2 flex justify-between items-center w-full">
                                     <div>
-                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Resultados (Mês)</span>
-                                        <strong id="motoristaCaixasMes" class="text-xl font-black text-slate-800">0 cx | 0 vg</strong>
-                                        <span id="motoristaMetaMes" class="text-[10px] font-bold text-indigo-500 block mt-1">Meta Mensal: 0 cx | Fat: R$ 0,00</span>
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 whitespace-nowrap">Resultados (Mês)</span>
+                                        <strong id="motoristaCaixasMes" class="text-xl font-black text-slate-800 whitespace-nowrap">0 cx | 0 vg</strong>
+                                        <span id="motoristaMetaMes" class="text-[10px] font-bold text-indigo-500 block mt-1 whitespace-nowrap leading-none">Meta Mensal: 0 cx | Fat: R$ 0,00</span>
                                     </div>
-                                    <div class="text-right">
-                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Previsão Final</span>
-                                        <strong id="motoristaPrevisaoMes" class="text-xl font-black text-slate-800">0 cx | 0 vg</strong>
+                                    <div class="text-right whitespace-nowrap">
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 leading-none">Previsão Final</span>
+                                        <strong id="motoristaPrevisaoMes" class="text-xl font-black text-slate-800 leading-none">0 cx | 0 vg</strong>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="bg-white border rounded-2xl p-6 shadow-sm mb-6 shrink-0 border-l-4 border-l-blue-500">
+                            <div class="bg-white border rounded-2xl p-6 shadow-sm mb-6 shrink-0 border-l-4 border-l-blue-500 w-full">
                                 <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Novo Lançamento
                                 </h4>
                                 
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start w-full">
                                     
-                                    <div class="flex flex-col gap-1">
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase">Data do Serviço:</label>
-                                        <input type="date" id="dataLancamento" class="input-base" onchange="window.atualizarResumosDoMotorista(); window.atualizarSlaInput();">
-                                        <div class="flex items-center gap-2 mt-2 cursor-pointer group">
+                                    <div class="flex flex-col gap-1 w-full">
+                                        <label class="whitespace-nowrap">Data do Serviço:</label>
+                                        <input type="date" id="dataLancamento" class="input-base w-full" onchange="window.atualizarResumosDoMotorista(); window.atualizarSlaInput();">
+                                        <div class="flex items-center gap-2 mt-2 cursor-pointer group whitespace-nowrap">
                                             <input type="checkbox" id="feriado" class="w-3.5 h-3.5 text-red-500 rounded border-slate-300 focus:ring-red-500">
                                             <label for="feriado" class="m-0 text-[11px] font-black text-red-500 uppercase cursor-pointer group-hover:text-red-600 transition-colors">É Feriado?</label>
                                         </div>
                                     </div>
                                     
-                                    <div class="flex flex-col gap-1 mb-[22px]">
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase">Veículo Operado:</label>
-                                        <select id="tipoVeiculo" class="input-base cursor-pointer"></select>
+                                    <div class="flex flex-col gap-1 mb-[22px] w-full">
+                                        <label class="whitespace-nowrap">Veículo Operado:</label>
+                                        <select id="tipoVeiculo" class="input-base cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis w-full"></select>
                                     </div>
 
-                                    <div class="flex flex-col gap-1 mb-[22px]">
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase">Qtd (Cx/Vg):</label>
-                                        <input type="number" id="servicos" min="0" placeholder="Ex: 0 = presença" class="input-base text-center font-bold">
+                                    <div class="flex flex-col gap-1 mb-[22px] w-full">
+                                        <label class="whitespace-nowrap">Qtd (Cx/Vg):</label>
+                                        <input type="number" id="servicos" min="0" placeholder="Ex: 0 = presença" class="input-base text-center font-bold whitespace-nowrap w-full">
                                     </div>
 
-                                    <div class="flex flex-col gap-1 mb-[22px]">
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase">Extra (R$):</label>
-                                        <input type="number" id="valorExtra" step="0.01" min="0" placeholder="0.00" class="input-base text-center text-blue-600 font-bold">
+                                    <div class="flex flex-col gap-1 mb-[22px] w-full">
+                                        <label class="whitespace-nowrap">Extra (R$):</label>
+                                        <input type="number" id="valorExtra" step="0.01" min="0" placeholder="0.00" class="input-base text-center text-blue-600 font-bold whitespace-nowrap w-full">
                                     </div>
 
-                                    <div class="flex flex-col gap-1 md:col-span-3">
-                                        <label class="text-[11px] font-bold text-slate-600 uppercase">Observações do Serviço:</label>
-                                        <textarea id="observacao" rows="2" class="input-base resize-none" placeholder="Opcional (Ex: Caminhão quebrou na BR...)"></textarea>
+                                    <div class="flex flex-col gap-1 md:col-span-3 w-full">
+                                        <label class="whitespace-nowrap">Observações do Serviço:</label>
+                                        <textarea id="observacao" rows="2" class="input-base resize-none whitespace-nowrap w-full" placeholder="Opcional (Ex: Caminhão quebrou na BR...)"></textarea>
                                     </div>
 
-                                    <div class="md:col-span-1 flex items-end pb-[2px]">
-                                        <button onclick="window.salvarLancamento()" class="btn-primary w-full flex items-center justify-center gap-2 h-[44px]">
-                                            <i data-lucide="save" class="w-4 h-4"></i> Gravar 
+                                    <div class="md:col-span-1 flex items-end pb-[2px] w-full">
+                                        <button onclick="window.salvarLancamento()" class="btn-primary w-full flex items-center justify-center gap-2 h-[44px] whitespace-nowrap">
+                                            <i data-lucide="save" class="w-4 h-4 shrink-0"></i> Gravar 
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="flex-1 min-h-[250px]">
-                                <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Histórico de Lançamentos</h4>
-                                <div class="border rounded-2xl overflow-hidden shadow-sm">
-                                    <table id="tabelaHistorico">
-                                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <div class="flex-1 min-h-[250px] w-full">
+                                <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 whitespace-nowrap">Histórico de Lançamentos</h4>
+                                <div class="border rounded-2xl overflow-hidden shadow-sm w-full">
+                                    <table id="tabelaHistorico" class="w-full">
+                                        <thead class="bg-slate-50 border-b border-slate-200 w-full">
                                             <tr>
-                                                <th class="text-[10px] font-black text-slate-500 uppercase">Data</th>
-                                                <th class="text-[10px] font-black text-slate-500 uppercase">Veículo / Dia</th>
-                                                <th class="text-[10px] font-black text-slate-500 uppercase text-center">Qtd</th>
-                                                <th class="text-[10px] font-black text-slate-500 uppercase text-center">Extra</th>
-                                                <th class="text-[10px] font-black text-slate-500 uppercase text-right">Valor Pagar</th>
-                                                <th class="text-[10px] font-black text-slate-500 uppercase">Observação</th>
-                                                <th class="text-[10px] font-black text-slate-500 uppercase text-center">Ação</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase whitespace-nowrap">Data</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase whitespace-nowrap">Veículo / Dia</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase text-center whitespace-nowrap">Qtd</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase text-center whitespace-nowrap">Extra</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase text-right whitespace-nowrap">Valor Pagar</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase whitespace-nowrap">Observação</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase text-center whitespace-nowrap">Ação</th>
                                             </tr>
                                         </thead>
-                                        <tbody></tbody>
+                                        <tbody class="w-full"></tbody>
                                     </table>
                                 </div>
-                            </div>
-
-                            <div class="h-48 w-full bg-white rounded-2xl border shadow-sm p-4 mt-6 shrink-0 hidden">
-                                <canvas id="chartEvolucao"></canvas>
                             </div>
 
                         </div>
@@ -263,7 +257,7 @@
                 </div>
             </div>
 
-            <div id="viewRankings" class="max-w-[1400px] mx-auto space-y-6">
+            <div id="viewRankings" class="w-full space-y-6">
                 <div class="flex justify-between items-end mb-8">
                     <div>
                         <h2 class="text-2xl font-black text-slate-900 tracking-tight">Central de Rankings</h2>
@@ -271,80 +265,85 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 w-full">
                     <div class="bg-white p-6 rounded-[1.5rem] border shadow-sm flex flex-col relative overflow-hidden">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">SLA Global (Mês)</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 whitespace-nowrap">SLA Global (Mês)</p>
                         <div class="flex items-center gap-2 mb-2">
-                            <input type="number" id="inputDiasUteisRank" min="1" max="31" onchange="window.salvarDiasUteis('rank')" class="text-3xl font-black text-slate-800 w-16 bg-transparent outline-none p-0 border-none" readonly>
-                            <button id="btnTravaRank" onclick="window.toggleTravaGlobais()" class="text-yellow-500 hover:scale-110 transition-transform"><i data-lucide="lock" class="w-5 h-5"></i></button>
+                            <input type="number" id="inputDiasUteisRank" min="1" max="31" onchange="window.salvarDiasUteis('rank')" class="text-3xl font-black text-slate-800 w-16 bg-transparent outline-none p-0 border-none whitespace-nowrap" readonly>
+                            <button id="btnTravaRank" onclick="window.toggleTravaGlobais()" class="text-yellow-500 hover:scale-110 transition-transform shrink-0"><i data-lucide="lock" class="w-5 h-5"></i></button>
                         </div>
                     </div>
                     <div class="bg-emerald-500 p-6 rounded-[1.5rem] shadow-lg shadow-emerald-200 text-white flex flex-col justify-between">
-                        <span class="text-[10px] font-black text-emerald-100 uppercase tracking-widest">Meta Geral (Mês)</span>
-                        <span class="text-2xl font-black tracking-tight" id="metaGeralGlobal">0 / 0 cx</span>
-                        <span class="text-xs font-bold text-emerald-100 mt-1" id="faltaGeralGlobal">0% | Faltam 0</span>
+                        <span class="text-[10px] font-black text-emerald-100 uppercase tracking-widest whitespace-nowrap">Meta Geral (Mês)</span>
+                        <span class="text-2xl font-black tracking-tight whitespace-nowrap" id="metaGeralGlobal">0 / 0 cx</span>
+                        <span class="text-xs font-bold text-emerald-100 mt-1 whitespace-nowrap" id="faltaGeralGlobal">0% | Faltam 0</span>
                     </div>
                     <div class="bg-pink-500 p-6 rounded-[1.5rem] shadow-lg shadow-pink-200 text-white flex flex-col justify-between">
-                        <span class="text-[10px] font-black text-pink-100 uppercase tracking-widest">Meta Rayanna (Mês)</span>
-                        <span class="text-2xl font-black tracking-tight" id="metaRayannaGlobal">0 / 0 cx</span>
-                        <span class="text-xs font-bold text-pink-100 mt-1" id="faltaRayannaGlobal">0% | Faltam 0</span>
+                        <span class="text-[10px] font-black text-pink-100 uppercase tracking-widest whitespace-nowrap">Meta Rayanna (Mês)</span>
+                        <span class="text-2xl font-black tracking-tight whitespace-nowrap" id="metaRayannaGlobal">0 / 0 cx</span>
+                        <span class="text-xs font-bold text-pink-100 mt-1 whitespace-nowrap" id="faltaRayannaGlobal">0% | Faltam 0</span>
                     </div>
                     <div class="bg-indigo-600 p-6 rounded-[1.5rem] shadow-lg shadow-indigo-200 text-white flex flex-col justify-between">
-                        <span class="text-[10px] font-black text-indigo-200 uppercase tracking-widest">Meta Júlia (Mês)</span>
-                        <span class="text-2xl font-black tracking-tight" id="metaJuliaGlobal">0 / 0 cx</span>
-                        <span class="text-xs font-bold text-indigo-200 mt-1" id="faltaJuliaGlobal">0% | Faltam 0</span>
+                        <span class="text-[10px] font-black text-indigo-200 uppercase tracking-widest whitespace-nowrap">Meta Júlia (Mês)</span>
+                        <span class="text-2xl font-black tracking-tight whitespace-nowrap" id="metaJuliaGlobal">0 / 0 cx</span>
+                        <span class="text-xs font-bold text-indigo-200 mt-1 whitespace-nowrap" id="faltaJuliaGlobal">0% | Faltam 0</span>
+                    </div>
+                    <div class="bg-amber-500 p-6 rounded-[1.5rem] shadow-lg shadow-amber-200 text-white flex flex-col justify-between">
+                        <span class="text-[10px] font-black text-amber-100 uppercase tracking-widest whitespace-nowrap">Volume Caçamba (Mês)</span>
+                        <span class="text-2xl font-black tracking-tight whitespace-nowrap" id="totalViagensMesGlobal">0 vg</span>
+                        <span class="text-xs font-bold text-amber-100 mt-1 whitespace-nowrap">Total de viagens úteis</span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white rounded-[2rem] border shadow-sm p-8">
-                        <div class="flex justify-between items-center border-b pb-4 mb-6">
-                            <h3 class="text-xl font-black text-slate-800">Leaderboard Mensal (Elo)</h3>
-                            <input type="month" id="mesFiltro" class="input-base w-auto font-bold text-slate-700" onchange="window.sincronizarMesFiltro(); window.gerarRankingMensal();">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
+                        <div class="flex justify-between items-center border-b pb-4 mb-6 w-full">
+                            <h3 class="text-xl font-black text-slate-800 whitespace-nowrap">Leaderboard Mensal (Elo)</h3>
+                            <input type="month" id="mesFiltro" class="input-base w-auto font-bold text-slate-700 whitespace-nowrap" onchange="window.sincronizarMesFiltro(); window.gerarRankingMensal();">
                         </div>
-                        <p class="text-xs text-slate-500 mb-6 font-medium">* O cálculo de Elo unifica 1 Vg = 2 Cx. A ordem é baseada na Porcentagem do SLA individual do motorista.</p>
-                        <div id="listaLeaderboard" class="space-y-3"></div>
+                        <p class="text-xs text-slate-500 mb-6 font-medium">* O cálculo unifica 1 Vg = 2 Cx. A ordem baseia-se na Porcentagem do SLA individual.</p>
+                        <div id="listaLeaderboard" class="space-y-3 w-full"></div>
                     </div>
-                    <div class="bg-white rounded-[2rem] border shadow-sm p-8">
-                        <div class="flex justify-between items-center border-b pb-4 mb-6">
-                            <h3 class="text-xl font-black text-slate-800">Ranking por Período</h3>
-                            <div class="flex items-center gap-2">
-                                <input type="date" id="dataRankingInicio" class="input-base w-auto font-bold text-slate-700" onchange="window.gerarRankingPeriodo()">
-                                <span class="text-slate-400 font-bold">até</span>
-                                <input type="date" id="dataRankingFim" class="input-base w-auto font-bold text-slate-700" onchange="window.gerarRankingPeriodo()">
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
+                        <div class="flex justify-between items-center border-b pb-4 mb-6 w-full">
+                            <h3 class="text-xl font-black text-slate-800 whitespace-nowrap">Ranking por Período</h3>
+                            <div class="flex items-center gap-2 whitespace-nowrap">
+                                <input type="date" id="dataRankingInicio" class="input-base w-auto font-bold text-slate-700 whitespace-nowrap" onchange="window.gerarRankingPeriodo()">
+                                <span class="text-slate-400 font-bold whitespace-nowrap">até</span>
+                                <input type="date" id="dataRankingFim" class="input-base w-auto font-bold text-slate-700 whitespace-nowrap" onchange="window.gerarRankingPeriodo()">
                             </div>
                         </div>
-                        <div id="listaRankingDiario" class="space-y-3"></div>
+                        <div id="listaRankingDiario" class="space-y-3 w-full"></div>
                     </div>
                 </div>
             </div>
 
-            <div id="viewDomFeriados" class="max-w-[1400px] mx-auto space-y-6">
-                <div class="flex justify-between items-end mb-8">
+            <div id="viewDomFeriados" class="w-full space-y-6">
+                <div class="flex justify-between items-end mb-8 w-full">
                     <div>
-                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Domingos & Feriados</h2>
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap">Domingos & Feriados</h2>
                     </div>
                     <div class="flex gap-4">
-                        <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border shadow-sm">
-                            <input type="date" id="dataDomInicio" class="bg-transparent text-sm font-bold text-slate-800 outline-none border-none" onchange="window.gerarPainelFeriados()">
-                            <span class="text-slate-400 font-bold text-xs uppercase">até</span>
-                            <input type="date" id="dataDomFim" class="bg-transparent text-sm font-bold text-slate-800 outline-none border-none" onchange="window.gerarPainelFeriados()">
+                        <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border shadow-sm whitespace-nowrap">
+                            <input type="date" id="dataDomInicio" class="bg-transparent text-sm font-bold text-slate-800 outline-none border-none whitespace-nowrap" onchange="window.gerarPainelFeriados()">
+                            <span class="text-slate-400 font-bold text-xs uppercase whitespace-nowrap">até</span>
+                            <input type="date" id="dataDomFim" class="bg-transparent text-sm font-bold text-slate-800 outline-none border-none whitespace-nowrap" onchange="window.gerarPainelFeriados()">
                         </div>
-                        <div class="bg-red-500 rounded-xl px-6 py-2 shadow-lg shadow-red-200 text-white flex flex-col justify-center">
-                            <span class="text-[9px] font-black text-red-100 uppercase tracking-widest">Total Período</span>
-                            <span class="text-lg font-black" id="totalFatDomGlobal">R$ 0,00</span>
+                        <div class="bg-red-500 rounded-xl px-6 py-2 shadow-lg shadow-red-200 text-white flex flex-col justify-center whitespace-nowrap">
+                            <span class="text-[9px] font-black text-red-100 uppercase tracking-widest whitespace-nowrap">Total Período</span>
+                            <span class="text-lg font-black whitespace-nowrap" id="totalFatDomGlobal">R$ 0,00</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white rounded-[2rem] border shadow-sm p-8">
-                        <h3 class="text-xl font-black text-slate-800 border-b pb-4 mb-6">☀️ Domingos</h3>
-                        <div id="listaDomingos" class="space-y-3"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
+                        <h3 class="text-xl font-black text-slate-800 border-b pb-4 mb-6 whitespace-nowrap">☀️ Domingos</h3>
+                        <div id="listaDomingos" class="space-y-3 w-full"></div>
                     </div>
-                    <div class="bg-white rounded-[2rem] border shadow-sm p-8">
-                        <h3 class="text-xl font-black text-slate-800 border-b pb-4 mb-6">🎉 Feriados</h3>
-                        <div id="listaFeriados" class="space-y-3"></div>
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
+                        <h3 class="text-xl font-black text-slate-800 border-b pb-4 mb-6 whitespace-nowrap">🎉 Feriados</h3>
+                        <div id="listaFeriados" class="space-y-3 w-full"></div>
                     </div>
                 </div>
             </div>
