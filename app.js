@@ -14,12 +14,12 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const docRef = doc(db, "sistema", "dados_logistica");
 
-const motoristas = [
-    "ADRIELSON", "BRUNO", "CLOVIS", "ELCIDES", "EMERSON", "JACKSON", 
-    "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGO", 
-    "LUIZ RODRIGUES", "MANSUETO", "MARCELO ANDRE", "MARCONI", "MARIO", 
-    "MATHEUS", "MAYKEL", "PLATINIS", "RÉGIO", "ROBERTO CARLOS", "RODRIGO"
-];
+// Listas separadas por Turno/Operadora
+const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
+const motJulia = ["BRUNO", "ELCIDES", "LUIZ RODRIGO", "MARCONI", "MAYKEL", "PLATINIS"];
+const motOutros = ["CLOVIS", "RODRIGO"]; 
+
+const motoristas = [...motRayanna, ...motJulia, ...motOutros].sort();
 
 window.motoristaSelecionado = null;
 window.chartInstanciaEvolucao = null;
@@ -115,13 +115,31 @@ window.renderizarSidebar = function() {
     const ul = document.getElementById('listaMotoristas');
     if(!ul) return;
     ul.innerHTML = '';
-    motoristas.forEach(mot => {
-        const li = document.createElement('li');
-        li.className = 'driver-item';
-        li.textContent = mot;
-        li.onclick = () => window.selecionarMotorista(mot, li);
-        ul.appendChild(li);
-    });
+
+    // Função interna para criar os grupos visuais
+    function criarGrupo(titulo, lista, icone) {
+        if(lista.length === 0) return;
+        
+        // Cria o título do grupo
+        const tituloEl = document.createElement('div');
+        tituloEl.innerHTML = `${icone} ${titulo}`;
+        tituloEl.style.cssText = 'font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 15px 0 5px 5px; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;';
+        ul.appendChild(tituloEl);
+
+        // Adiciona os motoristas em ordem alfabética dentro do grupo
+        [...lista].sort().forEach(mot => {
+            const li = document.createElement('li');
+            li.className = 'driver-item';
+            li.textContent = mot;
+            li.onclick = () => window.selecionarMotorista(mot, li);
+            ul.appendChild(li);
+        });
+    }
+
+    // Chama a criação dos 3 grupos
+    criarGrupo('Dia (Rayanna)', motRayanna, '☀️');
+    criarGrupo('Noite (Júlia)', motJulia, '🌙');
+    criarGrupo('Especial (Caçamba)', motOutros, '🚛');
 }
 window.renderizarSidebar();
 
@@ -841,7 +859,6 @@ window.gerarRankingMensal = function() {
             let faltam = pontosPara80 - mot.pontos;
             if (faltam > 0) {
                 let txtFaltam = "";
-                // MUDANÇA AQUI: Se for caçamba, mostra "vg" em vez de "cx"
                 if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
                     txtFaltam = `Faltam ${Math.ceil(faltam / 2)} vg`;
                 } else {
