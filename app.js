@@ -22,11 +22,10 @@ const motoristas = [...motRayanna, ...motJulia, ...motOutros].sort();
 window.motoristaSelecionado = null;
 window.chartInstanciaEvolucao = null;
 window.diasUteisTravado = true;
-window.slaTravado = true; // Nova trava do SLA individual
 
 window.bancoDadosCloud = {}; 
 window.configMesesCloud = {};
-window.configSlaCloud = {}; // Agora salva permanente: configSlaCloud["ADRIELSON"] = 15
+window.configSlaCloud = {}; 
 
 onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
@@ -99,6 +98,18 @@ if(document.getElementById('mesFiltro')) document.getElementById('mesFiltro').va
 if(document.getElementById('dataDomInicio')) document.getElementById('dataDomInicio').value = startStr;
 if(document.getElementById('dataDomFim')) document.getElementById('dataDomFim').value = hojeStr;
 
+// NOVA FUNÇÃO: MENU HAMBURGUER (Abre/Fecha barra esquerda)
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    if(sidebar.classList.contains('w-[280px]')) {
+        sidebar.classList.remove('w-[280px]');
+        sidebar.classList.add('w-0');
+    } else {
+        sidebar.classList.remove('w-0');
+        sidebar.classList.add('w-[280px]');
+    }
+}
+
 window.renderizarSidebar = function() {
     const ul = document.getElementById('listaMotoristas');
     const selectFiltro = document.getElementById('filtroTurno');
@@ -117,7 +128,6 @@ window.renderizarSidebar = function() {
         if(lista.length === 0) return;
         const tituloEl = document.createElement('div');
         tituloEl.innerHTML = `${icone} ${titulo}`;
-        tituloEl.style.cssText = 'font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 15px 0 5px 5px; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;';
         ul.appendChild(tituloEl);
 
         [...lista].sort().forEach(mot => {
@@ -159,37 +169,80 @@ window.toggleTravaGlobais = function() {
     if(window.diasUteisTravado) {
         inLanc.setAttribute('readonly', 'true');
         inRank.setAttribute('readonly', 'true');
-        if(btnLanc) btnLanc.innerText = '🔒';
-        if(btnRank) btnRank.innerText = '🔒';
+        if(btnLanc) btnLanc.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>';
+        if(btnRank) btnRank.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>';
     } else {
         inLanc.removeAttribute('readonly');
         inRank.removeAttribute('readonly');
-        if(btnLanc) btnLanc.innerText = '🔓';
-        if(btnRank) btnRank.innerText = '🔓';
+        if(btnLanc) btnLanc.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i>';
+        if(btnRank) btnRank.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i>';
         if(document.getElementById('viewLancamentos') && document.getElementById('viewLancamentos').style.display !== 'none') inLanc.focus();
         else inRank.focus();
     }
+    lucide.createIcons();
 }
 
-// NOVA FUNÇÃO: TRAVA DO SLA INDIVIDUAL
+// LOGICA CORRIGIDA: TRAVA SLA INDIVIDUAL
 window.toggleTravaSla = function() {
     if(!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
     
-    window.slaTravado = !window.slaTravado;
+    const inSla = document.getElementById('inputSlaMotorista');
+    const btnSla = document.getElementById('btnTravaSla');
+    if(!inSla || !btnSla) return;
+
+    // Se estiver com readonly, significa que está trancado. Então destranca.
+    if(inSla.hasAttribute('readonly')) {
+        inSla.removeAttribute('readonly');
+        btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>';
+        inSla.focus();
+    } else {
+        // Se estiver destrancado, tranca e salva na nuvem.
+        inSla.setAttribute('readonly', 'true');
+        btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
+        window.salvarSlaMotorista();
+    }
+    lucide.createIcons();
+}
+
+window.atualizarSlaInput = function() {
+    if(!window.motoristaSelecionado) return;
+    const dtLanc = document.getElementById('dataLancamento');
+    if(!dtLanc) return;
+    let anoMesStr = dtLanc.value.substring(0,7);
+    let globalSla = window.carregarDiasUteis(anoMesStr);
+    
+    // Busca na nuvem o SLA permanente do motorista (se não tiver, usa o global)
+    let customSla = window.configSlaCloud[window.motoristaSelecionado];
+    
     const inSla = document.getElementById('inputSlaMotorista');
     const btnSla = document.getElementById('btnTravaSla');
     
-    if(!inSla || !btnSla) return;
-
-    if(window.slaTravado) {
-        inSla.setAttribute('readonly', 'true');
-        btnSla.innerText = '🔒';
-        window.salvarSlaMotorista(); // Salva quando ele clica no cadeado para fechar
-    } else {
-        inSla.removeAttribute('readonly');
-        btnSla.innerText = '🔓';
-        inSla.focus();
+    if(inSla) {
+        inSla.value = customSla || globalSla;
+        inSla.setAttribute('readonly', 'true'); // Tranca por padrão ao carregar
     }
+    if(btnSla) {
+        btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
+    }
+    lucide.createIcons();
+}
+
+window.salvarSlaMotorista = function() {
+    if(!window.motoristaSelecionado) return;
+    
+    const inSla = document.getElementById('inputSlaMotorista');
+    if(!inSla) return;
+    
+    let val = parseInt(inSla.value);
+    
+    // Salva o SLA no nome do Motorista para sempre
+    if(val > 0) {
+        window.configSlaCloud[window.motoristaSelecionado] = val;
+    } else {
+        delete window.configSlaCloud[window.motoristaSelecionado];
+    }
+    window.syncToFirebase();
+    window.atualizarResumosDoMotorista();
 }
 
 window.carregarDiasUteis = function(anoMesStr) {
@@ -208,44 +261,6 @@ window.salvarDiasUteis = function(origem) {
     let anoMesStr = isLancamento ? inputRef.value.substring(0,7) : inputRef.value;
     window.configMesesCloud[anoMesStr] = parseInt(valor) || 22;
     window.syncToFirebase();
-}
-
-window.atualizarSlaInput = function() {
-    if(!window.motoristaSelecionado) return;
-    const dtLanc = document.getElementById('dataLancamento');
-    if(!dtLanc) return;
-    let anoMesStr = dtLanc.value.substring(0,7);
-    let globalSla = window.carregarDiasUteis(anoMesStr);
-    
-    // Agora o SLA é Permanente por motorista, não perde ao mudar o mês
-    let customSla = window.configSlaCloud[window.motoristaSelecionado];
-    
-    if(document.getElementById('inputSlaMotorista')) {
-        document.getElementById('inputSlaMotorista').value = customSla || globalSla;
-        document.getElementById('inputSlaMotorista').setAttribute('readonly', 'true');
-    }
-    if(document.getElementById('btnTravaSla')) {
-        document.getElementById('btnTravaSla').innerText = '🔒';
-    }
-    window.slaTravado = true;
-}
-
-window.salvarSlaMotorista = function() {
-    if(!window.motoristaSelecionado) return;
-    
-    const inputSla = document.getElementById('inputSlaMotorista');
-    if(!inputSla) return;
-    
-    let val = parseInt(inputSla.value);
-    
-    // Se digitou um valor, salva permanentemente para o motorista
-    if(val > 0) {
-        window.configSlaCloud[window.motoristaSelecionado] = val;
-    } else {
-        delete window.configSlaCloud[window.motoristaSelecionado];
-    }
-    window.syncToFirebase();
-    window.atualizarResumosDoMotorista(); // Recalcula a meta na hora
 }
 
 window.sincronizarMesData = function() {
@@ -331,7 +346,6 @@ window.selecionarMotorista = function(nome, elementoLista) {
     const dtG = document.getElementById('dataGlobal');
     if(dtG && document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = dtG.value;
     
-    // AGORA TEM AS DUAS OPÇÕES PARA QUALQUER UM
     const selectVeiculo = document.getElementById('tipoVeiculo');
     if(selectVeiculo) {
         let metaPoli = window.getMetaDiaria(nome);
@@ -340,7 +354,6 @@ window.selecionarMotorista = function(nome, elementoLista) {
             <option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>
         `;
         
-        // Ele apenas sugere o padrão baseado no motorista para agilizar
         if(nome === "CLOVIS" || nome === "RODRIGO") { 
             selectVeiculo.value = "cacamba"; 
         } else {
@@ -496,7 +509,7 @@ window.carregarHistoricoMotorista = function() {
     historico.sort((a, b) => new Date(b.data) - new Date(a.data));
 
     if (historico.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding: 30px;">Nenhum lançamento encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 font-medium py-8">Nenhum lançamento encontrado.</td></tr>';
         return;
     }
 
@@ -516,13 +529,13 @@ window.carregarHistoricoMotorista = function() {
         let obsText = item.dados.observacao ? item.dados.observacao : '-';
 
         tr.innerHTML = `
-            <td><strong>${window.formatarDataParaExibicao(item.data)}</strong></td>
-            <td><span class="badge-veiculo">${tagVeiculo}</span><br><span style="font-size:11px; margin-top:3px; display:block;">${tagsDia}</span></td>
-            <td><strong>${qtdText}</strong></td>
-            <td style="color: #8b5cf6; font-weight:600;">${extraTxt}</td>
-            <td style="color: #10b981; font-weight: 700; font-size:16px;">R$ ${item.dados.valor.toFixed(2).replace('.', ',')}</td>
-            <td style="font-size:11px; color:#64748b; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${obsText}">${obsText}</td>
-            <td><button class="btn-delete" onclick="window.deletarLancamentoEspecifico('${item.data}')">Excluir</button></td>
+            <td class="text-slate-800 font-bold">${window.formatarDataParaExibicao(item.data)}</td>
+            <td><span class="badge-veiculo">${tagVeiculo}</span><br><span class="inline-block mt-1">${tagsDia}</span></td>
+            <td class="text-center font-black">${qtdText}</td>
+            <td class="text-center text-blue-600 font-bold">${extraTxt}</td>
+            <td class="text-right text-emerald-600 font-black text-sm">R$ ${item.dados.valor.toFixed(2).replace('.', ',')}</td>
+            <td class="text-xs text-slate-500 max-w-[150px] truncate" title="${obsText}">${obsText}</td>
+            <td class="text-center"><button class="btn-delete" onclick="window.deletarLancamentoEspecifico('${item.data}')">Excluir</button></td>
         `;
         tbody.appendChild(tr);
     });
@@ -681,11 +694,11 @@ window.atualizarGraficoEvolucao = function() {
             datasets: [{
                 label: 'Volume (Pontos de Meta)',
                 data: dataPoints,
-                borderColor: '#0d6efd',
-                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
                 borderWidth: 3,
                 pointBackgroundColor: '#fff',
-                pointBorderColor: '#0d6efd',
+                pointBorderColor: '#2563eb',
                 pointBorderWidth: 2,
                 pointRadius: 4,
                 fill: true,
@@ -738,7 +751,7 @@ window.gerarRankingPeriodo = function() {
     divLista.innerHTML = '';
 
     if(rankArray.length === 0) {
-        divLista.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 40px; font-weight: 500;">Nenhum serviço normal no período. 😴</div>';
+        divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Nenhum serviço normal no período. 😴</div>';
         return;
     }
 
@@ -751,7 +764,7 @@ window.gerarRankingPeriodo = function() {
         else classeBarra = 'meta-ruim'; 
 
         let larguraBarra = mot.porcentagem > 100 ? 100 : mot.porcentagem; 
-        let extraBadge = mot.extra > 0 ? `<span style="font-size:10px; background:#f3e8ff; color:#7e22ce; padding:2px 6px; border-radius:4px; margin-left:8px;">+ Extra R$ ${mot.extra}</span>` : '';
+        let extraBadge = mot.extra > 0 ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded ml-2">+ Extra R$ ${mot.extra}</span>` : '';
         
         let textoQtd = "";
         if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
@@ -766,7 +779,7 @@ window.gerarRankingPeriodo = function() {
         linha.className = 'diario-row';
         linha.innerHTML = `
             <div class="diario-top">
-                <span class="diario-nome">#${index + 1} - ${mot.nome} (${textoQtd}) ${extraBadge}</span>
+                <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
                 <span class="diario-faturamento">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
             </div>
             <div class="progress-wrapper">
@@ -876,7 +889,7 @@ window.gerarRankingMensal = function() {
     divLista.innerHTML = '';
 
     if(rankFinal.length === 0) {
-        divLista.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8; font-weight: 500;">Sem registros válidos. O elo de todo mundo é Ferro! 🥶</div>';
+        divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Sem registros válidos. O elo de todo mundo é Ferro! 🥶</div>';
         return;
     }
 
@@ -921,7 +934,7 @@ window.gerarRankingMensal = function() {
                 } else {
                     txtFaltam = `Faltam ${faltam} cx`;
                 }
-                htmlFaltam = `<span style="font-size: 10px; color: #ef4444; margin-left: 8px; font-weight: 700; white-space: nowrap; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">${txtFaltam}</span>`;
+                htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
             }
         }
 
@@ -934,9 +947,9 @@ window.gerarRankingMensal = function() {
                 <span class="valor-sub">Fat: R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
             </div>
             <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
-            <div class="valor-destaque" style="color: #3b82f6; display:flex; align-items:center;">
+            <div class="valor-destaque text-blue-500 flex items-center">
                 ${textoQtd}
-                <span class="badge-percent" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};" title="Meta Atingida (Calculado sobre ${mot.diasBase} dias úteis)">${percentualStr}%</span>
+                <span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};" title="Meta Atingida (SLA: ${mot.diasBase} dias)">${percentualStr}%</span>
                 ${htmlFaltam}
             </div>
         `;
@@ -997,7 +1010,7 @@ window.gerarPainelFeriados = function() {
         divLista.innerHTML = '';
 
         if(listaRegistros.length === 0) {
-            divLista.innerHTML = `<div style="text-align: center; padding: 40px; color: #94a3b8; font-weight: 500;">${msgVazia}</div>`;
+            divLista.innerHTML = `<div class="text-center text-slate-400 py-8 font-medium">${msgVazia}</div>`;
             return;
         }
 
@@ -1018,10 +1031,10 @@ window.gerarPainelFeriados = function() {
             linha.innerHTML = `
                 <div class="diario-top" style="margin:0;">
                     <span class="diario-nome" style="display:flex; align-items:center; gap:8px;">
-                        <span style="background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:6px; font-size:12px; font-weight:800;">${dataFormatada}</span>
-                        ${mot.nome} (${textoQtd})
+                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-black">${dataFormatada}</span>
+                        ${mot.nome} <span class="text-blue-500">(${textoQtd})</span>
                     </span>
-                    <span class="diario-faturamento" style="color: #ef4444;">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
+                    <span class="diario-faturamento text-red-500">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
                 </div>
             `;
             divLista.appendChild(linha);
