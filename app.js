@@ -97,7 +97,8 @@ if(document.getElementById('dataRankingFim')) document.getElementById('dataRanki
 if(document.getElementById('mesFiltro')) document.getElementById('mesFiltro').value = anoMesAtual;
 if(document.getElementById('dataDomInicio')) document.getElementById('dataDomInicio').value = startStr;
 if(document.getElementById('dataDomFim')) document.getElementById('dataDomFim').value = hojeStr;
-
+if(document.getElementById('dataFerInicio')) document.getElementById('dataFerInicio').value = startStr;
+if(document.getElementById('dataFerFim')) document.getElementById('dataFerFim').value = hojeStr;
 // NOVA FUNÇÃO: MENU HAMBURGUER (Abre/Fecha barra esquerda)
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('sidebar');
@@ -782,96 +783,6 @@ window.atualizarGraficoEvolucao = function() {
     window.atualizarGraficosProjecao();
 }
 
-window.gerarRankingPeriodo = function() {
-    const elInicio = document.getElementById('dataRankingInicio');
-    const elFim = document.getElementById('dataRankingFim');
-    if(!elInicio || !elFim) return;
-    const inicio = elInicio.value;
-    const fim = elFim.value;
-    if(!inicio || !fim) return;
-
-    const bancoDados = window.bancoDadosCloud;
-    let rankPeriodo = {};
-    
-    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-        if (dataStr >= inicio && dataStr <= fim) {
-            const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
-            for (const [mot, dados] of Object.entries(dadosDia)) {
-                if (isDomingo || dados.isFeriado) continue;
-
-                if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0 };
-                if(dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += dados.servicos;
-                else rankPeriodo[mot].caixas += dados.servicos;
-                
-                rankPeriodo[mot].valor += dados.valor;
-                rankPeriodo[mot].extra += dados.valorExtra || 0;
-                rankPeriodo[mot].diasTrab += 1;
-            }
-        }
-    }
-
-    let rankArray = Object.keys(rankPeriodo).map(mot => {
-        let pontosFeitos = rankPeriodo[mot].caixas + (rankPeriodo[mot].viagens * 2);
-        let metaTotalPeriodo = window.getMetaDiaria(mot) * rankPeriodo[mot].diasTrab;
-        let porcentagem = metaTotalPeriodo > 0 ? (pontosFeitos / metaTotalPeriodo) * 100 : 0;
-        return { nome: mot, ...rankPeriodo[mot], porcentagem: porcentagem };
-    });
-    
-    rankArray.sort((a,b) => b.porcentagem - a.porcentagem);
-    
-    const divLista = document.getElementById('listaRankingDiario');
-    if(!divLista) return;
-    divLista.innerHTML = '';
-
-    if(rankArray.length === 0) {
-        divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Nenhum serviço normal no período. 😴</div>';
-        return;
-    }
-
-    rankArray.forEach((mot, index) => {
-        let porcentagemStr = mot.porcentagem.toFixed(2).replace('.', ',');
-
-        let classeBarra = '';
-        if(mot.porcentagem >= 100) classeBarra = 'meta-batida';
-        else if (mot.porcentagem >= 80) classeBarra = 'meta-excedida'; 
-        else classeBarra = 'meta-ruim'; 
-
-        let larguraBarra = mot.porcentagem > 100 ? 100 : mot.porcentagem; 
-        let extraBadge = mot.extra > 0 ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded ml-2">+ Extra R$ ${mot.extra}</span>` : '';
-        
-        let textoQtd = "";
-        if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
-            if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`;
-            else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`;
-            else textoQtd = `0 cx | ${mot.viagens} vg`;
-        } else {
-            textoQtd = `${mot.caixas} cx`;
-        }
-
-        const linha = document.createElement('div');
-        linha.className = 'diario-row';
-        linha.innerHTML = `
-            <div class="diario-top">
-                <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
-                <span class="diario-faturamento">R$ ${mot.valor.toFixed(2).replace('.', ',')}</span>
-            </div>
-            <div class="progress-wrapper">
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill ${classeBarra}" style="width: ${larguraBarra}%;"></div>
-                </div>
-                <span class="progress-text" title="Baseado nos dias trabalhados">${porcentagemStr}%</span>
-            </div>
-        `;
-        divLista.appendChild(linha);
-    });
-}
-
-window.obterRankElo = function(percentual) {
-    if (percentual >= 100) return { nome: 'Radiante', classe: 'elo-radiante' };
-    if (percentual >= 80) return { nome: 'Diamante', classe: 'elo-diamante' };
-    return { nome: 'Bronze', classe: 'elo-bronze' };
-}
-
 window.gerarRankingMensal = function() {
     const elFiltro = document.getElementById('mesFiltro');
     if(!elFiltro) return;
@@ -884,6 +795,7 @@ window.gerarRankingMensal = function() {
     let acumuladoMes = {};
     let totalCaixasFrota = 0;
     let totalViagensFrota = 0;
+    let totalFatMesFrota = 0; // NOVO: Guarda o dinheiro total do mês
 
     motoristas.forEach(m => acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0 });
 
@@ -901,6 +813,7 @@ window.gerarRankingMensal = function() {
                             totalCaixasFrota += dados.servicos; 
                         }
                         acumuladoMes[mot].valor += dados.valor;
+                        totalFatMesFrota += dados.valor; // NOVO: Soma o dinheiro
                     }
                 }
             }
@@ -908,6 +821,8 @@ window.gerarRankingMensal = function() {
     }
 
     if(document.getElementById('totalViagensMesGlobal')) document.getElementById('totalViagensMesGlobal').innerText = `${totalViagensFrota} vg`;
+    // NOVO: Exibe o Faturamento Total na tela
+    if(document.getElementById('totalFatMensalLeaderboard')) document.getElementById('totalFatMensalLeaderboard').innerText = `R$ ${totalFatMesFrota.toFixed(2).replace('.', ',')}`;
 
     let ptsRayanna = 0, feitasRayanna = 0;
     motRayanna.forEach(mot => {
@@ -971,20 +886,9 @@ window.gerarRankingMensal = function() {
         let percentualStr = mot.percentual.toFixed(2).replace('.', ',');
         
         let corPercent, bgPercent, borderPercent;
-        
-        if (mot.percentual >= 100) {
-            corPercent = '#10b981'; 
-            bgPercent = '#d1fae5'; 
-            borderPercent = '#a7f3d0';
-        } else if (mot.percentual >= 80) {
-            corPercent = '#d97706'; 
-            bgPercent = '#fef3c7'; 
-            borderPercent = '#fde68a';
-        } else {
-            corPercent = '#ef4444'; 
-            bgPercent = '#fee2e2'; 
-            borderPercent = '#fca5a5';
-        }
+        if (mot.percentual >= 100) { corPercent = '#10b981'; bgPercent = '#d1fae5'; borderPercent = '#a7f3d0'; } 
+        else if (mot.percentual >= 80) { corPercent = '#d97706'; bgPercent = '#fef3c7'; borderPercent = '#fde68a'; } 
+        else { corPercent = '#ef4444'; bgPercent = '#fee2e2'; borderPercent = '#fca5a5'; }
 
         let textoQtd = "";
         if (mot.nome === "CLOVIS" || mot.nome === "RODRIGO") {
@@ -995,7 +899,7 @@ window.gerarRankingMensal = function() {
             textoQtd = `${mot.caixas} cx`;
         }
 
-      let htmlFaltam = "";
+        let htmlFaltam = "";
         let metaMensalPontos = mot.diasBase * window.getMetaDiaria(mot.nome);
         let faltam = metaMensalPontos - mot.pontos;
         
