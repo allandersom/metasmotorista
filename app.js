@@ -98,6 +98,7 @@ if(document.getElementById('mesFiltro')) document.getElementById('mesFiltro').va
 if(document.getElementById('dataDomInicio')) document.getElementById('dataDomInicio').value = startStr;
 if(document.getElementById('dataDomFim')) document.getElementById('dataDomFim').value = hojeStr;
 
+// NOVA FUNÇÃO: MENU HAMBURGUER (Abre/Fecha barra esquerda)
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('sidebar');
     if(sidebar.classList.contains('w-[280px]')) {
@@ -181,6 +182,7 @@ window.toggleTravaGlobais = function() {
     lucide.createIcons();
 }
 
+// LOGICA CORRIGIDA: TRAVA SLA INDIVIDUAL
 window.toggleTravaSla = function() {
     if(!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
     
@@ -188,11 +190,13 @@ window.toggleTravaSla = function() {
     const btnSla = document.getElementById('btnTravaSla');
     if(!inSla || !btnSla) return;
 
+    // Se estiver com readonly, significa que está trancado. Então destranca.
     if(inSla.hasAttribute('readonly')) {
         inSla.removeAttribute('readonly');
         btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>';
         inSla.focus();
     } else {
+        // Se estiver destrancado, tranca e salva na nuvem.
         inSla.setAttribute('readonly', 'true');
         btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
         window.salvarSlaMotorista();
@@ -207,6 +211,7 @@ window.atualizarSlaInput = function() {
     let anoMesStr = dtLanc.value.substring(0,7);
     let globalSla = window.carregarDiasUteis(anoMesStr);
     
+    // Busca na nuvem o SLA permanente do motorista (se não tiver, usa o global)
     let customSla = window.configSlaCloud[window.motoristaSelecionado];
     
     const inSla = document.getElementById('inputSlaMotorista');
@@ -214,7 +219,7 @@ window.atualizarSlaInput = function() {
     
     if(inSla) {
         inSla.value = customSla || globalSla;
-        inSla.setAttribute('readonly', 'true');
+        inSla.setAttribute('readonly', 'true'); // Tranca por padrão ao carregar
     }
     if(btnSla) {
         btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
@@ -230,6 +235,7 @@ window.salvarSlaMotorista = function() {
     
     let val = parseInt(inSla.value);
     
+    // Salva o SLA no nome do Motorista para sempre
     if(val > 0) {
         window.configSlaCloud[window.motoristaSelecionado] = val;
     } else {
