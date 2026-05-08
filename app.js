@@ -182,7 +182,6 @@ window.toggleTravaGlobais = function() {
     lucide.createIcons();
 }
 
-// LOGICA CORRIGIDA: TRAVA SLA INDIVIDUAL
 window.toggleTravaSla = function() {
     if(!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
     
@@ -190,20 +189,30 @@ window.toggleTravaSla = function() {
     const btnSla = document.getElementById('btnTravaSla');
     if(!inSla || !btnSla) return;
 
-    // Se estiver com readonly, significa que está trancado. Então destranca.
     if(inSla.hasAttribute('readonly')) {
+        // DESTRANCA: Apaga a exceção e volta para o padrão Global (Amarelinho)
         inSla.removeAttribute('readonly');
         btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>';
-        inSla.focus();
+        btnSla.className = 'text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0';
+        
+        // Remove da nuvem pra seguir o global de novo
+        delete window.configSlaCloud[window.motoristaSelecionado];
+        window.syncToFirebase();
+        
+        // Atualiza a tela com o valor global
+        const dtLanc = document.getElementById('dataLancamento');
+        let anoMesStr = dtLanc ? dtLanc.value.substring(0,7) : '';
+        inSla.value = window.carregarDiasUteis(anoMesStr);
+        window.atualizarResumosDoMotorista();
     } else {
-        // Se estiver destrancado, tranca e salva na nuvem.
+        // TRANCA: Salva o valor só pra ele (Fica Vermelho)
         inSla.setAttribute('readonly', 'true');
         btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
+        btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0';
         window.salvarSlaMotorista();
     }
     lucide.createIcons();
 }
-
 window.atualizarSlaInput = function() {
     if(!window.motoristaSelecionado) return;
     const dtLanc = document.getElementById('dataLancamento');
@@ -211,18 +220,26 @@ window.atualizarSlaInput = function() {
     let anoMesStr = dtLanc.value.substring(0,7);
     let globalSla = window.carregarDiasUteis(anoMesStr);
     
-    // Busca na nuvem o SLA permanente do motorista (se não tiver, usa o global)
+    // Verifica se esse motorista tem exceção salva
     let customSla = window.configSlaCloud[window.motoristaSelecionado];
     
     const inSla = document.getElementById('inputSlaMotorista');
     const btnSla = document.getElementById('btnTravaSla');
     
-    if(inSla) {
-        inSla.value = customSla || globalSla;
-        inSla.setAttribute('readonly', 'true'); // Tranca por padrão ao carregar
-    }
-    if(btnSla) {
-        btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
+    if(inSla && btnSla) {
+        if(customSla) {
+            // TEM EXCEÇÃO: Vem Trancado e Vermelho
+            inSla.value = customSla;
+            inSla.setAttribute('readonly', 'true');
+            btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
+            btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0';
+        } else {
+            // NÃO TEM: Vem Aberto, Amarelinho e com o valor Global
+            inSla.value = globalSla;
+            inSla.removeAttribute('readonly');
+            btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>';
+            btnSla.className = 'text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0';
+        }
     }
     lucide.createIcons();
 }
@@ -231,18 +248,24 @@ window.salvarSlaMotorista = function() {
     if(!window.motoristaSelecionado) return;
     
     const inSla = document.getElementById('inputSlaMotorista');
+    const btnSla = document.getElementById('btnTravaSla');
     if(!inSla) return;
     
     let val = parseInt(inSla.value);
     
-    // Salva o SLA no nome do Motorista para sempre
     if(val > 0) {
         window.configSlaCloud[window.motoristaSelecionado] = val;
-    } else {
-        delete window.configSlaCloud[window.motoristaSelecionado];
+        window.syncToFirebase();
+        
+        // Tranca visualmente automático após alterar o número
+        inSla.setAttribute('readonly', 'true');
+        if(btnSla) {
+            btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
+            btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0';
+            lucide.createIcons();
+        }
+        window.atualizarResumosDoMotorista();
     }
-    window.syncToFirebase();
-    window.atualizarResumosDoMotorista();
 }
 
 window.carregarDiasUteis = function(anoMesStr) {
