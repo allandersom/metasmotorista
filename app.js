@@ -130,17 +130,37 @@ window.renderizarSidebar = function() {
         listaParaExibir = motoristas;
     }
 
-    [...listaParaExibir].sort().forEach(mot => {
-        const li = document.createElement('li');
-        li.className = 'driver-item';
-        // Mantém pintado de azul se for o motorista que já está selecionado
-        if (mot === window.motoristaSelecionado) {
-            li.classList.add('active');
-        }
-        li.textContent = mot;
-        li.onclick = () => window.selecionarMotorista(mot, li);
-        ul.appendChild(li);
-    });
+    function criarGrupo(titulo, lista, icone) {
+        if(lista.length === 0) return;
+        const tituloEl = document.createElement('div');
+        tituloEl.innerHTML = `${icone} ${titulo}`;
+        tituloEl.style.cssText = 'font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 15px 0 5px 5px; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;';
+        ul.appendChild(tituloEl);
+
+        [...lista].sort().forEach(mot => {
+            const li = document.createElement('li');
+            li.className = 'driver-item';
+            if (mot === window.motoristaSelecionado) li.classList.add('active');
+            li.textContent = mot;
+            li.onclick = () => window.selecionarMotorista(mot, li);
+            ul.appendChild(li);
+        });
+    }
+
+    if(filtroVal === 'todos') {
+        criarGrupo('Dia (Rayanna)', motRayanna, '☀️');
+        criarGrupo('Noite (Júlia)', motJulia, '🌙');
+        criarGrupo('Especial (Caçamba)', motOutros, '🚛');
+    } else {
+        [...listaParaExibir].sort().forEach(mot => {
+            const li = document.createElement('li');
+            li.className = 'driver-item';
+            if (mot === window.motoristaSelecionado) li.classList.add('active');
+            li.textContent = mot;
+            li.onclick = () => window.selecionarMotorista(mot, li);
+            ul.appendChild(li);
+        });
+    }
 }
 window.renderizarSidebar();
 
@@ -350,8 +370,11 @@ window.salvarLancamento = function() {
     const valorExtra = valorExtraInput ? parseFloat(valorExtraInput.replace(',','.')) : 0;
     const isFeriado = document.getElementById('feriado') ? document.getElementById('feriado').checked : false;
     
-    if (isNaN(servicos) && valorExtra === 0) {
-        alert("Preencha serviços (ou zero) ou valor extra.");
+    // PEGANDO O CAMPO DE OBSERVAÇÃO
+    const observacao = document.getElementById('observacao') ? document.getElementById('observacao').value : "";
+    
+    if (isNaN(servicos) && valorExtra === 0 && observacao.trim() === "") {
+        alert("Preencha serviços (ou zero), valor extra ou observação.");
         return;
     }
 
@@ -368,7 +391,11 @@ window.salvarLancamento = function() {
     let bateuMetaSemana = false;
     let bancoDados = window.bancoDadosCloud;
 
-    if (isDomingo || isFeriado) {
+    if (isNaN(servicos)) {
+        // Se a pessoa só salvar uma observação (deixar caixas em branco)
+        valorNormalBase = 0;
+    }
+    else if (isDomingo || isFeriado) {
         valorNormalBase = servicos * 30; 
     } 
     else if (isSabado) {
@@ -386,8 +413,9 @@ window.salvarLancamento = function() {
                 if (lancamentoDia.isFeriado) { 
                     qtdFeriadosSemana++; 
                 } else { 
-                    if(lancamentoDia.tipoVeiculo === 'cacamba') viagensSegSex += lancamentoDia.servicos;
-                    else caixasSegSex += lancamentoDia.servicos;
+                    let srv = isNaN(lancamentoDia.servicos) ? 0 : lancamentoDia.servicos;
+                    if(lancamentoDia.tipoVeiculo === 'cacamba') viagensSegSex += srv;
+                    else caixasSegSex += srv;
                 }
             }
         }
@@ -427,18 +455,20 @@ window.salvarLancamento = function() {
     if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
 
     bancoDados[dataStr][window.motoristaSelecionado] = {
-        servicos: servicos, 
+        servicos: isNaN(servicos) ? 0 : servicos, 
         valor: valorFinal, 
         isFeriado: isFeriado, 
         ganhouBonusSemana: bateuMetaSemana,
         tipoVeiculo: tipoVeiculo,
-        valorExtra: valorExtra
+        valorExtra: valorExtra,
+        observacao: observacao // SALVANDO OBSERVAÇÃO
     };
 
     window.syncToFirebase();
     
     if(document.getElementById('servicos')) document.getElementById('servicos').value = '';
     if(document.getElementById('valorExtra')) document.getElementById('valorExtra').value = '';
+    if(document.getElementById('observacao')) document.getElementById('observacao').value = '';
     if(document.getElementById('feriado')) document.getElementById('feriado').checked = false;
 }
 
@@ -458,7 +488,7 @@ window.carregarHistoricoMotorista = function() {
     historico.sort((a, b) => new Date(b.data) - new Date(a.data));
 
     if (historico.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding: 30px;">Nenhum lançamento encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding: 30px;">Nenhum lançamento encontrado.</td></tr>';
         return;
     }
 
@@ -475,6 +505,7 @@ window.carregarHistoricoMotorista = function() {
         let tagVeiculo = item.dados.tipoVeiculo === 'cacamba' ? 'CAÇAMBA' : 'POLIGUINDASTE';
         let qtdText = item.dados.tipoVeiculo === 'cacamba' ? `${item.dados.servicos} vg` : `${item.dados.servicos} cx`;
         let extraTxt = item.dados.valorExtra > 0 ? `+ R$ ${item.dados.valorExtra.toFixed(2).replace('.',',')}` : '-';
+        let obsText = item.dados.observacao ? item.dados.observacao : '-';
 
         tr.innerHTML = `
             <td><strong>${window.formatarDataParaExibicao(item.data)}</strong></td>
@@ -482,6 +513,7 @@ window.carregarHistoricoMotorista = function() {
             <td><strong>${qtdText}</strong></td>
             <td style="color: #8b5cf6; font-weight:600;">${extraTxt}</td>
             <td style="color: #10b981; font-weight: 700; font-size:16px;">R$ ${item.dados.valor.toFixed(2).replace('.', ',')}</td>
+            <td style="font-size:11px; color:#64748b; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${obsText}">${obsText}</td>
             <td><button class="btn-delete" onclick="window.deletarLancamentoEspecifico('${item.data}')">Excluir</button></td>
         `;
         tbody.appendChild(tr);
@@ -785,15 +817,22 @@ window.gerarRankingMensal = function() {
     let prevCx = window.calcularPrevisao(totalCaixasFrota, mesFiltro);
     if(document.getElementById('previsaoMesGlobal')) document.getElementById('previsaoMesGlobal').innerText = `${prevCx} cx`;
 
-    const motRayanna = ["MARIO", "JACKSON", "JONES", "MARCELO ANDRE", "RÉGIO", "JAMERSON", "MATHEUS", "LUIZ RODRIGUES", "JOAO VICTOR", "EMERSON", "MANSUETO", "ADRIELSON", "ROBERTO CARLOS", "JOELITON"];
-    const motJulia = ["ELCIDES", "MARCONI", "MAYKEL", "LUIZ RODRIGO", "BRUNO", "PLATINIS"];
+    // AGORA A META DAS OPERADORAS SOMA O SLA INDIVIDUAL E NÃO MAIS O GLOBAL
+    let metaTotalRayanna = 0;
+    motRayanna.forEach(mot => {
+        let diasUteisMotorista = window.configSlaCloud?.[mesFiltro]?.[mot] || diasUteisGlobais;
+        metaTotalRayanna += window.getMetaDiaria(mot) * diasUteisMotorista;
+    });
 
-    let ptsRayanna = motRayanna.reduce((acc, curr) => acc + window.getMetaDiaria(curr), 0);
-    let ptsJulia = motJulia.reduce((acc, curr) => acc + window.getMetaDiaria(curr), 0);
+    let metaTotalJulia = 0;
+    motJulia.forEach(mot => {
+        let diasUteisMotorista = window.configSlaCloud?.[mesFiltro]?.[mot] || diasUteisGlobais;
+        metaTotalJulia += window.getMetaDiaria(mot) * diasUteisMotorista;
+    });
 
-    if(document.getElementById('metaGeralGlobal')) document.getElementById('metaGeralGlobal').innerText = ((ptsRayanna + ptsJulia) * diasUteisGlobais) + ' cx';
-    if(document.getElementById('metaRayannaGlobal')) document.getElementById('metaRayannaGlobal').innerText = (ptsRayanna * diasUteisGlobais) + ' cx';
-    if(document.getElementById('metaJuliaGlobal')) document.getElementById('metaJuliaGlobal').innerText = (ptsJulia * diasUteisGlobais) + ' cx';
+    if(document.getElementById('metaGeralGlobal')) document.getElementById('metaGeralGlobal').innerText = (metaTotalRayanna + metaTotalJulia) + ' cx';
+    if(document.getElementById('metaRayannaGlobal')) document.getElementById('metaRayannaGlobal').innerText = metaTotalRayanna + ' cx';
+    if(document.getElementById('metaJuliaGlobal')) document.getElementById('metaJuliaGlobal').innerText = metaTotalJulia + ' cx';
 
     let rankFinal = Object.keys(acumuladoMes)
         .map(mot => {
