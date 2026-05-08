@@ -90,7 +90,7 @@ const hojeStr = dataLocal.toISOString().split('T')[0];
 const anoMesAtual = hojeStr.substring(0, 7);
 const startStr = `${anoMesAtual}-01`;
 
-if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = hojeStr;
+if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual;
 if(document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = hojeStr;
 if(document.getElementById('dataRankingInicio')) document.getElementById('dataRankingInicio').value = hojeStr;
 if(document.getElementById('dataRankingFim')) document.getElementById('dataRankingFim').value = hojeStr;
@@ -197,7 +197,9 @@ window.toggleTravaSla = function() {
         btnSla.className = 'text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0';
         
         // Remove da nuvem pra seguir o global de novo
-        delete window.configSlaCloud[window.motoristaSelecionado];
+        const elMes = document.getElementById('dataGlobal');
+    let anoMesStr = elMes ? elMes.value : new Date().toISOString().substring(0, 7);
+    delete window.configSlaCloud[window.motoristaSelecionado + "_" + anoMesStr];
         window.syncToFirebase();
         
         // Atualiza a tela com o valor global
@@ -216,26 +218,24 @@ window.toggleTravaSla = function() {
 }
 window.atualizarSlaInput = function() {
     if(!window.motoristaSelecionado) return;
-    const dtLanc = document.getElementById('dataLancamento');
-    if(!dtLanc) return;
-    let anoMesStr = dtLanc.value.substring(0,7);
+    const elMes = document.getElementById('dataGlobal');
+    let anoMesStr = elMes ? elMes.value : new Date().toISOString().substring(0, 7);
+    
     let globalSla = window.carregarDiasUteis(anoMesStr);
     
-    // Verifica se esse motorista tem exceção salva
-    let customSla = window.configSlaCloud[window.motoristaSelecionado];
+    let chaveComMes = window.motoristaSelecionado + "_" + anoMesStr;
+    let customSla = window.configSlaCloud[chaveComMes];
     
     const inSla = document.getElementById('inputSlaMotorista');
     const btnSla = document.getElementById('btnTravaSla');
     
     if(inSla && btnSla) {
         if(customSla) {
-            // TEM EXCEÇÃO: Vem Trancado e Vermelho
             inSla.value = customSla;
             inSla.setAttribute('readonly', 'true');
             btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
             btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0';
         } else {
-            // NÃO TEM: Vem Aberto, Amarelinho e com o valor Global
             inSla.value = globalSla;
             inSla.removeAttribute('readonly');
             btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>';
@@ -244,21 +244,24 @@ window.atualizarSlaInput = function() {
     }
     lucide.createIcons();
 }
-
 window.salvarSlaMotorista = function() {
     if(!window.motoristaSelecionado) return;
     
     const inSla = document.getElementById('inputSlaMotorista');
     const btnSla = document.getElementById('btnTravaSla');
+    const elMes = document.getElementById('dataGlobal'); // Pega o mês ativo
+    let anoMesStr = elMes ? elMes.value : new Date().toISOString().substring(0, 7);
+
     if(!inSla) return;
-    
     let val = parseInt(inSla.value);
     
+    // A chave salva agora é "NOME_MOTORISTA_2026-05" pra valer só pra esse mês
+    let chaveComMes = window.motoristaSelecionado + "_" + anoMesStr;
+    
     if(val > 0) {
-        window.configSlaCloud[window.motoristaSelecionado] = val;
+        window.configSlaCloud[chaveComMes] = val;
         window.syncToFirebase();
         
-        // Tranca visualmente automático após alterar o número
         inSla.setAttribute('readonly', 'true');
         if(btnSla) {
             btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
@@ -527,17 +530,23 @@ window.carregarHistoricoMotorista = function() {
     if(!tbody) return;
     tbody.innerHTML = ''; 
     const bancoDados = window.bancoDadosCloud;
+    
+    // NOVO: Pega o mês selecionado no cabeçalho
+    const elMes = document.getElementById('dataGlobal');
+    const mesFiltroStr = elMes ? elMes.value : new Date().toISOString().substring(0, 7);
+
     let historico = [];
 
     for (const data in bancoDados) {
-        if (bancoDados[data][window.motoristaSelecionado]) {
+        // NOVO: Filtra para mostrar apenas os lançamentos do mês selecionado
+        if (data.startsWith(mesFiltroStr) && bancoDados[data][window.motoristaSelecionado]) {
             historico.push({ data: data, dados: bancoDados[data][window.motoristaSelecionado] });
         }
     }
     historico.sort((a, b) => new Date(b.data) - new Date(a.data));
 
     if (historico.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 font-medium py-8">Nenhum lançamento encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 font-medium py-8">Nenhum lançamento encontrado neste mês.</td></tr>';
         return;
     }
 
@@ -652,43 +661,45 @@ window.atualizarResumosDoMotorista = function() {
 window.atualizarResumosGlobais = function() {
     const elGlobal = document.getElementById('dataGlobal');
     if(!elGlobal) return;
-    const dataGlobalStr = elGlobal.value;
-    if(!dataGlobalStr) return;
+    const mesGlobalStr = elGlobal.value; // Agora pega ex: 2026-05
+    if(!mesGlobalStr) return;
     const bancoDados = window.bancoDadosCloud;
     
-    let totalDiaGlobal = 0;
-    let caixasDia = 0;
-    const dadosDoDia = bancoDados[dataGlobalStr] || {};
-    for (const mot in dadosDoDia) { 
-        totalDiaGlobal += dadosDoDia[mot].valor; 
-        if(dadosDoDia[mot].tipoVeiculo !== 'cacamba') {
-            caixasDia += dadosDoDia[mot].servicos;
-        }
-    }
-    if(document.getElementById('totalDiaGlobal')) document.getElementById('totalDiaGlobal').innerText = `R$ ${totalDiaGlobal.toFixed(2).replace('.', ',')}`;
-    if(document.getElementById('caixasDiaGlobal')) document.getElementById('caixasDiaGlobal').innerText = `${caixasDia} cx`;
+    let totalMesGlobal = 0;
+    let caixasMesGlobal = 0;
 
-    let totalSemanaGlobal = 0;
-    let caixasSemana = 0;
-    const dataObj = new Date(dataGlobalStr + 'T00:00:00');
-    const diffParaSegunda = (dataObj.getDay() === 0) ? -6 : 1 - dataObj.getDay();
-    const dataSegunda = new Date(dataObj);
-    dataSegunda.setDate(dataObj.getDate() + diffParaSegunda);
-
-    for (let i = 0; i < 7; i++) {
-        const diaCheck = new Date(dataSegunda);
-        diaCheck.setDate(dataSegunda.getDate() + i);
-        const diaCheckStr = window.formatarDataParaBusca(diaCheck);
-        const dadosDia = bancoDados[diaCheckStr] || {};
-        for (const mot in dadosDia) { 
-            totalSemanaGlobal += dadosDia[mot].valor; 
-            if(dadosDia[mot].tipoVeiculo !== 'cacamba') {
-                caixasSemana += dadosDia[mot].servicos;
+    // Loop por todos os dias do banco de dados
+    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        // Só entra na conta se o dia começar com o ano-mês que você escolheu
+        if (dataStr.startsWith(mesGlobalStr)) {
+            for (const mot in dadosDia) { 
+                totalMesGlobal += dadosDia[mot].valor; 
+                if(dadosDia[mot].tipoVeiculo !== 'cacamba') {
+                    caixasMesGlobal += dadosDia[mot].servicos;
+                }
             }
         }
     }
-    if(document.getElementById('totalSemanaGlobal')) document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalSemanaGlobal.toFixed(2).replace('.', ',')}`;
-    if(document.getElementById('caixasSemanaGlobal')) document.getElementById('caixasSemanaGlobal').innerText = `${caixasSemana} cx`;
+    
+    // Atualiza as caixinhas verdes e azuis do topo da Gestão Diária
+    if(document.getElementById('totalDiaGlobal')) {
+        document.getElementById('totalDiaGlobal').innerText = `R$ ${totalMesGlobal.toFixed(2).replace('.', ',')}`;
+        // Para fazer sentido na tela, mudei o texto interno aqui pra refletir que agora é Mês
+        document.getElementById('totalDiaGlobal').previousElementSibling.innerText = "TOTAL FROTA (MÊS)";
+    }
+    if(document.getElementById('caixasDiaGlobal')) {
+        document.getElementById('caixasDiaGlobal').innerText = `${caixasMesGlobal} cx`;
+    }
+
+    // Como o filtro agora é mensal, podemos zerar/esconder a caixinha de Semana,
+    // ou se quiser, eu deixei ela espelhando o mês pra não bugar o visual
+    if(document.getElementById('totalSemanaGlobal')) {
+        document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalMesGlobal.toFixed(2).replace('.', ',')}`;
+        document.getElementById('totalSemanaGlobal').previousElementSibling.innerText = "TOTAL FROTA (MÊS)";
+    }
+    if(document.getElementById('caixasSemanaGlobal')) {
+        document.getElementById('caixasSemanaGlobal').innerText = `${caixasMesGlobal} cx`;
+    }
 }
 
 window.chartInstanciaInd = null;
