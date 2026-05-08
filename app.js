@@ -192,8 +192,9 @@ window.toggleTravaSla = function() {
     const btnSla = document.getElementById('btnTravaSla');
     if(!inSla || !btnSla) return;
 
+    // FORÇANDO PEGAR APENAS ANO E MÊS
     const elMes = document.getElementById('dataGlobal');
-    let mesFiltroStr = elMes && elMes.value ? elMes.value : new Date().toISOString().substring(0, 7);
+    let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
     let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
 
     if(inSla.hasAttribute('readonly')) {
@@ -218,8 +219,9 @@ window.toggleTravaSla = function() {
 window.atualizarSlaInput = function() {
     if(!window.motoristaSelecionado) return;
     
+    // FORÇANDO PEGAR APENAS ANO E MÊS
     const elMes = document.getElementById('dataGlobal');
-    let mesFiltroStr = elMes && elMes.value ? elMes.value : new Date().toISOString().substring(0, 7);
+    let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
     
     let globalSla = window.carregarDiasUteis(mesFiltroStr);
     let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
@@ -249,8 +251,10 @@ window.salvarSlaMotorista = function() {
     
     const inSla = document.getElementById('inputSlaMotorista');
     const btnSla = document.getElementById('btnTravaSla');
+    
+    // FORÇANDO PEGAR APENAS ANO E MÊS
     const elMes = document.getElementById('dataGlobal');
-    let mesFiltroStr = elMes && elMes.value ? elMes.value : new Date().toISOString().substring(0, 7);
+    let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
 
     if(!inSla) return;
     let val = parseInt(inSla.value);
@@ -635,7 +639,7 @@ window.atualizarResumosDoMotorista = function() {
 
     let metaDiaria = window.getMetaDiaria(window.motoristaSelecionado);
     let diasUteisGlobais = window.carregarDiasUteis(anoMesFiltro);
-    let chaveComMes = window.motoristaSelecionado + "_" + anoMesFiltro;
+    let chaveComMes = window.motoristaSelecionado + "_" + anoMesFiltro.substring(0, 7);
     let diasUteisMotorista = window.configSlaCloud[chaveComMes] || diasUteisGlobais;
     
     let metaMensalPontos = diasUteisMotorista * metaDiaria; 
