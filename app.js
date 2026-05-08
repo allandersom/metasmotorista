@@ -14,7 +14,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const docRef = doc(db, "sistema", "dados_logistica");
 
-const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
+const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO ROSALVES", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
 const motJulia = ["BRUNO", "ELCIDES", "LUIZ RODRIGO", "MARCONI", "MAYKEL", "PLATINIS"];
 const motOutros = ["CLOVIS", "RODRIGO"]; 
 const motoristas = [...motRayanna, ...motJulia, ...motOutros].sort();
@@ -92,7 +92,7 @@ const hojeStr = dataLocal.toISOString().split('T')[0];
 const anoMesAtual = hojeStr.substring(0, 7);
 const startStr = `${anoMesAtual}-01`;
 
-if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual; // Agora é input type="month"
+if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual;
 if(document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = hojeStr;
 if(document.getElementById('dataRankingInicio')) document.getElementById('dataRankingInicio').value = hojeStr;
 if(document.getElementById('dataRankingFim')) document.getElementById('dataRankingFim').value = hojeStr;
@@ -185,7 +185,6 @@ window.toggleTravaGlobais = function() {
     lucide.createIcons();
 }
 
-// LOGICA NOVA DE SLA: TRAVA ESPECIFICA POR MES
 window.toggleTravaSla = function() {
     if(!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
     
@@ -284,9 +283,11 @@ window.salvarDiasUteis = function(origem) {
     let inputRef = isLancamento ? document.getElementById('dataGlobal') : document.getElementById('mesFiltro');
     
     if(!inputRef) return;
-    let anoMesStr = isLancamento ? inputRef.value : inputRef.value;
+    let anoMesStr = inputRef.value;
     window.configMesesCloud[anoMesStr] = parseInt(valor) || 22;
     window.syncToFirebase();
+    window.atualizarResumosGlobais();
+    window.atualizarSlaInput();
 }
 
 window.sincronizarMesData = function() {
@@ -328,7 +329,6 @@ window.calcularPrevisao = function(totalSoma, anoMesStr, diasUteisAlvo) {
     return Math.round((totalSoma / diasUteisCorridos) * diasUteisTotais);
 }
 
-// NOVA FUNÇÃO DAS ABAS (INCLUI PROJEÇÃO)
 window.mudarAba = function(aba) {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
     if(document.getElementById('viewLancamentos')) document.getElementById('viewLancamentos').style.display = 'none';
@@ -375,7 +375,6 @@ window.selecionarMotorista = function(nome, elementoLista) {
     if(document.getElementById('conteudoMotorista')) document.getElementById('conteudoMotorista').style.display = 'block';
     if(document.getElementById('nomeMotoristaDisplay')) document.getElementById('nomeMotoristaDisplay').textContent = nome;
     
-    // Deixa data de lancamento como Hoje mesmo
     const selectVeiculo = document.getElementById('tipoVeiculo');
     if(selectVeiculo) {
         let metaPoli = window.getMetaDiaria(nome);
@@ -536,7 +535,6 @@ window.carregarHistoricoMotorista = function() {
     let historico = [];
 
     for (const data in bancoDados) {
-        // Exibe histórico só do mês selecionado
         if (data.startsWith(mesFiltroStr) && bancoDados[data][window.motoristaSelecionado]) {
             historico.push({ data: data, dados: bancoDados[data][window.motoristaSelecionado] });
         }
@@ -695,11 +693,6 @@ window.atualizarResumosGlobais = function() {
     if(document.getElementById('caixasSemanaGlobal')) {
         document.getElementById('caixasSemanaGlobal').innerText = `${caixasMesGlobal} cx`;
     }
-}
-
-// Mantem alias pro caso de clique no menu
-window.atualizarGraficoEvolucao = function() {
-    window.atualizarGraficosProjecao();
 }
 
 window.gerarRankingPeriodo = function() {
