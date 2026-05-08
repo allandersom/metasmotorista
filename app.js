@@ -14,11 +14,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const docRef = doc(db, "sistema", "dados_logistica");
 
-// Listas separadas por Turno/Operadora
 const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
 const motJulia = ["BRUNO", "ELCIDES", "LUIZ RODRIGO", "MARCONI", "MAYKEL", "PLATINIS"];
 const motOutros = ["CLOVIS", "RODRIGO"]; 
-
 const motoristas = [...motRayanna, ...motJulia, ...motOutros].sort();
 
 window.motoristaSelecionado = null;
@@ -65,23 +63,12 @@ onSnapshot(docRef, (docSnap) => {
     window.gerarRankingMensal();
     window.gerarPainelFeriados();
 
-    setTimeout(() => {
-        if(document.getElementById('loader')) {
-            document.getElementById('loader').style.opacity = '0';
-        }
-    }, 300);
-    setTimeout(() => {
-        if(document.getElementById('loader')) {
-            document.getElementById('loader').style.display = 'none';
-        }
-    }, 800);
-    
+    setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').style.opacity = '0'; }, 300);
+    setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').style.display = 'none'; }, 800);
 }, (error) => {
     console.error("ERRO DO FIREBASE:", error);
     alert("Erro ao conectar no banco de dados!\n\nMotivo: " + error.message);
-    if(document.getElementById('loader')) {
-        document.getElementById('loader').style.display = 'none';
-    }
+    if(document.getElementById('loader')) document.getElementById('loader').style.display = 'none';
 });
 
 window.syncToFirebase = function() {
@@ -120,15 +107,10 @@ window.renderizarSidebar = function() {
     let filtroVal = selectFiltro ? selectFiltro.value : 'todos';
     let listaParaExibir = [];
 
-    if (filtroVal === 'dia') {
-        listaParaExibir = motRayanna;
-    } else if (filtroVal === 'noite') {
-        listaParaExibir = motJulia;
-    } else if (filtroVal === 'especial') {
-        listaParaExibir = motOutros;
-    } else {
-        listaParaExibir = motoristas;
-    }
+    if (filtroVal === 'dia') listaParaExibir = motRayanna;
+    else if (filtroVal === 'noite') listaParaExibir = motJulia;
+    else if (filtroVal === 'especial') listaParaExibir = motOutros;
+    else listaParaExibir = motoristas;
 
     function criarGrupo(titulo, lista, icone) {
         if(lista.length === 0) return;
@@ -322,18 +304,18 @@ window.selecionarMotorista = function(nome, elementoLista) {
     const dtG = document.getElementById('dataGlobal');
     if(dtG && document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = dtG.value;
     
+    // QUALQUER MOTORISTA PODE ESCOLHER QUALQUER CARRO (SÓ MUDA O PADRÃO QUE JÁ VEM SELECIONADO)
     const selectVeiculo = document.getElementById('tipoVeiculo');
     if(selectVeiculo) {
+        let metaPoli = window.getMetaDiaria(nome);
+        selectVeiculo.innerHTML = `
+            <option value="poliguindaste">Poliguindaste (Meta ${metaPoli} Cx)</option>
+            <option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>
+        `;
+        
         if(nome === "CLOVIS" || nome === "RODRIGO") { 
-            selectVeiculo.innerHTML = '<option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option><option value="poliguindaste">Poliguindaste (Meta 8 Cx)</option>';
             selectVeiculo.value = "cacamba"; 
-        } 
-        else if (nome === "ROBERTO CARLOS") {
-            selectVeiculo.innerHTML = '<option value="poliguindaste">Poliguindaste (Meta 4 Cx)</option>';
-            selectVeiculo.value = "poliguindaste";
-        }
-        else { 
-            selectVeiculo.innerHTML = '<option value="poliguindaste">Poliguindaste (Meta 8 Cx)</option>';
+        } else {
             selectVeiculo.value = "poliguindaste"; 
         }
     }
@@ -370,7 +352,6 @@ window.salvarLancamento = function() {
     const valorExtra = valorExtraInput ? parseFloat(valorExtraInput.replace(',','.')) : 0;
     const isFeriado = document.getElementById('feriado') ? document.getElementById('feriado').checked : false;
     
-    // PEGANDO O CAMPO DE OBSERVAÇÃO
     const observacao = document.getElementById('observacao') ? document.getElementById('observacao').value : "";
     
     if (isNaN(servicos) && valorExtra === 0 && observacao.trim() === "") {
@@ -392,7 +373,6 @@ window.salvarLancamento = function() {
     let bancoDados = window.bancoDadosCloud;
 
     if (isNaN(servicos)) {
-        // Se a pessoa só salvar uma observação (deixar caixas em branco)
         valorNormalBase = 0;
     }
     else if (isDomingo || isFeriado) {
@@ -461,7 +441,7 @@ window.salvarLancamento = function() {
         ganhouBonusSemana: bateuMetaSemana,
         tipoVeiculo: tipoVeiculo,
         valorExtra: valorExtra,
-        observacao: observacao // SALVANDO OBSERVAÇÃO
+        observacao: observacao
     };
 
     window.syncToFirebase();
@@ -586,7 +566,6 @@ window.atualizarResumosDoMotorista = function() {
     let previsaoCaixas = window.calcularPrevisao(totalCaixasMes, anoMesFiltro, diasUteisMotorista);
     let previsaoViagens = window.calcularPrevisao(totalViagensMes, anoMesFiltro, diasUteisMotorista);
 
-    // Ajuste de texto visual 
     let textoMeta = "";
     if (window.motoristaSelecionado === "CLOVIS" || window.motoristaSelecionado === "RODRIGO") {
         textoMeta = `${metaMensalPontos / 2} vg`;
@@ -790,6 +769,7 @@ window.gerarRankingMensal = function() {
     const bancoDados = window.bancoDadosCloud;
     let acumuladoMes = {};
     let totalCaixasFrota = 0;
+    let totalViagensFrota = 0;
 
     motoristas.forEach(m => acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0 });
 
@@ -801,6 +781,7 @@ window.gerarRankingMensal = function() {
                     if (acumuladoMes[mot]) {
                         if(dados.tipoVeiculo === 'cacamba') {
                             acumuladoMes[mot].viagens += dados.servicos;
+                            totalViagensFrota += dados.servicos;
                         } else {
                             acumuladoMes[mot].caixas += dados.servicos;
                             totalCaixasFrota += dados.servicos; 
@@ -812,27 +793,35 @@ window.gerarRankingMensal = function() {
         }
     }
 
-    if(document.getElementById('totalCaixasMesGlobal')) document.getElementById('totalCaixasMesGlobal').innerText = `${totalCaixasFrota} cx`;
-    
-    let prevCx = window.calcularPrevisao(totalCaixasFrota, mesFiltro);
-    if(document.getElementById('previsaoMesGlobal')) document.getElementById('previsaoMesGlobal').innerText = `${prevCx} cx`;
+    if(document.getElementById('totalViagensMesGlobal')) document.getElementById('totalViagensMesGlobal').innerText = `${totalViagensFrota} vg`;
 
-    // AGORA A META DAS OPERADORAS SOMA O SLA INDIVIDUAL E NÃO MAIS O GLOBAL
-    let metaTotalRayanna = 0;
+    let ptsRayanna = 0, feitasRayanna = 0;
     motRayanna.forEach(mot => {
         let diasUteisMotorista = window.configSlaCloud?.[mesFiltro]?.[mot] || diasUteisGlobais;
-        metaTotalRayanna += window.getMetaDiaria(mot) * diasUteisMotorista;
+        ptsRayanna += window.getMetaDiaria(mot) * diasUteisMotorista;
+        if(acumuladoMes[mot]) feitasRayanna += acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
     });
 
-    let metaTotalJulia = 0;
+    let ptsJulia = 0, feitasJulia = 0;
     motJulia.forEach(mot => {
         let diasUteisMotorista = window.configSlaCloud?.[mesFiltro]?.[mot] || diasUteisGlobais;
-        metaTotalJulia += window.getMetaDiaria(mot) * diasUteisMotorista;
+        ptsJulia += window.getMetaDiaria(mot) * diasUteisMotorista;
+        if(acumuladoMes[mot]) feitasJulia += acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
     });
 
-    if(document.getElementById('metaGeralGlobal')) document.getElementById('metaGeralGlobal').innerText = (metaTotalRayanna + metaTotalJulia) + ' cx';
-    if(document.getElementById('metaRayannaGlobal')) document.getElementById('metaRayannaGlobal').innerText = metaTotalRayanna + ' cx';
-    if(document.getElementById('metaJuliaGlobal')) document.getElementById('metaJuliaGlobal').innerText = metaTotalJulia + ' cx';
+    let ptsGeral = ptsRayanna + ptsJulia;
+    let feitasGeral = feitasRayanna + feitasJulia;
+
+    function renderizarMeta(feitas, meta, elValor, elFalta) {
+        let perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0;
+        let faltam = Math.max(0, meta - feitas);
+        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${feitas} / ${meta} cx`;
+        if(document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${faltam}`;
+    }
+
+    renderizarMeta(feitasGeral, ptsGeral, 'metaGeralGlobal', 'faltaGeralGlobal');
+    renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal');
+    renderizarMeta(feitasJulia, ptsJulia, 'metaJuliaGlobal', 'faltaJuliaGlobal');
 
     let rankFinal = Object.keys(acumuladoMes)
         .map(mot => {
