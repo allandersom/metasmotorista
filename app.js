@@ -113,33 +113,34 @@ if(document.getElementById('dataDomFim')) document.getElementById('dataDomFim').
 
 window.renderizarSidebar = function() {
     const ul = document.getElementById('listaMotoristas');
+    const selectFiltro = document.getElementById('filtroTurno');
     if(!ul) return;
     ul.innerHTML = '';
 
-    // Função interna para criar os grupos visuais
-    function criarGrupo(titulo, lista, icone) {
-        if(lista.length === 0) return;
-        
-        // Cria o título do grupo
-        const tituloEl = document.createElement('div');
-        tituloEl.innerHTML = `${icone} ${titulo}`;
-        tituloEl.style.cssText = 'font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 15px 0 5px 5px; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;';
-        ul.appendChild(tituloEl);
+    let filtroVal = selectFiltro ? selectFiltro.value : 'todos';
+    let listaParaExibir = [];
 
-        // Adiciona os motoristas em ordem alfabética dentro do grupo
-        [...lista].sort().forEach(mot => {
-            const li = document.createElement('li');
-            li.className = 'driver-item';
-            li.textContent = mot;
-            li.onclick = () => window.selecionarMotorista(mot, li);
-            ul.appendChild(li);
-        });
+    if (filtroVal === 'dia') {
+        listaParaExibir = motRayanna;
+    } else if (filtroVal === 'noite') {
+        listaParaExibir = motJulia;
+    } else if (filtroVal === 'especial') {
+        listaParaExibir = motOutros;
+    } else {
+        listaParaExibir = motoristas;
     }
 
-    // Chama a criação dos 3 grupos
-    criarGrupo('Dia (Rayanna)', motRayanna, '☀️');
-    criarGrupo('Noite (Júlia)', motJulia, '🌙');
-    criarGrupo('Especial (Caçamba)', motOutros, '🚛');
+    [...listaParaExibir].sort().forEach(mot => {
+        const li = document.createElement('li');
+        li.className = 'driver-item';
+        // Mantém pintado de azul se for o motorista que já está selecionado
+        if (mot === window.motoristaSelecionado) {
+            li.classList.add('active');
+        }
+        li.textContent = mot;
+        li.onclick = () => window.selecionarMotorista(mot, li);
+        ul.appendChild(li);
+    });
 }
 window.renderizarSidebar();
 
