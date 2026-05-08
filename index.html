@@ -157,7 +157,7 @@
 
     <div id="loader" class="loading-screen">
         <div class="spinner"></div>
-        <p style="font-weight: 800; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Conectando à Nuvem...</p>
+        <p id="loader-text" style="font-weight: 800; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Conectando à Nuvem...</p>
     </div>
 
     <div class="main-navigation">
@@ -425,7 +425,7 @@
         window.configMesesCloud = {};
         window.configSlaCloud = {}; 
 
-        // Escutador do Firebase
+        // Escutador do Firebase COM TRATAMENTO DE ERRO
         onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -436,6 +436,17 @@
                 window.bancoDadosCloud = {};
                 window.configMesesCloud = {};
                 window.configSlaCloud = {};
+                
+                // Tenta criar pela primeira vez
+                setDoc(docRef, {
+                    lancamentos: {},
+                    configs: {},
+                    slas: {}
+                }).catch(err => {
+                    document.getElementById('loader-text').innerText = "ERRO DE PERMISSÃO. VERIFIQUE O FIREBASE!";
+                    document.getElementById('loader-text').style.color = "red";
+                    console.error(err);
+                });
             }
 
             // Atualiza tudo que está na tela automaticamente
@@ -451,8 +462,15 @@
             window.gerarRankingMensal();
             window.gerarPainelFeriados();
 
+            // Desliga a tela de carregamento se tudo deu certo
             setTimeout(() => document.getElementById('loader').style.opacity = '0', 300);
             setTimeout(() => document.getElementById('loader').style.display = 'none', 800);
+            
+        }, (error) => {
+            // SE O FIREBASE BLOQUEAR A CONEXÃO, O CÓDIGO CAI AQUI E TE AVISA!
+            console.error("ERRO DO FIREBASE:", error);
+            alert("Erro ao conectar no banco de dados!\n\nMotivo: " + error.message + "\n\n1. Verifique se você alterou as 'Regras' no painel do Firebase para permitir leitura/escrita.\n2. Verifique se está acessando via Servidor (Live Server) ou GitHub.");
+            document.getElementById('loader').style.display = 'none'; // Tira o loader da frente pra vc não ficar preso
         });
 
         // Helper para salvar na nuvem
@@ -461,14 +479,14 @@
                 lancamentos: window.bancoDadosCloud,
                 configs: window.configMesesCloud,
                 slas: window.configSlaCloud
-            });
+            }).catch(err => alert("Erro ao salvar: " + err.message));
         }
 
         window.getMetaDiaria = function(nome) {
             return nome === "ROBERTO CARLOS" ? 4 : 8;
         }
 
-        // Configuração Inicial
+        // Configuração Inicial de Datas
         const dataHoje = new Date();
         const offset = dataHoje.getTimezoneOffset() * 60000;
         const dataLocal = new Date(dataHoje.getTime() - offset);
@@ -672,10 +690,16 @@
             if (!dataStr) { alert("Preencha a data do serviço."); return; }
 
             const tipoVeiculo = document.getElementById('tipoVeiculo').value;
-            const servicos = parseInt(document.getElementById('servicos').value) || 0;
+            // parseInt permite salvar 0 (para registrar dias parados/presença)
+            const servicos = parseInt(document.getElementById('servicos').value);
             const valorExtraInput = document.getElementById('valorExtra').value;
             const valorExtra = valorExtraInput ? parseFloat(valorExtraInput.replace(',','.')) : 0;
             const isFeriado = document.getElementById('feriado').checked;
+            
+            if (isNaN(servicos) && valorExtra === 0) {
+                alert("Preencha serviços (ou zero) ou valor extra.");
+                return;
+            }
 
             const dataObj = new Date(dataStr + 'T00:00:00');
             const diaSemana = dataObj.getDay(); 
