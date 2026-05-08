@@ -55,6 +55,14 @@
         <div class="app-layout">
             <div class="sidebar">
                 <h3>Selecionar Motorista</h3>
+                
+                <select id="filtroTurno" class="search-box" style="margin-bottom: 10px; font-weight: 600; cursor: pointer;" onchange="window.renderizarSidebar()">
+                    <option value="todos">🌍 Todos os Turnos</option>
+                    <option value="dia">☀️ Dia (Rayanna)</option>
+                    <option value="noite">🌙 Noite (Júlia)</option>
+                    <option value="especial">🚛 Especial (Caçamba)</option>
+                </select>
+
                 <input type="text" id="buscaMotorista" class="search-box" placeholder="🔍 Buscar por nome..." onkeyup="window.filtrarMotoristas()">
                 
                 <div class="driver-list-container">
@@ -64,7 +72,7 @@
 
             <div class="main-panel">
                 <div id="estadoVazio" class="empty-state">
-                    👈 Clique em um motorista na lista ao lado para iniciar.
+                    👈 Selecione um turno e clique em um motorista na lista para iniciar.
                 </div>
 
                 <div id="conteudoMotorista" style="display: none;">
@@ -204,7 +212,7 @@
                         <input type="month" id="mesFiltro" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Inter';" onchange="window.sincronizarMesFiltro(); window.gerarRankingMensal();">
                     </div>
                 </div>
-                <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;"></div>
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;">* O cálculo de Elo unifica 1 Vg = 2 Cx. A ordem é baseada na Porcentagem do SLA individual do motorista.</div>
                 <div id="listaLeaderboard"></div>
             </div>
 
