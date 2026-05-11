@@ -397,7 +397,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-6">
                     <div class="bg-white p-6 rounded-[1.5rem] border shadow-sm">
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Produção Mês Atual</p>
                         <p class="text-3xl font-black text-slate-800" id="statMesAtual">0</p>
@@ -411,6 +411,29 @@
                         <div id="statCrescimento" class="text-lg font-black text-slate-800 flex items-center gap-2">
                             -
                         </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
+                    <div class="bg-white p-5 rounded-[1.5rem] border shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Consistência (Metas)</p>
+                        <p class="text-2xl font-black text-blue-600" id="statWinRate">0%</p>
+                        <p class="text-[10px] font-bold text-slate-500 mt-1" id="statWinRateSub">0 de 0 dias</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-[1.5rem] border shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Média Diária (Real)</p>
+                        <p class="text-2xl font-black text-slate-800" id="statMediaReal">0.0</p>
+                        <p class="text-[10px] font-bold text-slate-500 mt-1" id="statMediaNec">Meta: 0.0 /dia</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-[1.5rem] border shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Recorde Pessoal</p>
+                        <p class="text-2xl font-black text-amber-500" id="statRecorde">0</p>
+                        <p class="text-[10px] font-bold text-slate-500 mt-1" id="statRecordeData">Sem registro</p>
+                    </div>
+                    <div class="bg-slate-800 p-5 rounded-[1.5rem] border border-slate-700 shadow-sm text-white">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1" id="tituloDiaForte">Melhor Dia (Frota)</p>
+                        <p class="text-2xl font-black text-emerald-400" id="statMelhorDia">N/A</p>
+                        <p class="text-[10px] font-bold text-slate-400 mt-1" id="statMelhorDiaPts">0 pts acumulados</p>
                     </div>
                 </div>
                 
@@ -432,7 +455,7 @@
 
         </div>
     </main>
-<div id="modalGerenciar" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center animate-fade-in">
+    <div id="modalGerenciar" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center animate-fade-in">
         <div class="bg-white rounded-[2rem] shadow-2xl w-[450px] overflow-hidden flex flex-col">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
