@@ -14,7 +14,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const docRef = doc(db, "sistema", "dados_logistica");
 
-const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO ROSALVES", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
+const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
 const motJulia = ["BRUNO", "ELCIDES", "LUIZ RODRIGO", "MARCONI", "MAYKEL", "PLATINIS"];
 const motOutros = ["CLOVIS", "RODRIGO"]; 
 const motoristas = [...motRayanna, ...motJulia, ...motOutros].sort();
@@ -92,7 +92,7 @@ const hojeStr = dataLocal.toISOString().split('T')[0];
 const anoMesAtual = hojeStr.substring(0, 7);
 const startStr = `${anoMesAtual}-01`;
 
-if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual;
+if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual; 
 if(document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = hojeStr;
 if(document.getElementById('dataRankingInicio')) document.getElementById('dataRankingInicio').value = hojeStr;
 if(document.getElementById('dataRankingFim')) document.getElementById('dataRankingFim').value = hojeStr;
@@ -192,7 +192,6 @@ window.toggleTravaSla = function() {
     const btnSla = document.getElementById('btnTravaSla');
     if(!inSla || !btnSla) return;
 
-    // FORÇANDO PEGAR APENAS ANO E MÊS
     const elMes = document.getElementById('dataGlobal');
     let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
     let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
@@ -219,7 +218,6 @@ window.toggleTravaSla = function() {
 window.atualizarSlaInput = function() {
     if(!window.motoristaSelecionado) return;
     
-    // FORÇANDO PEGAR APENAS ANO E MÊS
     const elMes = document.getElementById('dataGlobal');
     let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
     
@@ -251,8 +249,6 @@ window.salvarSlaMotorista = function() {
     
     const inSla = document.getElementById('inputSlaMotorista');
     const btnSla = document.getElementById('btnTravaSla');
-    
-    // FORÇANDO PEGAR APENAS ANO E MÊS
     const elMes = document.getElementById('dataGlobal');
     let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
 
@@ -382,15 +378,16 @@ window.selecionarMotorista = function(nome, elementoLista) {
     const selectVeiculo = document.getElementById('tipoVeiculo');
     if(selectVeiculo) {
         let metaPoli = window.getMetaDiaria(nome);
-        selectVeiculo.innerHTML = `
-            <option value="poliguindaste">Poliguindaste (Meta ${metaPoli} Cx)</option>
-            <option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>
-        `;
         
         if(nome === "CLOVIS" || nome === "RODRIGO") { 
-            selectVeiculo.value = "cacamba"; 
+            selectVeiculo.innerHTML = `<option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>`;
+            selectVeiculo.value = "cacamba";
         } else {
-            selectVeiculo.value = "poliguindaste"; 
+            selectVeiculo.innerHTML = `
+                <option value="poliguindaste">Poliguindaste Simples (Meta ${metaPoli} Cx)</option>
+                <option value="poli_duplo">Poliguindaste Duplo (Meta 8 Cx)</option>
+            `;
+            selectVeiculo.value = "poliguindaste";
         }
     }
     
@@ -417,20 +414,48 @@ window.salvarLancamento = function() {
     
     const elData = document.getElementById('dataLancamento');
     const dataStr = elData ? elData.value : null;
-    
     if (!dataStr) { alert("Preencha a data do serviço."); return; }
 
-    const tipoVeiculo = document.getElementById('tipoVeiculo').value;
-    const servicos = parseInt(document.getElementById('servicos').value);
-    const valorExtraInput = document.getElementById('valorExtra').value;
-    const valorExtra = valorExtraInput ? parseFloat(valorExtraInput.replace(',','.')) : 0;
-    const isFeriado = document.getElementById('feriado') ? document.getElementById('feriado').checked : false;
-    
-    const observacao = document.getElementById('observacao') ? document.getElementById('observacao').value : "";
-    
-    if (isNaN(servicos) && valorExtra === 0 && observacao.trim() === "") {
-        alert("Preencha serviços (ou zero), valor extra ou observação.");
+    let tipoVeiculoInput = document.getElementById('tipoVeiculo').value;
+    let servicosInput = parseInt(document.getElementById('servicos').value) || 0;
+    let valorExtraInput = parseFloat(document.getElementById('valorExtra').value.replace(',','.')) || 0;
+    let isFeriadoInput = document.getElementById('feriado') ? document.getElementById('feriado').checked : false;
+    let observacaoInput = document.getElementById('observacao') ? document.getElementById('observacao').value.trim() : "";
+
+    if (servicosInput === 0 && valorExtraInput === 0 && observacaoInput === "") {
+        alert("Preencha serviços, valor extra ou observação.");
         return;
+    }
+
+    let bancoDados = window.bancoDadosCloud;
+    if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
+
+    let lancamentoExistente = bancoDados[dataStr][window.motoristaSelecionado];
+
+    // LÓGICA DE SOMA (VEÍCULO MISTO)
+    let servicosFinais = servicosInput;
+    let valorExtraFinal = valorExtraInput;
+    let isFeriadoFinal = isFeriadoInput;
+    let observacaoFinal = observacaoInput;
+    let tipoVeiculoFinal = tipoVeiculoInput;
+
+    if (lancamentoExistente) {
+        servicosFinais += (lancamentoExistente.servicos || 0);
+        valorExtraFinal += (lancamentoExistente.valorExtra || 0);
+        isFeriadoFinal = isFeriadoInput || lancamentoExistente.isFeriado; 
+        
+        if (lancamentoExistente.observacao && observacaoInput) {
+            observacaoFinal = lancamentoExistente.observacao + " | " + observacaoInput;
+        } else if (lancamentoExistente.observacao) {
+            observacaoFinal = lancamentoExistente.observacao;
+        }
+
+        if (lancamentoExistente.tipoVeiculo && lancamentoExistente.tipoVeiculo !== tipoVeiculoInput) {
+            tipoVeiculoFinal = 'misto';
+            if(!observacaoFinal.includes("[MISTO]")) observacaoFinal = "[MISTO] " + observacaoFinal;
+        } else {
+            tipoVeiculoFinal = lancamentoExistente.tipoVeiculo;
+        }
     }
 
     const dataObj = new Date(dataStr + 'T00:00:00');
@@ -438,19 +463,26 @@ window.salvarLancamento = function() {
     const isDomingo = diaSemana === 0;
     const isSabado = diaSemana === 6;
     
-    const metaBaseDia = window.getMetaDiaria(window.motoristaSelecionado);
-    const metaBaseLancamento = (tipoVeiculo === 'cacamba') ? 4 : metaBaseDia;
-    const multiplicadorExtra = (tipoVeiculo === 'cacamba') ? 20 : 10;
+    const metaBaseMotorista = window.getMetaDiaria(window.motoristaSelecionado);
+    let metaBaseLancamento = metaBaseMotorista;
+    let multiplicadorExtra = 10;
+
+    if (tipoVeiculoFinal === 'cacamba') {
+        metaBaseLancamento = 4;
+        multiplicadorExtra = 20;
+    } else if (tipoVeiculoFinal === 'poli_duplo') {
+        metaBaseLancamento = 8;
+        multiplicadorExtra = 10;
+    } else if (tipoVeiculoFinal === 'misto') {
+        metaBaseLancamento = 6; 
+        multiplicadorExtra = 10;
+    }
 
     let valorNormalBase = 0;
     let bateuMetaSemana = false;
-    let bancoDados = window.bancoDadosCloud;
 
-    if (isNaN(servicos)) {
-        valorNormalBase = 0;
-    }
-    else if (isDomingo || isFeriado) {
-        valorNormalBase = servicos * 30; 
+    if (isDomingo || isFeriadoFinal) {
+        valorNormalBase = servicosFinais * 30; 
     } 
     else if (isSabado) {
         let caixasSegSex = 0;
@@ -475,21 +507,22 @@ window.salvarLancamento = function() {
         }
 
         let pontosFeitosSemana = caixasSegSex + (viagensSegSex * 2);
-        let metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseDia; 
+        let metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseMotorista; 
         let pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
 
-        let pontosDesteSabado = (tipoVeiculo === 'cacamba') ? servicos * 2 : servicos;
+        let pontosDesteSabado = (tipoVeiculoFinal === 'cacamba') ? servicosFinais * 2 : servicosFinais;
         let pontosParaMeta = Math.min(pontosDesteSabado, pontosFaltantes);
         let pontosBonus = Math.max(0, pontosDesteSabado - pontosFaltantes);
 
         let calcServicosNormais = 0;
-        if (pontosParaMeta >= metaBaseDia) { 
-            let equivalenciaReal = (tipoVeiculo === 'cacamba') ? (pontosParaMeta / 2) : pontosParaMeta;
+        if (pontosParaMeta >= metaBaseMotorista) { 
+            let equivalenciaReal = (tipoVeiculoFinal === 'cacamba') ? (pontosParaMeta / 2) : pontosParaMeta;
             calcServicosNormais = 50 + ((equivalenciaReal - metaBaseLancamento) * multiplicadorExtra);
+            if(calcServicosNormais < 50) calcServicosNormais = 50; 
         }
         
         let calcServicosBonus = 0;
-        if(tipoVeiculo === 'cacamba'){
+        if(tipoVeiculoFinal === 'cacamba'){
             calcServicosBonus = (pontosBonus / 2) * 20; 
         } else {
             calcServicosBonus = pontosBonus * 20; 
@@ -499,23 +532,21 @@ window.salvarLancamento = function() {
         bateuMetaSemana = pontosBonus > 0;
     } 
     else {
-        if (servicos >= metaBaseLancamento) { 
-            valorNormalBase = 50 + ((servicos - metaBaseLancamento) * multiplicadorExtra); 
+        if (servicosFinais >= metaBaseLancamento) { 
+            valorNormalBase = 50 + ((servicosFinais - metaBaseLancamento) * multiplicadorExtra); 
         }
     }
     
-    let valorFinal = valorNormalBase + valorExtra;
-    
-    if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
+    let valorFinal = valorNormalBase + valorExtraFinal;
 
     bancoDados[dataStr][window.motoristaSelecionado] = {
-        servicos: isNaN(servicos) ? 0 : servicos, 
+        servicos: servicosFinais, 
         valor: valorFinal, 
-        isFeriado: isFeriado, 
+        isFeriado: isFeriadoFinal, 
         ganhouBonusSemana: bateuMetaSemana,
-        tipoVeiculo: tipoVeiculo,
-        valorExtra: valorExtra,
-        observacao: observacao
+        tipoVeiculo: tipoVeiculoFinal,
+        valorExtra: valorExtraFinal,
+        observacao: observacaoFinal
     };
 
     window.syncToFirebase();
@@ -560,7 +591,11 @@ window.carregarHistoricoMotorista = function() {
         if (item.dados.ganhouBonusSemana) tagsDia += '<span class="badge-meta">META SAB BATIDA</span>';
         if (tagsDia === '') tagsDia = 'Normal';
 
-        let tagVeiculo = item.dados.tipoVeiculo === 'cacamba' ? 'CAÇAMBA' : 'POLIGUINDASTE';
+        let tagVeiculo = 'POLIGUINDASTE';
+        if (item.dados.tipoVeiculo === 'cacamba') tagVeiculo = 'CAÇAMBA';
+        if (item.dados.tipoVeiculo === 'poli_duplo') tagVeiculo = 'POLI. DUPLO';
+        if (item.dados.tipoVeiculo === 'misto') tagVeiculo = 'VEÍC. MISTO';
+
         let qtdText = item.dados.tipoVeiculo === 'cacamba' ? `${item.dados.servicos} vg` : `${item.dados.servicos} cx`;
         let extraTxt = item.dados.valorExtra > 0 ? `+ R$ ${item.dados.valorExtra.toFixed(2).replace('.',',')}` : '-';
         let obsText = item.dados.observacao ? item.dados.observacao : '-';
