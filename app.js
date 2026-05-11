@@ -16,7 +16,7 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const docRef = doc(db, "sistema", "dados_logistica");
 
-// NOMES ATUALIZADOS COMPLETOS (O que você pediu!)
+// NOMES ATUALIZADOS COMPLETOS
 const motRayannaBase = ["EMERSON JOSE", "JACKSON MOREIRA", "JAMERSON DA SILVA", "JOÃO VICTOR MARTINS", "JOELITON PEREIRA", "JONES ALBUQUERQUE", "LUIZ RODRIGUES", "MANSUETO ROSALVES", "MARCELO ANDRE", "MARIO GOMES", "MATHEUS FELIPE", "ADRIELSON", "ROBERTO CARLOS", "RÉGIO"];
 const motJuliaBase = ["ELCIDES JOSE", "LUIZ RODRIGO", "MARCONI JOSE", "PLATINIS NILSON", "BRUNO HENRIQUE", "MAYKEL DE SOUZA"];
 const motOutrosBase = ["CLOVIS RIBEIRO", "RODRIGO FRANCISCO"]; 
@@ -79,6 +79,33 @@ window.gerarBackup = function() {
     alert("Backup gerado com sucesso! Guarde o arquivo .json em um local seguro.");
 }
 
+// BOTÃO VERMELHO DO PÂNICO CORRIGIDO COM AWAIT
+window.apagarTudo = async function() {
+    let senha = prompt("⚠️ CUIDADO EXTREMO! Isso vai apagar TODOS os lançamentos de TODOS os meses do sistema.\n\nPara confirmar, digite a palavra: APAGAR");
+    
+    if (senha === 'APAGAR') {
+        window.bancoDadosCloud = {}; // Zera os dados localmente
+        
+        try {
+            // AWAIT: Obriga o navegador a esperar o Firebase confirmar que apagou tudo lá na nuvem!
+            await setDoc(docRef, {
+                lancamentos: {}, 
+                configs: window.configMesesCloud, 
+                slas: window.configSlaCloud, 
+                motoristasCustom: window.motoristasCustom, 
+                motoristasInativos: window.motoristasInativos
+            });
+            alert("Base de dados zerada com sucesso!");
+            window.fecharModalSistema();
+            location.reload(); // Só recarrega a página depois que a nuvem já estiver vazia
+        } catch(e) {
+            alert("Erro ao tentar apagar: " + e.message);
+        }
+    } else if (senha !== null) {
+        alert("Palavra incorreta. Ação cancelada, nada foi apagado.");
+    }
+}
+
 // A FUNÇÃO MESTRA DE LEITURA DA INTELIGÊNCIA ARTIFICIAL
 window.importarDadosIA = function() {
     const jsonText = document.getElementById('codigoIA').value.trim();
@@ -114,7 +141,7 @@ window.importarDadosIA = function() {
         let isFeriadoFinal = lanc.isFeriado === true;
         let tipoVeiculoFinal = lanc.veiculo || (window.motOutros.includes(mot) ? 'cacamba' : 'poliguindaste');
         let valorExtraFinal = parseFloat(lanc.extra) || 0;
-        let observacaoFinal = lanc.observacao || "";
+        let observacaoFinal = lanc.observacao || ""; // Vazio como você pediu (Sem "Lançado Pela IA")
 
         if (statusFinal !== 'normal') {
             servicosFinais = 0;
@@ -724,14 +751,19 @@ window.gerarRankingPeriodo = function() {
         if (dataStr >= inicio && dataStr <= fim) {
             const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
             for (const [mot, dados] of Object.entries(dadosDia)) {
-                if (isDomingo || dados.isFeriado || (dados.status && dados.status !== 'normal')) continue;
                 if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
-                if(dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += dados.servicos;
-                else rankPeriodo[mot].caixas += dados.servicos;
-                rankPeriodo[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
+                
+                // MUDANÇA DAQUI: Soma o valor e o extra MESMO se for domingo/feriado!
                 rankPeriodo[mot].valor += dados.valor;
                 rankPeriodo[mot].extra += dados.valorExtra || 0;
-                rankPeriodo[mot].diasTrab += 1;
+
+                // Mas só soma as CAIXAS e a META se for dia útil e tiver trabalhado
+                if (!isDomingo && !dados.isFeriado && (!dados.status || dados.status === 'normal')) {
+                    if(dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += dados.servicos;
+                    else rankPeriodo[mot].caixas += dados.servicos;
+                    rankPeriodo[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
+                    rankPeriodo[mot].diasTrab += 1;
+                }
             }
         }
     }
@@ -740,7 +772,9 @@ window.gerarRankingPeriodo = function() {
         let metaTotalPeriodo = window.getMetaDiaria(mot) * rankPeriodo[mot].diasTrab;
         let porcentagem = metaTotalPeriodo > 0 ? (rankPeriodo[mot].pontos / metaTotalPeriodo) * 100 : 0;
         return { nome: mot, ...rankPeriodo[mot], porcentagem: porcentagem };
-    });
+    })
+    .filter(item => item.pontos > 0 || item.valor > 0); // Só mostra quem faturou ou fez ponto
+
     rankArray.sort((a,b) => b.porcentagem - a.porcentagem);
     const divLista = document.getElementById('listaRankingDiario'); if(!divLista) return; divLista.innerHTML = '';
     if(rankArray.length === 0) { divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Nenhum serviço normal no período. 😴</div>'; return; }
@@ -850,6 +884,7 @@ window.gerarPainelFeriados = function() {
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         const dataObj = new Date(dataStr + 'T00:00:00'); const isDomingo = dataObj.getDay() === 0;
         for (const [mot, dados] of Object.entries(dadosDia)) {
+            // Continua exibindo domingos na aba só se tiver feito dinheiro
             if (!(dados.servicos > 0) && (!dados.status || dados.status === 'normal')) continue; 
 
             let obj = { dataStr: dataStr, nome: mot, caixas: dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0, viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0, valor: dados.valor, status: dados.status };
@@ -996,19 +1031,5 @@ window.atualizarGraficosProjecao = function() {
     if (ctxGeral) {
         if (window.chartInstanciaGeral) window.chartInstanciaGeral.destroy();
         window.chartInstanciaGeral = new Chart(ctxGeral.getContext('2d'), { type: 'line', data: { labels: labelsGeral, datasets: [{ label: 'Frota', data: dataGeral, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#10b981', fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } } });
-    }
-}
-window.apagarTudo = function() {
-    let senha = prompt("⚠️ CUIDADO EXTREMO! Isso vai apagar TODOS os lançamentos de TODOS os meses do sistema.\n\nPara confirmar, digite a palavra: APAGAR");
-    
-    if (senha === 'APAGAR') {
-        window.bancoDadosCloud = {}; // Zera tudo
-        window.syncToFirebase(); // Manda o vazio pra nuvem
-        
-        alert("Base de dados zerada com sucesso!");
-        window.fecharModalSistema();
-        location.reload(); // Atualiza a página pra limpar os gráficos da tela
-    } else if (senha !== null) {
-        alert("Palavra incorreta. Ação cancelada, nada foi apagado.");
     }
 }
