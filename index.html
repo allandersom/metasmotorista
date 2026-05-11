@@ -375,22 +375,27 @@
                 <div class="flex justify-between items-end mb-6 w-full border-b pb-4">
                     <div>
                         <h2 class="text-2xl font-black text-slate-900 tracking-tight">Projeção e Evolução</h2>
-                        <p class="text-sm text-slate-500 font-medium mt-1">Análise de <span id="projecaoNomeMotorista" class="text-blue-600 font-bold uppercase tracking-wider">Ninguém Selecionado</span> neste mês.</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-sm text-slate-500 font-medium">Análise de <strong id="projecaoNomeMotorista" class="text-blue-600 uppercase tracking-wider">Ninguém</strong> no período:</span>
+                            <input type="date" id="dataProjInicio" class="input-base py-1 px-2 text-xs font-bold w-auto cursor-pointer" onchange="window.atualizarGraficosProjecao()">
+                            <span class="text-[10px] text-slate-400 font-black uppercase">até</span>
+                            <input type="date" id="dataProjFim" class="input-base py-1 px-2 text-xs font-bold w-auto cursor-pointer" onchange="window.atualizarGraficosProjecao()">
+                        </div>
                     </div>
                     
                     <div class="flex items-center gap-4 bg-white p-2.5 rounded-xl border shadow-sm">
                         <div class="flex flex-col">
-                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Motorista (Gráfico Azul)</label>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Motorista (Azul)</label>
                             <select id="filtroProjMot" onchange="window.selecionarMotoristaProjecao(this.value)" class="text-sm font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-2 py-1 outline-none focus:border-blue-500 cursor-pointer">
                                 <option value="">Selecione...</option>
                             </select>
                         </div>
                         <div class="flex flex-col">
-                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Turno (Gráfico Verde)</label>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Turno (Verde)</label>
                             <select id="filtroProjTurno" onchange="window.atualizarGraficosProjecao()" class="text-sm font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1 outline-none focus:border-emerald-500 cursor-pointer">
-                                <option value="todos">Todos os Turnos (Frota)</option>
-                                <option value="dia">Turno Dia (Rayanna)</option>
-                                <option value="noite">Turno Noite (Júlia)</option>
+                                <option value="todos">Frota Completa</option>
+                                <option value="dia">Dia (Rayanna)</option>
+                                <option value="noite">Noite (Júlia)</option>
                                 <option value="especial">Especial (Caçamba)</option>
                             </select>
                         </div>
@@ -399,15 +404,15 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-6">
                     <div class="bg-white p-6 rounded-[1.5rem] border shadow-sm">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Produção Mês Atual</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Produção (Período Atual)</p>
                         <p class="text-3xl font-black text-slate-800" id="statMesAtual">0</p>
                     </div>
                     <div class="bg-white p-6 rounded-[1.5rem] border shadow-sm">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Produção Mês Passado</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Produção (Período Anterior)</p>
                         <p class="text-3xl font-black text-slate-800" id="statMesPassado">0</p>
                     </div>
                     <div class="bg-white p-6 rounded-[1.5rem] border shadow-sm flex flex-col justify-center">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Desempenho</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Desempenho vs Anterior</p>
                         <div id="statCrescimento" class="text-lg font-black text-slate-800 flex items-center gap-2">
                             -
                         </div>
@@ -439,13 +444,13 @@
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
                     <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
-                        <h3 class="text-lg font-black text-slate-800 mb-4">Evolução Diária (Mês Atual)</h3>
+                        <h3 class="text-lg font-black text-slate-800 mb-4">Evolução Diária (Período Atual)</h3>
                         <div class="h-64 w-full relative">
                             <canvas id="chartEvolucaoIndividual"></canvas>
                         </div>
                     </div>
                     <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
-                        <h3 class="text-lg font-black text-slate-800 mb-4">Volume Geral da Frota (Mês Atual)</h3>
+                        <h3 class="text-lg font-black text-slate-800 mb-4">Volume Geral da Frota (Período Atual)</h3>
                         <div class="h-64 w-full relative">
                             <canvas id="chartEvolucaoGeral"></canvas>
                         </div>
