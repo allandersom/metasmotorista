@@ -34,6 +34,16 @@ window.configSlaCloud = {};
 window.motoristasCustom = {}; 
 window.motoristasInativos = []; 
 
+// Lógica Universal de Pontos para padronizar o Ranking e Financeiro
+window.calcularPontosMotorista = function(nome, servicos, tipoVeiculo) {
+    if (tipoVeiculo === 'cacamba') return servicos * 2;
+    if (nome === 'ROBERTO CARLOS') {
+        if (tipoVeiculo === 'poli_duplo') return servicos / 2;
+        if (tipoVeiculo === 'misto') return servicos / 1.5; // Média para dia misto
+    }
+    return servicos;
+}
+
 onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
         const data = docSnap.data();
@@ -49,9 +59,8 @@ onSnapshot(docRef, (docSnap) => {
         window.motoristasCustom = {};
         window.motoristasInativos = [];
         
-        setDoc(docRef, {
-            lancamentos: {}, configs: {}, slas: {}, motoristasCustom: {}, motoristasInativos: []
-        }).catch(err => console.error(err));
+        setDoc(docRef, { lancamentos: {}, configs: {}, slas: {}, motoristasCustom: {}, motoristasInativos: [] })
+            .catch(err => console.error(err));
     }
 
     window.reconstruirListasMotoristas();
@@ -72,7 +81,6 @@ onSnapshot(docRef, (docSnap) => {
     setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').style.display = 'none'; }, 800);
 }, (error) => {
     console.error("ERRO DO FIREBASE:", error);
-    alert("Erro ao conectar no banco de dados!\n\nMotivo: " + error.message);
     if(document.getElementById('loader')) document.getElementById('loader').style.display = 'none';
 });
 
@@ -86,9 +94,6 @@ window.syncToFirebase = function() {
     }).catch(err => alert("Erro ao salvar: " + err.message));
 }
 
-// ------------------------------------
-// GERENCIADOR DE MOTORISTAS (MODAL)
-// ------------------------------------
 window.gerenciarMotoristas = function() { window.abrirModalGerenciar(); }
 
 window.abrirModalGerenciar = function() {
@@ -177,7 +182,6 @@ window.reconstruirListasMotoristas = function() {
         if(window.motoristas.includes(selecionadoAntes)) selProjMot.value = selecionadoAntes;
     }
 }
-// ------------------------------------
 
 window.getMetaDiaria = function(nome) {
     return nome === "ROBERTO CARLOS" ? 4 : 8;
@@ -190,7 +194,7 @@ const hojeStr = dataLocal.toISOString().split('T')[0];
 const anoMesAtual = hojeStr.substring(0, 7);
 const startStr = `${anoMesAtual}-01`;
 
-if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual;
+if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual; 
 if(document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = hojeStr;
 if(document.getElementById('dataRankingInicio')) document.getElementById('dataRankingInicio').value = hojeStr;
 if(document.getElementById('dataRankingFim')) document.getElementById('dataRankingFim').value = hojeStr;
@@ -211,7 +215,6 @@ window.toggleSidebar = function() {
     }
 }
 
-// LOGICA VISUAL: MOSTRAR VERMELHO SE INATIVO E TIVER HISTÓRICO
 window.motoristaTemLancamentoNoMes = function(nome, mes) {
     for (let data in window.bancoDadosCloud) {
         if (data.startsWith(mes) && window.bancoDadosCloud[data][nome]) return true;
@@ -403,7 +406,7 @@ window.sincronizarMesData = function() {
     let anoMesStr = dtG.value;
     msF.value = anoMesStr;
     window.carregarDiasUteis(anoMesStr);
-    window.renderizarSidebar(); // Recarrega barra
+    window.renderizarSidebar();
 }
 
 window.sincronizarMesFiltro = function() {
@@ -411,6 +414,7 @@ window.sincronizarMesFiltro = function() {
     if(!msF) return;
     let anoMesStr = msF.value;
     window.carregarDiasUteis(anoMesStr);
+    window.renderizarSidebar();
 }
 
 window.calcularPrevisao = function(totalSoma, anoMesStr, diasUteisAlvo) {
@@ -577,20 +581,25 @@ window.salvarLancamento = function() {
     const isSabado = diaSemana === 6;
     
     const metaBaseMotorista = window.getMetaDiaria(window.motoristaSelecionado);
-    let metaBaseLancamento = metaBaseMotorista;
-    let multiplicadorExtra = 10;
+    
+    // DEFINIÇÃO DO VALOR DO PONTO EXTRA 
+    let valorPorPontoExtra = 10;
+    let valorPorPontoExtraSabado = 20;
 
     if (tipoVeiculoFinal === 'cacamba') {
-        metaBaseLancamento = 4;
-        multiplicadorExtra = 20;
-    } else if (tipoVeiculoFinal === 'poli_duplo') {
-        metaBaseLancamento = 8;
-        multiplicadorExtra = 10;
-    } else if (tipoVeiculoFinal === 'misto') {
-        metaBaseLancamento = 6; 
-        multiplicadorExtra = 10;
+        valorPorPontoExtra = 10;
+        valorPorPontoExtraSabado = 10; // Caçamba paga fixo 10 por pt no sabado original
+    } else if (window.motoristaSelecionado === 'ROBERTO CARLOS') {
+        if (tipoVeiculoFinal === 'poli_duplo') {
+            valorPorPontoExtra = 20;
+            valorPorPontoExtraSabado = 40;
+        } else if (tipoVeiculoFinal === 'misto') {
+            valorPorPontoExtra = 15;
+            valorPorPontoExtraSabado = 30;
+        }
     }
 
+    let pontosFeitosHoje = window.calcularPontosMotorista(window.motoristaSelecionado, servicosFinais, tipoVeiculoFinal);
     let valorNormalBase = 0;
     let bateuMetaSemana = false;
 
@@ -598,8 +607,7 @@ window.salvarLancamento = function() {
         valorNormalBase = servicosFinais * 30; 
     } 
     else if (isSabado) {
-        let caixasSegSex = 0;
-        let viagensSegSex = 0;
+        let pontosFeitosSemana = 0;
         let qtdFeriadosSemana = 0;
         
         for (let i = 1; i <= 5; i++) {
@@ -613,40 +621,31 @@ window.salvarLancamento = function() {
                     qtdFeriadosSemana++; 
                 } else { 
                     let srv = isNaN(lancamentoDia.servicos) ? 0 : lancamentoDia.servicos;
-                    if(lancamentoDia.tipoVeiculo === 'cacamba') viagensSegSex += srv;
-                    else caixasSegSex += srv;
+                    pontosFeitosSemana += window.calcularPontosMotorista(window.motoristaSelecionado, srv, lancamentoDia.tipoVeiculo);
                 }
             }
         }
 
-        let pontosFeitosSemana = caixasSegSex + (viagensSegSex * 2);
         let metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseMotorista; 
         let pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
 
-        let pontosDesteSabado = (tipoVeiculoFinal === 'cacamba') ? servicosFinais * 2 : servicosFinais;
-        let pontosParaMeta = Math.min(pontosDesteSabado, pontosFaltantes);
-        let pontosBonus = Math.max(0, pontosDesteSabado - pontosFaltantes);
+        let pontosParaMeta = Math.min(pontosFeitosHoje, pontosFaltantes);
+        let pontosBonus = Math.max(0, pontosFeitosHoje - pontosFaltantes);
 
         let calcServicosNormais = 0;
         if (pontosParaMeta >= metaBaseMotorista) { 
-            let equivalenciaReal = (tipoVeiculoFinal === 'cacamba') ? (pontosParaMeta / 2) : pontosParaMeta;
-            calcServicosNormais = 50 + ((equivalenciaReal - metaBaseLancamento) * multiplicadorExtra);
+            calcServicosNormais = 50 + ((pontosParaMeta - metaBaseMotorista) * valorPorPontoExtra);
             if(calcServicosNormais < 50) calcServicosNormais = 50; 
         }
         
-        let calcServicosBonus = 0;
-        if(tipoVeiculoFinal === 'cacamba'){
-            calcServicosBonus = (pontosBonus / 2) * 20; 
-        } else {
-            calcServicosBonus = pontosBonus * 20; 
-        }
+        let calcServicosBonus = pontosBonus * valorPorPontoExtraSabado; 
 
         valorNormalBase = calcServicosNormais + calcServicosBonus;
         bateuMetaSemana = pontosBonus > 0;
     } 
     else {
-        if (servicosFinais >= metaBaseLancamento) { 
-            valorNormalBase = 50 + ((servicosFinais - metaBaseLancamento) * multiplicadorExtra); 
+        if (pontosFeitosHoje >= metaBaseMotorista) { 
+            valorNormalBase = 50 + ((pontosFeitosHoje - metaBaseMotorista) * valorPorPontoExtra); 
         }
     }
     
@@ -771,14 +770,20 @@ window.atualizarResumosDoMotorista = function() {
     let totalCaixasMes = 0;
     let totalViagensMes = 0;
     let totalFatMes = 0;
+    let totalPontosMes = 0; // Serve para a Previsão exata do Elo
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataStr.startsWith(anoMesFiltro)) {
             const dObj = new Date(dataStr + 'T00:00:00');
             if (dadosDia[window.motoristaSelecionado]) {
                 if (dObj.getDay() !== 0 && !dadosDia[window.motoristaSelecionado].isFeriado) {
-                    if(dadosDia[window.motoristaSelecionado].tipoVeiculo === 'cacamba') totalViagensMes += dadosDia[window.motoristaSelecionado].servicos;
-                    else totalCaixasMes += dadosDia[window.motoristaSelecionado].servicos;
+                    let srv = dadosDia[window.motoristaSelecionado].servicos;
+                    let veic = dadosDia[window.motoristaSelecionado].tipoVeiculo;
+                    
+                    if(veic === 'cacamba') totalViagensMes += srv;
+                    else totalCaixasMes += srv;
+                    
+                    totalPontosMes += window.calcularPontosMotorista(window.motoristaSelecionado, srv, veic);
                     totalFatMes += dadosDia[window.motoristaSelecionado].valor;
                 }
             }
@@ -792,18 +797,23 @@ window.atualizarResumosDoMotorista = function() {
     
     let metaMensalPontos = diasUteisMotorista * metaDiaria; 
 
-    let previsaoCaixas = window.calcularPrevisao(totalCaixasMes, anoMesFiltro, diasUteisMotorista);
-    let previsaoViagens = window.calcularPrevisao(totalViagensMes, anoMesFiltro, diasUteisMotorista);
+    // A projeção usa os pontos padronizados para garantir que a lógica dupla funcione!
+    let previsaoPontos = window.calcularPrevisao(totalPontosMes, anoMesFiltro, diasUteisMotorista);
 
     let textoMeta = "";
     if (window.motOutros.includes(window.motoristaSelecionado)) {
         textoMeta = `${metaMensalPontos / 2} vg`;
         if(document.getElementById('motoristaCaixasMes')) document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx | ${totalViagensMes} vg`;
-        if(document.getElementById('motoristaPrevisaoMes')) document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoCaixas} cx | ${previsaoViagens} vg`;
+        if(document.getElementById('motoristaPrevisaoMes')) document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoPontos / 2} vg`;
     } else {
         textoMeta = `${metaMensalPontos} cx`;
         if(document.getElementById('motoristaCaixasMes')) document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx`;
-        if(document.getElementById('motoristaPrevisaoMes')) document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoCaixas} cx`;
+        // Para a previsão visual do Roberto continuar coerente, mantemos exibição real baseada em multiplicador médio
+        let exibeCaixas = (window.motoristaSelecionado === 'ROBERTO CARLOS' && totalCaixasMes > totalPontosMes) 
+            ? Math.round(previsaoPontos * (totalCaixasMes / totalPontosMes)) 
+            : previsaoPontos;
+            
+        if(document.getElementById('motoristaPrevisaoMes')) document.getElementById('motoristaPrevisaoMes').innerText = `${exibeCaixas} cx`;
     }
     
     if(document.getElementById('motoristaMetaMes')) document.getElementById('motoristaMetaMes').innerText = `Meta Mensal: ${textoMeta} | Fat: R$ ${totalFatMes.toFixed(2).replace('.', ',')}`;
@@ -864,10 +874,12 @@ window.gerarRankingPeriodo = function() {
             for (const [mot, dados] of Object.entries(dadosDia)) {
                 if (isDomingo || dados.isFeriado) continue;
 
-                if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0 };
+                if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
+                
                 if(dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += dados.servicos;
                 else rankPeriodo[mot].caixas += dados.servicos;
                 
+                rankPeriodo[mot].pontos += window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
                 rankPeriodo[mot].valor += dados.valor;
                 rankPeriodo[mot].extra += dados.valorExtra || 0;
                 rankPeriodo[mot].diasTrab += 1;
@@ -876,9 +888,8 @@ window.gerarRankingPeriodo = function() {
     }
 
     let rankArray = Object.keys(rankPeriodo).map(mot => {
-        let pontosFeitos = rankPeriodo[mot].caixas + (rankPeriodo[mot].viagens * 2);
         let metaTotalPeriodo = window.getMetaDiaria(mot) * rankPeriodo[mot].diasTrab;
-        let porcentagem = metaTotalPeriodo > 0 ? (pontosFeitos / metaTotalPeriodo) * 100 : 0;
+        let porcentagem = metaTotalPeriodo > 0 ? (rankPeriodo[mot].pontos / metaTotalPeriodo) * 100 : 0;
         return { nome: mot, ...rankPeriodo[mot], porcentagem: porcentagem };
     });
     
@@ -951,7 +962,7 @@ window.gerarRankingMensal = function() {
     let totalViagensFrota = 0;
     let totalFatMesFrota = 0;
 
-    window.motoristas.forEach(m => acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0 });
+    window.motoristas.forEach(m => acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0, pontos: 0 });
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataStr.startsWith(mesFiltro)) {
@@ -966,6 +977,7 @@ window.gerarRankingMensal = function() {
                             acumuladoMes[mot].caixas += dados.servicos;
                             totalCaixasFrota += dados.servicos; 
                         }
+                        acumuladoMes[mot].pontos += window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
                         acumuladoMes[mot].valor += dados.valor;
                         totalFatMesFrota += dados.valor;
                     }
@@ -981,14 +993,14 @@ window.gerarRankingMensal = function() {
     window.motRayanna.forEach(mot => {
         let diasUteisMotorista = window.configSlaCloud[mot + "_" + mesFiltro] || diasUteisGlobais;
         ptsRayanna += window.getMetaDiaria(mot) * diasUteisMotorista;
-        if(acumuladoMes[mot]) feitasRayanna += acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
+        if(acumuladoMes[mot]) feitasRayanna += acumuladoMes[mot].pontos; 
     });
 
     let ptsJulia = 0, feitasJulia = 0;
     window.motJulia.forEach(mot => {
         let diasUteisMotorista = window.configSlaCloud[mot + "_" + mesFiltro] || diasUteisGlobais;
         ptsJulia += window.getMetaDiaria(mot) * diasUteisMotorista;
-        if(acumuladoMes[mot]) feitasJulia += acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
+        if(acumuladoMes[mot]) feitasJulia += acumuladoMes[mot].pontos;
     });
 
     let ptsGeral = ptsRayanna + ptsJulia;
@@ -997,8 +1009,9 @@ window.gerarRankingMensal = function() {
     function renderizarMeta(feitas, meta, elValor, elFalta) {
         let perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0;
         let faltam = Math.max(0, meta - feitas);
-        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${feitas} / ${meta} cx`;
-        if(document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${faltam}`;
+        // Exibição é em pontos para manter coerência, mas a gente chama de cx pra manter familiar
+        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${Math.round(feitas)} / ${meta} cx`;
+        if(document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${Math.round(faltam)}`;
     }
 
     renderizarMeta(feitasGeral, ptsGeral, 'metaGeralGlobal', 'faltaGeralGlobal');
@@ -1007,7 +1020,7 @@ window.gerarRankingMensal = function() {
 
     let rankFinal = Object.keys(acumuladoMes)
         .map(mot => {
-            let pts = acumuladoMes[mot].caixas + (acumuladoMes[mot].viagens * 2);
+            let pts = acumuladoMes[mot].pontos;
             let diasUteisMotorista = window.configSlaCloud[mot + "_" + mesFiltro] || diasUteisGlobais;
             let metaMensalPontos = diasUteisMotorista * window.getMetaDiaria(mot);
             let percentualMeta = metaMensalPontos > 0 ? ((pts / metaMensalPontos) * 100) : 0;
@@ -1061,7 +1074,8 @@ window.gerarRankingMensal = function() {
             if (window.motOutros.includes(mot.nome)) {
                 txtFaltam = `Faltam ${Math.ceil(faltam / 2)} vg`;
             } else {
-                txtFaltam = `Faltam ${faltam} cx`;
+                // Se foi duplo e quebrou número
+                txtFaltam = `Faltam ${Math.ceil(faltam)} cx`;
             }
             htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
         } else {
@@ -1200,15 +1214,14 @@ window.atualizarGraficosProjecao = function() {
         let pontosDiaGeral = 0;
         
         for (const [mot, dados] of Object.entries(motoristasDia)) {
-            let pts = dados.tipoVeiculo === 'cacamba' ? dados.servicos * 2 : dados.servicos;
-            let qtdReal = dados.servicos;
+            let pts = window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
             
             if (mot === window.motoristaSelecionado) {
                 if (isMesAtual && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
-                    stats.atual += qtdReal;
+                    stats.atual += pts;
                 }
                 if (isMesPassado && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
-                    stats.passado += qtdReal;
+                    stats.passado += pts;
                 }
                 if (isMesAtual) {
                     dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
@@ -1232,15 +1245,15 @@ window.atualizarGraficosProjecao = function() {
 
     let txtSufixo = (window.motOutros.includes(window.motoristaSelecionado)) ? " vg" : " cx";
     
-    if(document.getElementById('statMesAtual')) document.getElementById('statMesAtual').innerText = stats.atual + txtSufixo;
-    if(document.getElementById('statMesPassado')) document.getElementById('statMesPassado').innerText = stats.passado + txtSufixo;
+    if(document.getElementById('statMesAtual')) document.getElementById('statMesAtual').innerText = Math.round(stats.atual) + txtSufixo;
+    if(document.getElementById('statMesPassado')) document.getElementById('statMesPassado').innerText = Math.round(stats.passado) + txtSufixo;
     
     let elCrescimento = document.getElementById('statCrescimento');
     if(elCrescimento) {
         if (!window.motoristaSelecionado) {
             elCrescimento.innerHTML = `<span class="text-slate-500 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Selecione na lista</span>`;
         } else {
-            let diff = stats.atual - stats.passado;
+            let diff = Math.round(stats.atual - stats.passado);
             if (diff > 0) {
                 elCrescimento.innerHTML = `<span class="text-emerald-600 bg-emerald-100 px-3 py-1 rounded-xl text-sm font-bold">+${diff}${txtSufixo} a mais</span><span class="text-xs text-slate-500 font-medium">que o mês anterior</span>`;
             } else if (diff < 0) {
