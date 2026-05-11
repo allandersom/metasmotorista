@@ -367,10 +367,28 @@
             </div>
 
             <div id="viewProjecao" class="w-full space-y-6" style="display: none;">
-                <div class="flex justify-between items-end mb-4">
+                <div class="flex justify-between items-end mb-6 w-full border-b pb-4">
                     <div>
                         <h2 class="text-2xl font-black text-slate-900 tracking-tight">Projeção e Evolução</h2>
                         <p class="text-sm text-slate-500 font-medium mt-1">Análise de <span id="projecaoNomeMotorista" class="text-blue-600 font-bold uppercase tracking-wider">Ninguém Selecionado</span> neste mês.</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-white p-2.5 rounded-xl border shadow-sm">
+                        <div class="flex flex-col">
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Motorista (Gráfico Azul)</label>
+                            <select id="filtroProjMot" onchange="window.selecionarMotoristaProjecao(this.value)" class="text-sm font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-2 py-1 outline-none focus:border-blue-500 cursor-pointer">
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Turno (Gráfico Verde)</label>
+                            <select id="filtroProjTurno" onchange="window.atualizarGraficosProjecao()" class="text-sm font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1 outline-none focus:border-emerald-500 cursor-pointer">
+                                <option value="todos">Todos os Turnos (Frota)</option>
+                                <option value="dia">Turno Dia (Rayanna)</option>
+                                <option value="noite">Turno Noite (Júlia)</option>
+                                <option value="especial">Especial (Caçamba)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
