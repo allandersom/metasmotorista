@@ -14,12 +14,10 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const docRef = doc(db, "sistema", "dados_logistica");
 
-// Listas base originais
 const motRayannaBase = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO ROSALVES", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
 const motJuliaBase = ["BRUNO", "ELCIDES", "LUIZ RODRIGO", "MARCONI", "MAYKEL", "PLATINIS"];
 const motOutrosBase = ["CLOVIS", "RODRIGO"]; 
 
-// Listas Dinâmicas
 window.motRayanna = [];
 window.motJulia = [];
 window.motOutros = [];
@@ -33,8 +31,8 @@ window.diasUteisTravado = true;
 window.bancoDadosCloud = {}; 
 window.configMesesCloud = {};
 window.configSlaCloud = {}; 
-window.motoristasCustom = {}; // Salva novos motoristas
-window.motoristasInativos = []; // Salva quem foi desativado
+window.motoristasCustom = {}; 
+window.motoristasInativos = []; 
 
 onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
@@ -56,7 +54,6 @@ onSnapshot(docRef, (docSnap) => {
         }).catch(err => console.error(err));
     }
 
-    // Reconstrói as listas de motoristas com as atualizações da nuvem
     window.reconstruirListasMotoristas();
 
     if(window.motoristaSelecionado) {
@@ -89,30 +86,85 @@ window.syncToFirebase = function() {
     }).catch(err => alert("Erro ao salvar: " + err.message));
 }
 
-// LOGICA DE RECONSTRUIR AS LISTAS DE MOTORISTAS DINAMICAMENTE
+// ------------------------------------
+// GERENCIADOR DE MOTORISTAS (MODAL)
+// ------------------------------------
+window.gerenciarMotoristas = function() { window.abrirModalGerenciar(); }
+
+window.abrirModalGerenciar = function() {
+    const modal = document.getElementById('modalGerenciar');
+    const selDesativar = document.getElementById('desativarMotNome');
+    const selReativar = document.getElementById('reativarMotNome');
+
+    selDesativar.innerHTML = '<option value="">Selecione quem desativar...</option>';
+    selReativar.innerHTML = '<option value="">Selecione quem reativar...</option>';
+
+    window.motoristas.forEach(m => {
+        if(!window.motoristasInativos.includes(m)) {
+            selDesativar.innerHTML += `<option value="${m}">${m}</option>`;
+        }
+    });
+
+    window.motoristasInativos.forEach(m => {
+        selReativar.innerHTML += `<option value="${m}">${m}</option>`;
+    });
+
+    modal.classList.remove('hidden');
+    lucide.createIcons();
+}
+
+window.fecharModalGerenciar = function() {
+    document.getElementById('modalGerenciar').classList.add('hidden');
+    document.getElementById('novoMotNome').value = '';
+}
+
+window.addMotoristaModal = function() {
+    let nome = document.getElementById('novoMotNome').value.toUpperCase().trim();
+    let turno = document.getElementById('novoMotTurno').value;
+    if (!nome) return;
+    
+    window.motoristasCustom[nome] = turno;
+    window.syncToFirebase();
+    window.reconstruirListasMotoristas();
+    window.fecharModalGerenciar();
+}
+
+window.desativarMotoristaModal = function() {
+    let nome = document.getElementById('desativarMotNome').value;
+    if (!nome) return;
+    
+    window.motoristasInativos.push(nome);
+    window.syncToFirebase();
+    window.reconstruirListasMotoristas();
+    window.fecharModalGerenciar();
+}
+
+window.reativarMotoristaModal = function() {
+    let nome = document.getElementById('reativarMotNome').value;
+    if (!nome) return;
+    
+    window.motoristasInativos = window.motoristasInativos.filter(m => m !== nome);
+    window.syncToFirebase();
+    window.reconstruirListasMotoristas();
+    window.fecharModalGerenciar();
+}
+
 window.reconstruirListasMotoristas = function() {
     window.motRayanna = [...motRayannaBase];
     window.motJulia = [...motJuliaBase];
     window.motOutros = [...motOutrosBase];
 
-    // Adiciona os manuais customizados
     for(let mot in window.motoristasCustom) {
         let turno = window.motoristasCustom[mot];
-        if(turno === 'dia') window.motRayanna.push(mot);
-        else if(turno === 'noite') window.motJulia.push(mot);
-        else if(turno === 'especial') window.motOutros.push(mot);
+        if(turno === 'dia' && !window.motRayanna.includes(mot)) window.motRayanna.push(mot);
+        else if(turno === 'noite' && !window.motJulia.includes(mot)) window.motJulia.push(mot);
+        else if(turno === 'especial' && !window.motOutros.includes(mot)) window.motOutros.push(mot);
     }
-
-    // Remove os inativos
-    window.motRayanna = window.motRayanna.filter(m => !window.motoristasInativos.includes(m));
-    window.motJulia = window.motJulia.filter(m => !window.motoristasInativos.includes(m));
-    window.motOutros = window.motOutros.filter(m => !window.motoristasInativos.includes(m));
 
     window.motoristas = [...window.motRayanna, ...window.motJulia, ...window.motOutros].sort();
     
     window.renderizarSidebar();
     
-    // Atualiza a caixinha de projeção
     const selProjMot = document.getElementById('filtroProjMot');
     if(selProjMot) {
         let selecionadoAntes = selProjMot.value;
@@ -125,56 +177,7 @@ window.reconstruirListasMotoristas = function() {
         if(window.motoristas.includes(selecionadoAntes)) selProjMot.value = selecionadoAntes;
     }
 }
-
-// GERENCIADOR DE MOTORISTAS
-window.gerenciarMotoristas = function() {
-    let acao = prompt("GERENCIAR MOTORISTAS\n\n1 = Adicionar Novo Motorista\n2 = Desativar Motorista (Ocultar)\n3 = Reativar Motorista\n\nDigite o número da ação:");
-    
-    if (acao === '1') {
-        let nome = prompt("Qual o NOME do novo motorista?");
-        if (!nome) return;
-        nome = nome.toUpperCase().trim();
-        let turno = prompt("Qual o TURNO dele?\n(Digite: dia, noite ou especial)").toLowerCase().trim();
-        
-        if (['dia', 'noite', 'especial'].includes(turno)) {
-            window.motoristasCustom[nome] = turno;
-            window.syncToFirebase();
-            window.reconstruirListasMotoristas();
-            alert(`✅ ${nome} adicionado com sucesso ao turno ${turno}!`);
-        } else {
-            alert("❌ Turno inválido. Operação cancelada.");
-        }
-    } 
-    else if (acao === '2') {
-        let nome = prompt("Digite o nome EXATO do motorista para desativar:\n(O histórico e os rankings passados não serão perdidos)");
-        if (!nome) return;
-        nome = nome.toUpperCase().trim();
-        
-        if (window.motoristas.includes(nome)) {
-            window.motoristasInativos.push(nome);
-            window.syncToFirebase();
-            window.reconstruirListasMotoristas();
-            alert(`🛑 ${nome} foi desativado e removido das listas.`);
-        } else {
-            alert("❌ Motorista não encontrado na lista.");
-        }
-    }
-    else if (acao === '3') {
-        let inativos = window.motoristasInativos.join(", ");
-        if (!inativos) { alert("Não há motoristas desativados."); return; }
-        
-        let nome = prompt(`MOTORISTAS DESATIVADOS:\n${inativos}\n\nDigite o nome de quem deseja REATIVAR:`).toUpperCase().trim();
-        if (window.motoristasInativos.includes(nome)) {
-            window.motoristasInativos = window.motoristasInativos.filter(m => m !== nome);
-            window.syncToFirebase();
-            window.reconstruirListasMotoristas();
-            alert(`♻️ ${nome} foi reativado com sucesso!`);
-        } else {
-            alert("❌ Nome não encontrado na lista de inativos.");
-        }
-    }
-    lucide.createIcons();
-}
+// ------------------------------------
 
 window.getMetaDiaria = function(nome) {
     return nome === "ROBERTO CARLOS" ? 4 : 8;
@@ -208,6 +211,14 @@ window.toggleSidebar = function() {
     }
 }
 
+// LOGICA VISUAL: MOSTRAR VERMELHO SE INATIVO E TIVER HISTÓRICO
+window.motoristaTemLancamentoNoMes = function(nome, mes) {
+    for (let data in window.bancoDadosCloud) {
+        if (data.startsWith(mes) && window.bancoDadosCloud[data][nome]) return true;
+    }
+    return false;
+}
+
 window.renderizarSidebar = function() {
     const ul = document.getElementById('listaMotoristas');
     const selectFiltro = document.getElementById('filtroTurno');
@@ -215,26 +226,44 @@ window.renderizarSidebar = function() {
     ul.innerHTML = '';
 
     let filtroVal = selectFiltro ? selectFiltro.value : 'todos';
+    const elMes = document.getElementById('dataGlobal');
+    let mesAtualFiltro = elMes && elMes.value ? elMes.value.substring(0, 7) : anoMesAtual;
 
     function criarGrupo(titulo, lista, icone) {
-        if(lista.length === 0) return;
+        let listaFiltrada = lista.filter(mot => {
+            let isInativo = window.motoristasInativos.includes(mot);
+            let temLancamento = window.motoristaTemLancamentoNoMes(mot, mesAtualFiltro);
+            return !(isInativo && !temLancamento);
+        }).sort();
+
+        if(listaFiltrada.length === 0) return;
+
         const tituloEl = document.createElement('div');
         tituloEl.innerHTML = `${icone} ${titulo}`;
         ul.appendChild(tituloEl);
 
-        [...lista].sort().forEach(mot => {
+        listaFiltrada.forEach(mot => {
+            let isInativo = window.motoristasInativos.includes(mot);
             const li = document.createElement('li');
             li.className = 'driver-item';
             if (mot === window.motoristaSelecionado) li.classList.add('active');
-            li.textContent = mot;
+            
+            if(isInativo) {
+                li.innerHTML = `<span class="text-red-500 w-full block font-black leading-tight">${mot} <span class="text-[9px] opacity-70 ml-1 bg-red-100 px-1 rounded">(Inativo)</span></span>`;
+            } else {
+                li.textContent = mot;
+            }
+            
             li.onclick = () => window.selecionarMotorista(mot, li);
             ul.appendChild(li);
         });
     }
 
-    if(filtroVal === 'todos' || filtroVal === 'dia') criarGrupo('Dia', window.motRayanna, '☀️');
-    if(filtroVal === 'todos' || filtroVal === 'noite') criarGrupo('Noite', window.motJulia, '🌙');
+    if(filtroVal === 'todos' || filtroVal === 'dia') criarGrupo('Dia (Rayanna)', window.motRayanna, '☀️');
+    if(filtroVal === 'todos' || filtroVal === 'noite') criarGrupo('Noite (Júlia)', window.motJulia, '🌙');
     if(filtroVal === 'todos' || filtroVal === 'especial') criarGrupo('Especial (Caçamba)', window.motOutros, '🚛');
+    
+    lucide.createIcons();
 }
 
 window.toggleTravaGlobais = function() {
@@ -374,6 +403,7 @@ window.sincronizarMesData = function() {
     let anoMesStr = dtG.value;
     msF.value = anoMesStr;
     window.carregarDiasUteis(anoMesStr);
+    window.renderizarSidebar(); // Recarrega barra
 }
 
 window.sincronizarMesFiltro = function() {
@@ -446,7 +476,7 @@ window.filtrarMotoristas = function() {
 window.selecionarMotorista = function(nome, elementoLista) {
     window.motoristaSelecionado = nome;
     document.querySelectorAll('.driver-item').forEach(el => el.classList.remove('active'));
-    elementoLista.classList.add('active');
+    if(elementoLista) elementoLista.classList.add('active');
     
     if(document.getElementById('estadoVazio')) document.getElementById('estadoVazio').style.display = 'none';
     if(document.getElementById('conteudoMotorista')) document.getElementById('conteudoMotorista').style.display = 'block';
@@ -478,10 +508,7 @@ window.selecionarMotorista = function(nome, elementoLista) {
 
 window.selecionarMotoristaProjecao = function(nome) {
     if(!nome) return;
-    const itensLista = document.querySelectorAll('.driver-item');
-    itensLista.forEach(item => {
-        if(item.textContent === nome) window.selecionarMotorista(nome, item);
-    });
+    window.selecionarMotorista(nome, null);
 }
 
 window.formatarDataParaBusca = function(data) {
