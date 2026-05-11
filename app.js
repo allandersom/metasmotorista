@@ -114,7 +114,7 @@ window.importarDadosIA = function() {
         let isFeriadoFinal = lanc.isFeriado === true;
         let tipoVeiculoFinal = lanc.veiculo || (window.motOutros.includes(mot) ? 'cacamba' : 'poliguindaste');
         let valorExtraFinal = parseFloat(lanc.extra) || 0;
-        let observacaoFinal = lanc.observacao || "[LANÇADO PELA IA]";
+        let observacaoFinal = lanc.observacao || "";
 
         if (statusFinal !== 'normal') {
             servicosFinais = 0;
@@ -996,5 +996,19 @@ window.atualizarGraficosProjecao = function() {
     if (ctxGeral) {
         if (window.chartInstanciaGeral) window.chartInstanciaGeral.destroy();
         window.chartInstanciaGeral = new Chart(ctxGeral.getContext('2d'), { type: 'line', data: { labels: labelsGeral, datasets: [{ label: 'Frota', data: dataGeral, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#10b981', fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } } });
+    }
+}
+window.apagarTudo = function() {
+    let senha = prompt("⚠️ CUIDADO EXTREMO! Isso vai apagar TODOS os lançamentos de TODOS os meses do sistema.\n\nPara confirmar, digite a palavra: APAGAR");
+    
+    if (senha === 'APAGAR') {
+        window.bancoDadosCloud = {}; // Zera tudo
+        window.syncToFirebase(); // Manda o vazio pra nuvem
+        
+        alert("Base de dados zerada com sucesso!");
+        window.fecharModalSistema();
+        location.reload(); // Atualiza a página pra limpar os gráficos da tela
+    } else if (senha !== null) {
+        alert("Palavra incorreta. Ação cancelada, nada foi apagado.");
     }
 }
