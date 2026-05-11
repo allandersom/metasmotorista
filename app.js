@@ -34,16 +34,22 @@ window.configSlaCloud = {};
 window.motoristasCustom = {}; 
 window.motoristasInativos = []; 
 
-// Lógica Universal de Pontos para padronizar o Ranking e Financeiro
+// Lógica Universal de Pontos (Equivalência)
 window.calcularPontosMotorista = function(nome, servicos, tipoVeiculo) {
-    if (tipoVeiculo === 'cacamba') return servicos * 2;
-    if (nome === 'ROBERTO CARLOS') {
-        if (tipoVeiculo === 'poli_duplo') return servicos / 2;
-        if (tipoVeiculo === 'misto') return servicos / 1.5; // Média para dia misto
+    let metaMot = window.getMetaDiaria(nome); // Roberto é 4, os outros são 8
+    
+    if (tipoVeiculo === 'cacamba') {
+        return servicos * (metaMot / 4); // Ex: Rayanna(8) 4 vg = 8 pts. Roberto(4) 4 vg = 4 pts.
     }
-    return servicos;
+    if (tipoVeiculo === 'poli_duplo') {
+        return servicos * (metaMot / 8); // Ex: Roberto(4) 8 cx = 4 pts. Rayanna(8) 8 cx = 8 pts.
+    }
+    if (tipoVeiculo === 'misto') {
+        return servicos * (metaMot / 6); // Peso médio para dias com troca de veículo
+    }
+    
+    return servicos; // Poliguindaste Simples (Peso 1 pra 1)
 }
-
 onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
         const data = docSnap.data();
@@ -490,14 +496,17 @@ window.selecionarMotorista = function(nome, elementoLista) {
     if(selectVeiculo) {
         let metaPoli = window.getMetaDiaria(nome);
         
+        // TODOS OS MOTORISTAS AGORA TÊM AS 3 OPÇÕES
+        selectVeiculo.innerHTML = `
+            <option value="poliguindaste">Poliguindaste Simples (Meta ${metaPoli} Cx)</option>
+            <option value="poli_duplo">Poliguindaste Duplo (Meta 8 Cx)</option>
+            <option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>
+        `;
+        
+        // Apenas deixa o select "pré-selecionado" no caminhão mais comum daquele motorista
         if(window.motOutros.includes(nome)) { 
-            selectVeiculo.innerHTML = `<option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>`;
             selectVeiculo.value = "cacamba";
         } else {
-            selectVeiculo.innerHTML = `
-                <option value="poliguindaste">Poliguindaste Simples (Meta ${metaPoli} Cx)</option>
-                <option value="poli_duplo">Poliguindaste Duplo (Meta 8 Cx)</option>
-            `;
             selectVeiculo.value = "poliguindaste";
         }
     }
@@ -581,25 +590,25 @@ window.salvarLancamento = function() {
     const isSabado = diaSemana === 6;
     
     const metaBaseMotorista = window.getMetaDiaria(window.motoristaSelecionado);
-    
-    // DEFINIÇÃO DO VALOR DO PONTO EXTRA 
-    let valorPorPontoExtra = 10;
-    let valorPorPontoExtraSabado = 20;
+    let metaBaseLancamento = metaBaseMotorista;
+    let valorPorServicoExtra = 10;
+    let valorPorServicoSabado = 20; // Sábados pagam o dobro na meta batida
 
+    // CONFIGURA O VALOR DE ACORDO COM O CAMINHÃO ESCOLHIDO
     if (tipoVeiculoFinal === 'cacamba') {
-        valorPorPontoExtra = 10;
-        valorPorPontoExtraSabado = 10; // Caçamba paga fixo 10 por pt no sabado original
-    } else if (window.motoristaSelecionado === 'ROBERTO CARLOS') {
-        if (tipoVeiculoFinal === 'poli_duplo') {
-            valorPorPontoExtra = 20;
-            valorPorPontoExtraSabado = 40;
-        } else if (tipoVeiculoFinal === 'misto') {
-            valorPorPontoExtra = 15;
-            valorPorPontoExtraSabado = 30;
-        }
+        metaBaseLancamento = 4;
+        valorPorServicoExtra = 20;
+        valorPorServicoSabado = 20; 
+    } else if (tipoVeiculoFinal === 'poli_duplo') {
+        metaBaseLancamento = 8;
+        valorPorServicoExtra = 10;
+        valorPorServicoSabado = 20; 
+    } else if (tipoVeiculoFinal === 'misto') {
+        metaBaseLancamento = 6; 
+        valorPorServicoExtra = 10;
+        valorPorServicoSabado = 20;
     }
 
-    let pontosFeitosHoje = window.calcularPontosMotorista(window.motoristaSelecionado, servicosFinais, tipoVeiculoFinal);
     let valorNormalBase = 0;
     let bateuMetaSemana = false;
 
@@ -629,23 +638,26 @@ window.salvarLancamento = function() {
         let metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseMotorista; 
         let pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
 
-        let pontosParaMeta = Math.min(pontosFeitosHoje, pontosFaltantes);
-        let pontosBonus = Math.max(0, pontosFeitosHoje - pontosFaltantes);
+        // Converte os "pontos" que faltam para "viagens/caixas" do caminhão que ele pegou hoje
+        let servicosFaltantes = pontosFaltantes * (metaBaseLancamento / metaBaseMotorista);
+        let servicosParaMeta = Math.min(servicosFinais, servicosFaltantes);
+        let servicosBonus = Math.max(0, servicosFinais - servicosFaltantes);
 
         let calcServicosNormais = 0;
-        if (pontosParaMeta >= metaBaseMotorista) { 
-            calcServicosNormais = 50 + ((pontosParaMeta - metaBaseMotorista) * valorPorPontoExtra);
+        if (servicosParaMeta >= metaBaseLancamento) { 
+            calcServicosNormais = 50 + ((servicosParaMeta - metaBaseLancamento) * valorPorServicoExtra);
             if(calcServicosNormais < 50) calcServicosNormais = 50; 
         }
         
-        let calcServicosBonus = pontosBonus * valorPorPontoExtraSabado; 
+        let calcServicosBonus = servicosBonus * valorPorServicoSabado; 
 
         valorNormalBase = calcServicosNormais + calcServicosBonus;
-        bateuMetaSemana = pontosBonus > 0;
+        bateuMetaSemana = servicosBonus > 0;
     } 
     else {
-        if (pontosFeitosHoje >= metaBaseMotorista) { 
-            valorNormalBase = 50 + ((pontosFeitosHoje - metaBaseMotorista) * valorPorPontoExtra); 
+        // DIAS NORMAIS DA SEMANA
+        if (servicosFinais >= metaBaseLancamento) { 
+            valorNormalBase = 50 + ((servicosFinais - metaBaseLancamento) * valorPorServicoExtra); 
         }
     }
     
