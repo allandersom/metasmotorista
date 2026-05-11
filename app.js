@@ -1029,7 +1029,7 @@ window.gerarRankingMensal = function() {
     function renderizarMeta(feitas, meta, elValor, elFalta) {
         let perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0;
         let faltam = Math.max(0, meta - feitas);
-        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${Math.round(feitas)} / ${meta} pts`;
+        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${Math.round(feitas)} / ${meta} cx;
         if(document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${Math.round(faltam)}`;
     }
 
@@ -1093,7 +1093,7 @@ window.gerarRankingMensal = function() {
             if (window.motOutros.includes(mot.nome)) {
                 txtFaltam = `Faltam ${Math.ceil(faltam / 2)} vg`;
             } else {
-                txtFaltam = `Faltam ${Math.ceil(faltam)} pts`;
+                txtFaltam = Faltam ${Math.ceil(faltam)} cx;
             }
             htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
         } else {
@@ -1261,7 +1261,7 @@ window.atualizarGraficosProjecao = function() {
         }
     }
 
-    let txtSufixo = (window.motOutros.includes(window.motoristaSelecionado)) ? " vg (pts)" : " pts";
+    let txtSufixo = (window.motOutros.includes(window.motoristaSelecionado)) ? " vg" : " cx";
     
     if(document.getElementById('statMesAtual')) document.getElementById('statMesAtual').innerText = Math.round(stats.atual) + txtSufixo;
     if(document.getElementById('statMesPassado')) document.getElementById('statMesPassado').innerText = Math.round(stats.passado) + txtSufixo;
