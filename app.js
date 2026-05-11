@@ -14,7 +14,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const docRef = doc(db, "sistema", "dados_logistica");
 
-const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
+const motRayanna = ["ADRIELSON", "EMERSON", "JACKSON", "JAMERSON", "JOAO VICTOR", "JOELITON", "JONES", "LUIZ RODRIGUES", "MANSUETO ROSALVES", "MARCELO ANDRE", "MARIO", "MATHEUS", "RÉGIO", "ROBERTO CARLOS"];
 const motJulia = ["BRUNO", "ELCIDES", "LUIZ RODRIGO", "MARCONI", "MAYKEL", "PLATINIS"];
 const motOutros = ["CLOVIS", "RODRIGO"]; 
 const motoristas = [...motRayanna, ...motJulia, ...motOutros].sort();
@@ -92,7 +92,7 @@ const hojeStr = dataLocal.toISOString().split('T')[0];
 const anoMesAtual = hojeStr.substring(0, 7);
 const startStr = `${anoMesAtual}-01`;
 
-if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual; 
+if(document.getElementById('dataGlobal')) document.getElementById('dataGlobal').value = anoMesAtual;
 if(document.getElementById('dataLancamento')) document.getElementById('dataLancamento').value = hojeStr;
 if(document.getElementById('dataRankingInicio')) document.getElementById('dataRankingInicio').value = hojeStr;
 if(document.getElementById('dataRankingFim')) document.getElementById('dataRankingFim').value = hojeStr;
@@ -381,15 +381,16 @@ window.selecionarMotorista = function(nome, elementoLista) {
         
         if(nome === "CLOVIS" || nome === "RODRIGO") { 
             selectVeiculo.innerHTML = `<option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>`;
+            selectVeiculo.value = "cacamba";
         } else {
             selectVeiculo.innerHTML = `
                 <option value="poliguindaste">Poliguindaste Simples (Meta ${metaPoli} Cx)</option>
                 <option value="poli_duplo">Poliguindaste Duplo (Meta 8 Cx)</option>
             `;
+            selectVeiculo.value = "poliguindaste";
         }
     }
-    
-    // NOVO: Atualiza a caixinha lá na aba de projeção
+
     if(document.getElementById('filtroProjMot')) document.getElementById('filtroProjMot').value = nome;
     
     window.atualizarSlaInput();
@@ -454,7 +455,6 @@ window.salvarLancamento = function() {
 
     let lancamentoExistente = bancoDados[dataStr][window.motoristaSelecionado];
 
-    // LÓGICA DE SOMA (VEÍCULO MISTO)
     let servicosFinais = servicosInput;
     let valorExtraFinal = valorExtraInput;
     let isFeriadoFinal = isFeriadoInput;
@@ -587,7 +587,7 @@ window.carregarHistoricoMotorista = function() {
     const bancoDados = window.bancoDadosCloud;
     
     const elMes = document.getElementById('dataGlobal');
-    const mesFiltroStr = elMes && elMes.value ? elMes.value : new Date().toISOString().substring(0, 7);
+    const mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
 
     let historico = [];
 
@@ -675,7 +675,7 @@ window.atualizarResumosDoMotorista = function() {
     if(document.getElementById('motoristaTotalSemana')) document.getElementById('motoristaTotalSemana').innerText = `R$ ${totalSemana.toFixed(2).replace('.', ',')}`;
 
     const elMes = document.getElementById('dataGlobal');
-    const anoMesFiltro = elMes && elMes.value ? elMes.value : dataRefStr.substring(0, 7);
+    const anoMesFiltro = elMes && elMes.value ? elMes.value.substring(0, 7) : dataRefStr.substring(0, 7);
     
     let totalCaixasMes = 0;
     let totalViagensMes = 0;
@@ -696,7 +696,7 @@ window.atualizarResumosDoMotorista = function() {
 
     let metaDiaria = window.getMetaDiaria(window.motoristaSelecionado);
     let diasUteisGlobais = window.carregarDiasUteis(anoMesFiltro);
-    let chaveComMes = window.motoristaSelecionado + "_" + anoMesFiltro.substring(0, 7);
+    let chaveComMes = window.motoristaSelecionado + "_" + anoMesFiltro;
     let diasUteisMotorista = window.configSlaCloud[chaveComMes] || diasUteisGlobais;
     
     let metaMensalPontos = diasUteisMotorista * metaDiaria; 
@@ -721,7 +721,7 @@ window.atualizarResumosDoMotorista = function() {
 window.atualizarResumosGlobais = function() {
     const elGlobal = document.getElementById('dataGlobal');
     if(!elGlobal) return;
-    const mesGlobalStr = elGlobal.value; 
+    const mesGlobalStr = elGlobal.value.substring(0, 7); 
     if(!mesGlobalStr) return;
     const bancoDados = window.bancoDadosCloud;
     
@@ -1212,30 +1212,6 @@ window.atualizarGraficosProjecao = function() {
                 labels: labelsGeral,
                 datasets: [{
                     label: nomeTurnoGrafico + ' (Pontos)',
-                    data: dataGeral,
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#10b981',
-                    fill: true,
-                    tension: 0.3 
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
-        });
-    }
-}
-
-    const ctxGeral = document.getElementById('chartEvolucaoGeral');
-    if (ctxGeral) {
-        if (window.chartInstanciaGeral) window.chartInstanciaGeral.destroy();
-        window.chartInstanciaGeral = new Chart(ctxGeral.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: labelsGeral,
-                datasets: [{
-                    label: 'Frota Geral (Pontos)',
                     data: dataGeral,
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
