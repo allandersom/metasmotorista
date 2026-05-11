@@ -1126,6 +1126,10 @@ window.gerarPainelFeriados = function() {
         const isDomingo = dataObj.getDay() === 0;
 
         for (const [mot, dados] of Object.entries(dadosDia)) {
+            // FILTRO SOLICITADO: Só processa e mostra se tiver feito pelo menos 1 serviço
+            // (Isso remove os lançamentos de "0" da visualização desta aba)
+            if (!(dados.servicos > 0)) continue; 
+
             let obj = {
                 dataStr: dataStr,
                 nome: mot,
