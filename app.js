@@ -831,15 +831,33 @@ window.atualizarResumosDoMotorista = function() {
 }
 
 window.atualizarResumosGlobais = function() {
+    const elLanc = document.getElementById('dataLancamento');
+    const dataRefStr = elLanc ? elLanc.value : null;
+    
     const elGlobal = document.getElementById('dataGlobal');
-    if(!elGlobal) return;
-    const mesGlobalStr = elGlobal.value.substring(0, 7); 
+    const mesGlobalStr = elGlobal ? elGlobal.value.substring(0, 7) : (dataRefStr ? dataRefStr.substring(0, 7) : null);
+    
     if(!mesGlobalStr) return;
+    
     const bancoDados = window.bancoDadosCloud;
+    
+    let totalDiaGlobal = 0;
+    let caixasDiaGlobal = 0;
     
     let totalMesGlobal = 0;
     let caixasMesGlobal = 0;
 
+    // 1. Calcula o total exato do DIA selecionado
+    if (dataRefStr && bancoDados[dataRefStr]) {
+        for (const mot in bancoDados[dataRefStr]) {
+            totalDiaGlobal += bancoDados[dataRefStr][mot].valor;
+            if(bancoDados[dataRefStr][mot].tipoVeiculo !== 'cacamba') {
+                caixasDiaGlobal += bancoDados[dataRefStr][mot].servicos;
+            }
+        }
+    }
+
+    // 2. Calcula o total do MÊS
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataStr.startsWith(mesGlobalStr)) {
             for (const mot in dadosDia) { 
@@ -851,14 +869,16 @@ window.atualizarResumosGlobais = function() {
         }
     }
     
+    // Atualiza o CARTÃO VERDE (DIA)
     if(document.getElementById('totalDiaGlobal')) {
-        document.getElementById('totalDiaGlobal').innerText = `R$ ${totalMesGlobal.toFixed(2).replace('.', ',')}`;
-        document.getElementById('totalDiaGlobal').previousElementSibling.innerText = "TOTAL FROTA (MÊS)";
+        document.getElementById('totalDiaGlobal').innerText = `R$ ${totalDiaGlobal.toFixed(2).replace('.', ',')}`;
+        document.getElementById('totalDiaGlobal').previousElementSibling.innerText = "TOTAL FROTA (DIA)";
     }
     if(document.getElementById('caixasDiaGlobal')) {
-        document.getElementById('caixasDiaGlobal').innerText = `${caixasMesGlobal} cx`;
+        document.getElementById('caixasDiaGlobal').innerText = `${caixasDiaGlobal} cx`;
     }
 
+    // Atualiza o CARTÃO AZUL (MÊS)
     if(document.getElementById('totalSemanaGlobal')) {
         document.getElementById('totalSemanaGlobal').innerText = `R$ ${totalMesGlobal.toFixed(2).replace('.', ',')}`;
         document.getElementById('totalSemanaGlobal').previousElementSibling.innerText = "TOTAL FROTA (MÊS)";
@@ -867,7 +887,6 @@ window.atualizarResumosGlobais = function() {
         document.getElementById('caixasSemanaGlobal').innerText = `${caixasMesGlobal} cx`;
     }
 }
-
 window.gerarRankingPeriodo = function() {
     const elInicio = document.getElementById('dataRankingInicio');
     const elFim = document.getElementById('dataRankingFim');
