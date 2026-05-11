@@ -1244,15 +1244,19 @@ window.atualizarGraficosProjecao = function() {
             let pts = (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
             let qtdReal = dados.servicos;
             
-            if (mot === window.motoristaSelecionado) {
+          if (mot === window.motoristaSelecionado) {
                 if (isPeriodoAtual && !dados.isFeriado && diaDaSemana !== 0) {
-                    stats.atual += pts;
+                    stats.atual += pts; // Continua somando sábados no volume total
                     
-                    diasTrabalhadosInd++;
-                    let metaDiariaMot = window.getMetaDiaria(mot);
-                    if (pts >= metaDiariaMot) diasMetaBatidaInd++;
+                    // MUDANÇA: Conta Média e Consistência APENAS de Segunda (1) a Sexta (5)
+                    if (diaDaSemana >= 1 && diaDaSemana <= 5) {
+                        diasTrabalhadosInd++;
+                        let metaDiariaMot = window.getMetaDiaria(mot);
+                        if (pts >= metaDiariaMot) diasMetaBatidaInd++;
+                        
+                        somaServicosFisicosReal += qtdReal;
+                    }
                     
-                    somaServicosFisicosReal += qtdReal;
                     if (qtdReal > maxServicosDiarios) {
                         maxServicosDiarios = qtdReal;
                         dataRecordeFisico = data;
