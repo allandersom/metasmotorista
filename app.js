@@ -542,15 +542,19 @@ window.salvarLancamento = function() {
     if (!dataStr) { alert("Preencha a data do serviço."); return; }
 
     let tipoVeiculoInput = document.getElementById('tipoVeiculo').value;
-    let servicosInput = parseInt(document.getElementById('servicos').value) || 0;
+    let servicosRaw = document.getElementById('servicos').value; // Pega o que foi digitado de verdade
     let valorExtraInput = parseFloat(document.getElementById('valorExtra').value.replace(',','.')) || 0;
     let isFeriadoInput = document.getElementById('feriado') ? document.getElementById('feriado').checked : false;
     let observacaoInput = document.getElementById('observacao') ? document.getElementById('observacao').value.trim() : "";
 
-    if (servicosInput === 0 && valorExtraInput === 0 && observacaoInput === "") {
-        alert("Preencha serviços, valor extra ou observação.");
+    // Se estiver VAZIO, sem extra e sem observação, ele barra. Se digitar "0", ele deixa passar!
+    if (servicosRaw === "" && valorExtraInput === 0 && observacaoInput === "") {
+        alert("Preencha a quantidade (pode ser 0), o valor extra ou uma observação.");
         return;
     }
+
+    let servicosInput = parseInt(servicosRaw);
+    if (isNaN(servicosInput)) servicosInput = 0; // Previne erros de matemática caso passe vazio
 
     let bancoDados = window.bancoDadosCloud;
     if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
