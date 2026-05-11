@@ -34,23 +34,12 @@ window.configSlaCloud = {};
 window.motoristasCustom = {}; 
 window.motoristasInativos = []; 
 
-// Lógica Proporcional para o RANKING (Meta do Motorista)
 window.calcularPontosMotorista = function(nome, servicos, tipoVeiculo) {
-    let metaMot = window.getMetaDiaria(nome); // 4 ou 8
-    
-    if (tipoVeiculo === 'cacamba') {
-        // Caçamba 4 viagens completa 100% da meta de qualquer um
-        return servicos * (metaMot / 4);
-    }
-    if (tipoVeiculo === 'poli_duplo') {
-        // Poli duplo precisa do dobro de caixas pra fazer o mesmo ponto
-        return servicos / 2;
-    }
-    if (tipoVeiculo === 'misto') {
-        return servicos * (metaMot / 6); // Média proporcional para misto
-    }
-    
-    return servicos; // Poli simples = 1 pra 1
+    let metaMot = window.getMetaDiaria(nome); 
+    if (tipoVeiculo === 'cacamba') return servicos * (metaMot / 4);
+    if (tipoVeiculo === 'poli_duplo') return servicos / 2;
+    if (tipoVeiculo === 'misto') return servicos * (metaMot / 6); 
+    return servicos; 
 }
 
 onSnapshot(docRef, (docSnap) => {
@@ -102,9 +91,6 @@ window.syncToFirebase = function() {
     }).catch(err => alert("Erro ao salvar: " + err.message));
 }
 
-// ------------------------------------
-// GERENCIADOR DE MOTORISTAS (MODAL)
-// ------------------------------------
 window.gerenciarMotoristas = function() { window.abrirModalGerenciar(); }
 
 window.abrirModalGerenciar = function() {
@@ -192,7 +178,6 @@ window.reconstruirListasMotoristas = function() {
         if(window.motoristas.includes(selecionadoAntes)) selProjMot.value = selecionadoAntes;
     }
 }
-// ------------------------------------
 
 window.getMetaDiaria = function(nome) {
     return nome === "ROBERTO CARLOS" ? 4 : 8;
@@ -522,10 +507,7 @@ window.selecionarMotorista = function(nome, elementoLista) {
 
 window.selecionarMotoristaProjecao = function(nome) {
     if(!nome) return;
-    const itensLista = document.querySelectorAll('.driver-item');
-    itensLista.forEach(item => {
-        if(item.textContent.includes(nome)) window.selecionarMotorista(nome, item);
-    });
+    window.selecionarMotorista(nome, null);
 }
 
 window.formatarDataParaBusca = function(data) {
@@ -1200,6 +1182,9 @@ window.gerarPainelFeriados = function() {
     renderizarLista(registrosFer, 'listaFeriados', 'Nenhum serviço em feriados no período selecionado. 😴');
 }
 
+// --------------------------------------------------------
+// MÓDULO BI: LÓGICA DE PROJEÇÃO E ESTATÍSTICAS AVANÇADAS
+// --------------------------------------------------------
 window.atualizarGraficosProjecao = function() {
     const bancoDados = window.bancoDadosCloud;
     const elFiltro = document.getElementById('mesFiltro');
@@ -1214,6 +1199,15 @@ window.atualizarGraficosProjecao = function() {
     let dadosEvolucaoInd = [];
     let mapGeral = {};
     let stats = { atual: 0, passado: 0 };
+    
+    // Variáveis para as novas Estatísticas (BI)
+    let diasTrabalhadosInd = 0;
+    let diasMetaBatidaInd = 0;
+    let somaServicosFisicosReal = 0; // Para calcular média real (Cx/Vg físo, não pontos)
+    let maxServicosDiarios = 0;
+    let dataRecordeFisico = '';
+    let somaPontosDiaDaSemana = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    const nomesDias = { 1: 'Segunda-feira', 2: 'Terça-feira', 3: 'Quarta-feira', 4: 'Quinta-feira', 5: 'Sexta-feira', 6: 'Sábado' };
 
     if(document.getElementById('projecaoNomeMotorista')) {
         document.getElementById('projecaoNomeMotorista').innerText = window.motoristaSelecionado || "Ninguém Selecionado";
@@ -1222,16 +1216,31 @@ window.atualizarGraficosProjecao = function() {
     for (const [data, motoristasDia] of Object.entries(bancoDados)) {
         let isMesAtual = data.startsWith(mesAtualStr);
         let isMesPassado = data.startsWith(mesPassadoStr);
+        
+        let dataObj = new Date(data + 'T00:00:00');
+        let diaDaSemana = dataObj.getDay();
         let pontosDiaGeral = 0;
         
         for (const [mot, dados] of Object.entries(motoristasDia)) {
             let pts = (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
+            let qtdReal = dados.servicos;
             
             if (mot === window.motoristaSelecionado) {
-                if (isMesAtual && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
+                if (isMesAtual && !dados.isFeriado && diaDaSemana !== 0) {
                     stats.atual += pts;
+                    
+                    // Cálculo BI Individual
+                    diasTrabalhadosInd++;
+                    let metaDiariaMot = window.getMetaDiaria(mot);
+                    if (pts >= metaDiariaMot) diasMetaBatidaInd++;
+                    
+                    somaServicosFisicosReal += qtdReal;
+                    if (qtdReal > maxServicosDiarios) {
+                        maxServicosDiarios = qtdReal;
+                        dataRecordeFisico = data;
+                    }
                 }
-                if (isMesPassado && !dados.isFeriado && new Date(data + 'T00:00:00').getDay() !== 0) {
+                if (isMesPassado && !dados.isFeriado && diaDaSemana !== 0) {
                     stats.passado += pts;
                 }
                 if (isMesAtual) {
@@ -1245,8 +1254,9 @@ window.atualizarGraficosProjecao = function() {
             else if (filtroTurno === 'noite' && window.motJulia.includes(mot)) incluirNoGeral = true;
             else if (filtroTurno === 'especial' && window.motOutros.includes(mot)) incluirNoGeral = true;
 
-            if (isMesAtual && incluirNoGeral) {
+            if (isMesAtual && incluirNoGeral && !dados.isFeriado && diaDaSemana !== 0) {
                 pontosDiaGeral += pts;
+                somaPontosDiaDaSemana[diaDaSemana] += pts; // Pra descobrir o melhor dia da frota
             }
         }
         if (isMesAtual) {
@@ -1275,6 +1285,45 @@ window.atualizarGraficosProjecao = function() {
             }
         }
     }
+
+    // --- PREENCHENDO AS NOVAS ESTATÍSTICAS DE BI NA TELA ---
+    
+    // 1. Taxa de Consistência
+    let winRate = diasTrabalhadosInd > 0 ? Math.round((diasMetaBatidaInd / diasTrabalhadosInd) * 100) : 0;
+    if(document.getElementById('statWinRate')) {
+        document.getElementById('statWinRate').innerText = `${winRate}%`;
+        document.getElementById('statWinRateSub').innerText = `${diasMetaBatidaInd} metas batidas em ${diasTrabalhadosInd} dias`;
+    }
+
+    // 2. Média Diária Real vs Necessária
+    let mediaReal = diasTrabalhadosInd > 0 ? (somaServicosFisicosReal / diasTrabalhadosInd).toFixed(1) : 0;
+    let metaDiariaFixa = window.motoristaSelecionado ? window.getMetaDiaria(window.motoristaSelecionado) : 0;
+    if(document.getElementById('statMediaReal')) {
+        document.getElementById('statMediaReal').innerText = `${mediaReal} ${txtSufixo}/dia`;
+        let metaVisual = window.motOutros.includes(window.motoristaSelecionado) ? (metaDiariaFixa / 2) + " vg" : metaDiariaFixa + " cx";
+        document.getElementById('statMediaNec').innerText = `SLA pede: ${metaVisual} /dia`;
+    }
+
+    // 3. Recorde Pessoal
+    if(document.getElementById('statRecorde')) {
+        document.getElementById('statRecorde').innerText = `${maxServicosDiarios} ${txtSufixo}`;
+        document.getElementById('statRecordeData').innerText = dataRecordeFisico ? `Dia ${window.formatarDataParaExibicao(dataRecordeFisico)}` : "Sem registros";
+    }
+
+    // 4. Melhor Dia da Semana da Frota
+    let melhorDiaChave = Object.keys(somaPontosDiaDaSemana).reduce((a, b) => somaPontosDiaDaSemana[a] > somaPontosDiaDaSemana[b] ? a : b);
+    let ptsMelhorDia = somaPontosDiaDaSemana[melhorDiaChave];
+    
+    if(document.getElementById('statMelhorDia')) {
+        if (ptsMelhorDia > 0) {
+            document.getElementById('statMelhorDia').innerText = nomesDias[melhorDiaChave];
+            document.getElementById('statMelhorDiaPts').innerText = `${Math.round(ptsMelhorDia)} pts acumulados`;
+        } else {
+            document.getElementById('statMelhorDia').innerText = "N/A";
+            document.getElementById('statMelhorDiaPts').innerText = "Sem dados";
+        }
+    }
+    // --------------------------------------------------------
 
     dadosEvolucaoInd.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
     const labelsInd = dadosEvolucaoInd.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
