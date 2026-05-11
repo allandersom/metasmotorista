@@ -273,8 +273,8 @@ window.renderizarSidebar = function() {
         });
     }
 
-    if(filtroVal === 'todos' || filtroVal === 'dia') criarGrupo('Dia', window.motRayanna, '☀️');
-    if(filtroVal === 'todos' || filtroVal === 'noite') criarGrupo('Noite', window.motJulia, '🌙');
+    if(filtroVal === 'todos' || filtroVal === 'dia') criarGrupo('Dia (Rayanna)', window.motRayanna, '☀️');
+    if(filtroVal === 'todos' || filtroVal === 'noite') criarGrupo('Noite (Júlia)', window.motJulia, '🌙');
     if(filtroVal === 'todos' || filtroVal === 'especial') criarGrupo('Especial (Caçamba)', window.motOutros, '🚛');
     
     lucide.createIcons();
@@ -499,14 +499,12 @@ window.selecionarMotorista = function(nome, elementoLista) {
     
     const selectVeiculo = document.getElementById('tipoVeiculo');
     if(selectVeiculo) {
-        // LIBERADO PARA TODOS
         selectVeiculo.innerHTML = `
             <option value="poliguindaste">Poliguindaste Simples (Meta 4 Cx p/ Faturamento)</option>
             <option value="poli_duplo">Poliguindaste Duplo (Meta 8 Cx p/ Faturamento)</option>
             <option value="cacamba">Caminhão Caçamba (Meta 4 Vg p/ Faturamento)</option>
         `;
         
-        // Mantém a pré-seleção baseada na preferência antiga pra facilitar sua vida
         if(window.motOutros.includes(nome)) { 
             selectVeiculo.value = "cacamba";
         } else {
@@ -524,7 +522,10 @@ window.selecionarMotorista = function(nome, elementoLista) {
 
 window.selecionarMotoristaProjecao = function(nome) {
     if(!nome) return;
-    window.selecionarMotorista(nome, null);
+    const itensLista = document.querySelectorAll('.driver-item');
+    itensLista.forEach(item => {
+        if(item.textContent.includes(nome)) window.selecionarMotorista(nome, item);
+    });
 }
 
 window.formatarDataParaBusca = function(data) {
@@ -539,9 +540,6 @@ window.formatarDataParaExibicao = function(dataStr) {
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
-// ------------------------------------
-// A MÁGICA FINANCEIRA (FATURAMENTO FIXO POR VEÍCULO)
-// ------------------------------------
 window.salvarLancamento = function() {
     if (!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
     
@@ -595,8 +593,7 @@ window.salvarLancamento = function() {
     const isDomingo = diaSemana === 0;
     const isSabado = diaSemana === 6;
     
-    // DEFINIÇÃO DO FINANCEIRO (IGUAL PARA TODOS OS MOTORISTAS)
-    let metaFinanceira = 4; // Base Poliguindaste Simples
+    let metaFinanceira = 4;
     let valorExtraPorUnidade = 10;
 
     if (tipoVeiculoFinal === 'cacamba') {
@@ -636,12 +633,10 @@ window.salvarLancamento = function() {
             }
         }
 
-        // Meta semanal baseada nos pontos daquele motorista
         let metaBaseMotorista = window.getMetaDiaria(window.motoristaSelecionado);
         let metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseMotorista; 
         let pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
 
-        // Converte pontos faltantes na física do veículo do sábado
         let divisorParaFisico = 1;
         if(tipoVeiculoFinal === 'poli_duplo') divisorParaFisico = 0.5;
         if(tipoVeiculoFinal === 'cacamba') divisorParaFisico = metaBaseMotorista / 4;
@@ -658,14 +653,12 @@ window.salvarLancamento = function() {
             if(calcServicosNormais < 50) calcServicosNormais = 50; 
         }
         
-        // Sábado dobra o valor do excedente
         let calcServicosBonus = servicosBonus * (valorExtraPorUnidade * 2); 
 
         valorNormalBase = calcServicosNormais + calcServicosBonus;
         bateuMetaSemana = servicosBonus > 0;
     } 
     else {
-        // DIAS NORMAIS DA SEMANA (Financeiro Fixo)
         if (servicosFinais >= metaFinanceira) { 
             valorNormalBase = 50 + ((servicosFinais - metaFinanceira) * valorExtraPorUnidade); 
         }
@@ -826,7 +819,7 @@ window.atualizarResumosDoMotorista = function() {
         if(document.getElementById('motoristaCaixasMes')) document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx | ${totalViagensMes} vg`;
         if(document.getElementById('motoristaPrevisaoMes')) document.getElementById('motoristaPrevisaoMes').innerText = `${previsaoPontos / 2} vg`;
     } else {
-        textoMeta = `${metaMensalPontos} pts`;
+        textoMeta = `${metaMensalPontos} cx`;
         if(document.getElementById('motoristaCaixasMes')) document.getElementById('motoristaCaixasMes').innerText = `${totalCaixasMes} cx`;
         
         let exibeCaixas = (totalPontosMes > 0 && totalCaixasMes > totalPontosMes) 
@@ -1029,8 +1022,8 @@ window.gerarRankingMensal = function() {
     function renderizarMeta(feitas, meta, elValor, elFalta) {
         let perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0;
         let faltam = Math.max(0, meta - feitas);
-        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${Math.round(feitas)} / ${meta} cx;
-        if(document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${Math.round(faltam)}`;
+        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${Math.round(feitas)} / ${meta} cx`;
+        if(document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${Math.round(faltam)} cx`;
     }
 
     renderizarMeta(feitasGeral, ptsGeral, 'metaGeralGlobal', 'faltaGeralGlobal');
@@ -1093,7 +1086,7 @@ window.gerarRankingMensal = function() {
             if (window.motOutros.includes(mot.nome)) {
                 txtFaltam = `Faltam ${Math.ceil(faltam / 2)} vg`;
             } else {
-                txtFaltam = Faltam ${Math.ceil(faltam)} cx;
+                txtFaltam = `Faltam ${Math.ceil(faltam)} cx`;
             }
             htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
         } else {
