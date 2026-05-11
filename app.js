@@ -36,9 +36,17 @@ window.motoristasInativos = [];
 
 window.calcularPontosMotorista = function(nome, servicos, tipoVeiculo) {
     let metaMot = window.getMetaDiaria(nome); 
-    if (tipoVeiculo === 'cacamba') return servicos * (metaMot / 4);
-    if (tipoVeiculo === 'poli_duplo') return servicos / 2;
-    if (tipoVeiculo === 'misto') return servicos * (metaMot / 6); 
+    
+    if (tipoVeiculo === 'cacamba') {
+        return servicos * (metaMot / 4);
+    }
+    if (tipoVeiculo === 'poli_duplo') {
+        return servicos / 2;
+    }
+    if (tipoVeiculo === 'misto') {
+        return servicos * (metaMot / 6); 
+    }
+    
     return servicos; 
 }
 
@@ -199,6 +207,10 @@ if(document.getElementById('dataDomInicio')) document.getElementById('dataDomIni
 if(document.getElementById('dataDomFim')) document.getElementById('dataDomFim').value = hojeStr;
 if(document.getElementById('dataFerInicio')) document.getElementById('dataFerInicio').value = startStr;
 if(document.getElementById('dataFerFim')) document.getElementById('dataFerFim').value = hojeStr;
+
+// Injeta datas padrão na nova tela de projeção
+if(document.getElementById('dataProjInicio')) document.getElementById('dataProjInicio').value = startStr;
+if(document.getElementById('dataProjFim')) document.getElementById('dataProjFim').value = hojeStr;
 
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('sidebar');
@@ -1182,31 +1194,34 @@ window.gerarPainelFeriados = function() {
     renderizarLista(registrosFer, 'listaFeriados', 'Nenhum serviço em feriados no período selecionado. 😴');
 }
 
-// --------------------------------------------------------
-// MÓDULO BI: LÓGICA DE PROJEÇÃO E ESTATÍSTICAS AVANÇADAS
-// --------------------------------------------------------
 window.atualizarGraficosProjecao = function() {
     const bancoDados = window.bancoDadosCloud;
-    const elFiltro = document.getElementById('mesFiltro');
-    const mesAtualStr = elFiltro ? elFiltro.value : new Date().toISOString().substring(0, 7);
     
+    const inicio = document.getElementById('dataProjInicio') ? document.getElementById('dataProjInicio').value : null;
+    const fim = document.getElementById('dataProjFim') ? document.getElementById('dataProjFim').value : null;
     const filtroTurno = document.getElementById('filtroProjTurno') ? document.getElementById('filtroProjTurno').value : 'todos';
 
-    let [ano, mes] = mesAtualStr.split('-');
-    let dataPassado = new Date(ano, parseInt(mes) - 2, 1);
-    let mesPassadoStr = dataPassado.getFullYear() + "-" + String(dataPassado.getMonth() + 1).padStart(2, '0');
+    if (!inicio || !fim) return;
+
+    // Calcula o Período Anterior (Exatamente 1 mês antes das datas escolhidas)
+    let dIni = new Date(inicio + 'T00:00:00');
+    let dFim = new Date(fim + 'T00:00:00');
+    dIni.setMonth(dIni.getMonth() - 1);
+    dFim.setMonth(dFim.getMonth() - 1);
+    
+    let inicioPassadoStr = window.formatarDataParaBusca(dIni);
+    let fimPassadoStr = window.formatarDataParaBusca(dFim);
 
     let dadosEvolucaoInd = [];
     let mapGeral = {};
     let stats = { atual: 0, passado: 0 };
     
-    // Variáveis para as novas Estatísticas (BI)
     let diasTrabalhadosInd = 0;
     let diasMetaBatidaInd = 0;
-    let somaServicosFisicosReal = 0; // Para calcular média real (Cx/Vg físo, não pontos)
+    let somaServicosFisicosReal = 0; 
     let maxServicosDiarios = 0;
     let dataRecordeFisico = '';
-    let somaPontosDiaDaSemana = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    let somaPontosDiaDaSemana = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }; 
     const nomesDias = { 1: 'Segunda-feira', 2: 'Terça-feira', 3: 'Quarta-feira', 4: 'Quinta-feira', 5: 'Sexta-feira', 6: 'Sábado' };
 
     if(document.getElementById('projecaoNomeMotorista')) {
@@ -1214,8 +1229,8 @@ window.atualizarGraficosProjecao = function() {
     }
 
     for (const [data, motoristasDia] of Object.entries(bancoDados)) {
-        let isMesAtual = data.startsWith(mesAtualStr);
-        let isMesPassado = data.startsWith(mesPassadoStr);
+        let isPeriodoAtual = (data >= inicio && data <= fim);
+        let isPeriodoPassado = (data >= inicioPassadoStr && data <= fimPassadoStr);
         
         let dataObj = new Date(data + 'T00:00:00');
         let diaDaSemana = dataObj.getDay();
@@ -1226,10 +1241,9 @@ window.atualizarGraficosProjecao = function() {
             let qtdReal = dados.servicos;
             
             if (mot === window.motoristaSelecionado) {
-                if (isMesAtual && !dados.isFeriado && diaDaSemana !== 0) {
+                if (isPeriodoAtual && !dados.isFeriado && diaDaSemana !== 0) {
                     stats.atual += pts;
                     
-                    // Cálculo BI Individual
                     diasTrabalhadosInd++;
                     let metaDiariaMot = window.getMetaDiaria(mot);
                     if (pts >= metaDiariaMot) diasMetaBatidaInd++;
@@ -1240,10 +1254,10 @@ window.atualizarGraficosProjecao = function() {
                         dataRecordeFisico = data;
                     }
                 }
-                if (isMesPassado && !dados.isFeriado && diaDaSemana !== 0) {
+                if (isPeriodoPassado && !dados.isFeriado && diaDaSemana !== 0) {
                     stats.passado += pts;
                 }
-                if (isMesAtual) {
+                if (isPeriodoAtual) {
                     dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
                 }
             }
@@ -1254,12 +1268,12 @@ window.atualizarGraficosProjecao = function() {
             else if (filtroTurno === 'noite' && window.motJulia.includes(mot)) incluirNoGeral = true;
             else if (filtroTurno === 'especial' && window.motOutros.includes(mot)) incluirNoGeral = true;
 
-            if (isMesAtual && incluirNoGeral && !dados.isFeriado && diaDaSemana !== 0) {
+            if (isPeriodoAtual && incluirNoGeral && !dados.isFeriado && diaDaSemana !== 0) {
                 pontosDiaGeral += pts;
-                somaPontosDiaDaSemana[diaDaSemana] += pts; // Pra descobrir o melhor dia da frota
+                somaPontosDiaDaSemana[diaDaSemana] += pts; 
             }
         }
-        if (isMesAtual) {
+        if (isPeriodoAtual) {
             mapGeral[data] = pontosDiaGeral;
         }
     }
@@ -1276,26 +1290,22 @@ window.atualizarGraficosProjecao = function() {
         } else {
             let diff = Math.round(stats.atual - stats.passado);
             if (diff > 0) {
-                elCrescimento.innerHTML = `<span class="text-emerald-600 bg-emerald-100 px-3 py-1 rounded-xl text-sm font-bold">+${diff}${txtSufixo} a mais</span><span class="text-xs text-slate-500 font-medium">que o mês anterior</span>`;
+                elCrescimento.innerHTML = `<span class="text-emerald-600 bg-emerald-100 px-3 py-1 rounded-xl text-sm font-bold">+${diff}${txtSufixo}</span><span class="text-xs text-slate-500 font-medium">vs Per. Anterior</span>`;
             } else if (diff < 0) {
                 let numeroPositivo = Math.abs(diff);
-                elCrescimento.innerHTML = `<span class="text-red-600 bg-red-100 px-3 py-1 rounded-xl text-sm font-bold">-${numeroPositivo}${txtSufixo} a menos</span><span class="text-xs text-slate-500 font-medium">que o mês anterior</span>`;
+                elCrescimento.innerHTML = `<span class="text-red-600 bg-red-100 px-3 py-1 rounded-xl text-sm font-bold">-${numeroPositivo}${txtSufixo}</span><span class="text-xs text-slate-500 font-medium">vs Per. Anterior</span>`;
             } else {
-                elCrescimento.innerHTML = `<span class="text-slate-600 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Empatado</span><span class="text-xs text-slate-500 font-medium">com o mês anterior</span>`;
+                elCrescimento.innerHTML = `<span class="text-slate-600 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Empatado</span><span class="text-xs text-slate-500 font-medium">vs Per. Anterior</span>`;
             }
         }
     }
 
-    // --- PREENCHENDO AS NOVAS ESTATÍSTICAS DE BI NA TELA ---
-    
-    // 1. Taxa de Consistência
     let winRate = diasTrabalhadosInd > 0 ? Math.round((diasMetaBatidaInd / diasTrabalhadosInd) * 100) : 0;
     if(document.getElementById('statWinRate')) {
         document.getElementById('statWinRate').innerText = `${winRate}%`;
         document.getElementById('statWinRateSub').innerText = `${diasMetaBatidaInd} metas batidas em ${diasTrabalhadosInd} dias`;
     }
 
-    // 2. Média Diária Real vs Necessária
     let mediaReal = diasTrabalhadosInd > 0 ? (somaServicosFisicosReal / diasTrabalhadosInd).toFixed(1) : 0;
     let metaDiariaFixa = window.motoristaSelecionado ? window.getMetaDiaria(window.motoristaSelecionado) : 0;
     if(document.getElementById('statMediaReal')) {
@@ -1304,26 +1314,23 @@ window.atualizarGraficosProjecao = function() {
         document.getElementById('statMediaNec').innerText = `SLA pede: ${metaVisual} /dia`;
     }
 
-    // 3. Recorde Pessoal
     if(document.getElementById('statRecorde')) {
         document.getElementById('statRecorde').innerText = `${maxServicosDiarios} ${txtSufixo}`;
         document.getElementById('statRecordeData').innerText = dataRecordeFisico ? `Dia ${window.formatarDataParaExibicao(dataRecordeFisico)}` : "Sem registros";
     }
 
-    // 4. Melhor Dia da Semana da Frota
     let melhorDiaChave = Object.keys(somaPontosDiaDaSemana).reduce((a, b) => somaPontosDiaDaSemana[a] > somaPontosDiaDaSemana[b] ? a : b);
     let ptsMelhorDia = somaPontosDiaDaSemana[melhorDiaChave];
     
     if(document.getElementById('statMelhorDia')) {
-        if (ptsMelhorDia > 0) {
+        if (ptsMelhorDia > 0 && nomesDias[melhorDiaChave]) {
             document.getElementById('statMelhorDia').innerText = nomesDias[melhorDiaChave];
             document.getElementById('statMelhorDiaPts').innerText = `${Math.round(ptsMelhorDia)} pts acumulados`;
         } else {
             document.getElementById('statMelhorDia').innerText = "N/A";
-            document.getElementById('statMelhorDiaPts').innerText = "Sem dados";
+            document.getElementById('statMelhorDiaPts').innerText = "Sem dados suficientes";
         }
     }
-    // --------------------------------------------------------
 
     dadosEvolucaoInd.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
     const labelsInd = dadosEvolucaoInd.map(d => window.formatarDataParaExibicao(d.dataStr).substring(0, 5));
