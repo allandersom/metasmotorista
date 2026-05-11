@@ -381,21 +381,43 @@ window.selecionarMotorista = function(nome, elementoLista) {
         
         if(nome === "CLOVIS" || nome === "RODRIGO") { 
             selectVeiculo.innerHTML = `<option value="cacamba">Caminhão Caçamba (Meta 4 Vg)</option>`;
-            selectVeiculo.value = "cacamba";
         } else {
             selectVeiculo.innerHTML = `
                 <option value="poliguindaste">Poliguindaste Simples (Meta ${metaPoli} Cx)</option>
                 <option value="poli_duplo">Poliguindaste Duplo (Meta 8 Cx)</option>
             `;
-            selectVeiculo.value = "poliguindaste";
         }
     }
+    
+    // NOVO: Atualiza a caixinha lá na aba de projeção
+    if(document.getElementById('filtroProjMot')) document.getElementById('filtroProjMot').value = nome;
     
     window.atualizarSlaInput();
     window.carregarHistoricoMotorista();
     window.atualizarResumosDoMotorista();
     window.atualizarGraficosProjecao();
 }
+
+window.selecionarMotoristaProjecao = function(nome) {
+    if(!nome) return;
+    const itensLista = document.querySelectorAll('.driver-item');
+    itensLista.forEach(item => {
+        if(item.textContent === nome) window.selecionarMotorista(nome, item);
+    });
+}
+
+// Carrega os nomes na caixinha de projeção quando o sistema abre
+setTimeout(() => {
+    const selProjMot = document.getElementById('filtroProjMot');
+    if(selProjMot && selProjMot.options.length <= 1) {
+        motoristas.forEach(m => {
+            let opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            selProjMot.appendChild(opt);
+        });
+    }
+}, 500);
 
 window.formatarDataParaBusca = function(data) {
     const ano = data.getFullYear();
@@ -1067,6 +1089,9 @@ window.atualizarGraficosProjecao = function() {
     const elFiltro = document.getElementById('mesFiltro');
     const mesAtualStr = elFiltro ? elFiltro.value : new Date().toISOString().substring(0, 7);
     
+    // Puxa qual turno você quer ver no gráfico verde
+    const filtroTurno = document.getElementById('filtroProjTurno') ? document.getElementById('filtroProjTurno').value : 'todos';
+
     let [ano, mes] = mesAtualStr.split('-');
     let dataPassado = new Date(ano, parseInt(mes) - 2, 1);
     let mesPassadoStr = dataPassado.getFullYear() + "-" + String(dataPassado.getMonth() + 1).padStart(2, '0');
@@ -1099,7 +1124,15 @@ window.atualizarGraficosProjecao = function() {
                     dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
                 }
             }
-            if (isMesAtual) {
+            
+            // LÓGICA DO FILTRO DE TURNO NO GRÁFICO GERAL
+            let incluirNoGeral = false;
+            if (filtroTurno === 'todos') incluirNoGeral = true;
+            else if (filtroTurno === 'dia' && motRayanna.includes(mot)) incluirNoGeral = true;
+            else if (filtroTurno === 'noite' && motJulia.includes(mot)) incluirNoGeral = true;
+            else if (filtroTurno === 'especial' && motOutros.includes(mot)) incluirNoGeral = true;
+
+            if (isMesAtual && incluirNoGeral) {
                 pontosDiaGeral += pts;
             }
         }
@@ -1163,6 +1196,36 @@ window.atualizarGraficosProjecao = function() {
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
         });
     }
+
+    const ctxGeral = document.getElementById('chartEvolucaoGeral');
+    if (ctxGeral) {
+        if (window.chartInstanciaGeral) window.chartInstanciaGeral.destroy();
+        
+        let nomeTurnoGrafico = 'Frota Completa';
+        if(filtroTurno === 'dia') nomeTurnoGrafico = 'Turno Dia (Rayanna)';
+        if(filtroTurno === 'noite') nomeTurnoGrafico = 'Turno Noite (Júlia)';
+        if(filtroTurno === 'especial') nomeTurnoGrafico = 'Especial (Caçamba)';
+
+        window.chartInstanciaGeral = new Chart(ctxGeral.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labelsGeral,
+                datasets: [{
+                    label: nomeTurnoGrafico + ' (Pontos)',
+                    data: dataGeral,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#10b981',
+                    fill: true,
+                    tension: 0.3 
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+        });
+    }
+}
 
     const ctxGeral = document.getElementById('chartEvolucaoGeral');
     if (ctxGeral) {
