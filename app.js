@@ -1035,8 +1035,8 @@ window.atualizarGraficosProjecao = function() {
     }
 }
 
-// Função que lê o arquivo JSON e envia pro Firebase
-function processarRestauracaoBackup(event) {
+// Função que lê o arquivo JSON e envia pro Firebase (CORRIGIDA PRO SEU SISTEMA)
+window.processarRestauracaoBackup = function(event) {
     const arquivo = event.target.files[0];
     if (!arquivo) return;
 
@@ -1046,28 +1046,53 @@ function processarRestauracaoBackup(event) {
         try {
             const dadosBackup = JSON.parse(e.target.result);
             
-            const confirmar = confirm(`Arquivo lido com sucesso!\nForam encontrados ${dadosBackup.length} registros.\n\nDeseja injetar esses dados no sistema?`);
+            // Verifica se o arquivo é um objeto (Backup) e não um array (Código da IA)
+            if (typeof dadosBackup !== 'object' || Array.isArray(dadosBackup)) {
+                alert("O arquivo selecionado não parece ser um backup válido gerado pelo botão do sistema.");
+                document.getElementById('inputRestaurarBackup').value = '';
+                return;
+            }
+
+            const qtdDias = Object.keys(dadosBackup).length;
+            
+            const confirmar = confirm(`✅ Arquivo de backup lido com sucesso!\nForam encontrados dados de ${qtdDias} dias diferentes.\n\n⚠️ ATENÇÃO: Isso vai SOBRESCREVER todos os lançamentos atuais com os dados deste backup.\n\nDeseja continuar?`);
             
             if (!confirmar) {
                 document.getElementById('inputRestaurarBackup').value = '';
                 return;
             }
 
-            console.log("Iniciando restauração...");
+            // Mostra a tela de carregamento
+            if(document.getElementById('loader')) { document.getElementById('loader').style.display = 'flex'; document.getElementById('loader').style.opacity = '1'; }
 
-            // ATENÇÃO: Confirme se a sua coleção no Firebase se chama 'lancamentos' mesmo
-            for (let i = 0; i < dadosBackup.length; i++) {
-                const item = dadosBackup[i];
-                await db.collection("lancamentos").add(item);
-                console.log(`Restaurando: ${i + 1} de ${dadosBackup.length}`);
+            // Substitui os dados atuais pelos dados do Backup!
+            window.bancoDadosCloud = dadosBackup;
+
+            // Salva na nuvem usando a sua própria função já configurada
+            window.syncToFirebase();
+
+            // Atualiza todos os gráficos e tabelas da tela
+            window.sincronizarMesFiltro(); 
+            window.atualizarResumosGlobais(); 
+            window.gerarRankingPeriodo(); 
+            window.gerarRankingMensal(); 
+            window.gerarPainelFeriados();
+            if(window.motoristaSelecionado) { 
+                window.carregarHistoricoMotorista(); 
+                window.atualizarResumosDoMotorista(); 
+                window.atualizarGraficosProjecao(); 
             }
 
-            alert("🔥 Backup restaurado com sucesso! Atualize a página para ver os dados.");
+            // Esconde a tela de carregamento
+            if(document.getElementById('loader')) { document.getElementById('loader').style.opacity = '0'; setTimeout(()=> document.getElementById('loader').style.display = 'none', 300); }
+
+            alert("🔥 Backup restaurado com sucesso! O painel já está atualizado.");
             document.getElementById('inputRestaurarBackup').value = '';
 
         } catch (erro) {
             console.error("Erro na restauração:", erro);
-            alert("Deu ruim na leitura do arquivo! Verifique se é um .json válido.");
+            alert("Deu ruim na leitura do arquivo! Verifique se é um arquivo .json válido.");
+            if(document.getElementById('loader')) { document.getElementById('loader').style.opacity = '0'; setTimeout(()=> document.getElementById('loader').style.display = 'none', 300); }
         }
     };
 
