@@ -106,7 +106,7 @@ window.apagarTudo = async function() {
     }
 }
 
-// A FUNÇÃO MESTRA DE LEITURA DA INTELIGÊNCIA ARTIFICIAL
+// A FUNÇÃO MESTRA DE LEITURA DA INTELIGÊNCIA ARTIFICIAL (CORRIGIDA)
 window.importarDadosIA = function() {
     const jsonText = document.getElementById('codigoIA').value.trim();
     if (!jsonText) { alert("Cole o código gerado pela IA antes de importar!"); return; }
@@ -122,15 +122,13 @@ window.importarDadosIA = function() {
     if(document.getElementById('loader')) { document.getElementById('loader').style.display = 'flex'; document.getElementById('loader').style.opacity = '1'; }
 
     let banco = window.bancoDadosCloud;
-    
-    // Ordena pela data para garantir que o bônus de Sábado leia os dias anteriores corretamente
     dados.sort((a, b) => new Date(a.data) - new Date(b.data));
 
     let inseridos = 0;
     dados.forEach(lanc => {
         let dataStr = lanc.data;
         let mot = lanc.motorista.toUpperCase().trim();
-        if (!window.motoristas.includes(mot)) return; // Ignora se a IA errar feio o nome
+        if (!window.motoristas.includes(mot)) return; 
         
         if (!banco[dataStr]) banco[dataStr] = {};
 
@@ -141,7 +139,7 @@ window.importarDadosIA = function() {
         let isFeriadoFinal = lanc.isFeriado === true;
         let tipoVeiculoFinal = lanc.veiculo || (window.motOutros.includes(mot) ? 'cacamba' : 'poliguindaste');
         let valorExtraFinal = parseFloat(lanc.extra) || 0;
-        let observacaoFinal = lanc.observacao || ""; // Vazio como você pediu (Sem "Lançado Pela IA")
+        let observacaoFinal = lanc.observacao || "";
 
         if (statusFinal !== 'normal') {
             servicosFinais = 0;
@@ -153,7 +151,10 @@ window.importarDadosIA = function() {
         let isDomingo = diaSemana === 0;
         let isSabado = diaSemana === 6;
 
-        let metaFinanceira = 4; let valorExtraPorUnidade = 10;
+        // 🔥 CORREÇÃO DA META AQUI! AGORA ELE PUXA 8 PRA TODOS E 4 PRO ROBERTO CARLOS
+        let metaFinanceira = window.getMetaDiaria(mot); 
+        let valorExtraPorUnidade = 10;
+        
         if (tipoVeiculoFinal === 'cacamba') { metaFinanceira = 4; valorExtraPorUnidade = 20; }
         else if (tipoVeiculoFinal === 'poli_duplo') { metaFinanceira = 8; valorExtraPorUnidade = 10; }
         else if (tipoVeiculoFinal === 'misto') { metaFinanceira = 6; valorExtraPorUnidade = 10; }
