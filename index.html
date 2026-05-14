@@ -534,6 +534,7 @@
                 </button>
             </div>
             <div class="p-6 space-y-6">
+                
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col gap-2 cursor-pointer hover:border-blue-500 transition-all group" onclick="window.gerarBackup()">
                     <div class="flex items-center gap-3">
                         <i data-lucide="download-cloud" class="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform"></i>
@@ -543,6 +544,17 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="bg-orange-50 p-4 rounded-xl border border-orange-200 cursor-pointer hover:border-orange-500 transition-all group mt-2" onclick="document.getElementById('inputRestaurarBackup').click()">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="upload-cloud" class="w-6 h-6 text-orange-500 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <h4 class="font-black text-orange-800">Restaurar Backup (.json)</h4>
+                            <p class="text-[11px] text-orange-600">Envia um arquivo de backup do seu PC de volta para o sistema.</p>
+                        </div>
+                    </div>
+                </div>
+                <input type="file" id="inputRestaurarBackup" accept=".json" style="display: none;" onchange="window.processarRestauracaoBackup(event)">
                 
                 <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 group">
                     <div class="flex items-center gap-3 mb-3">
