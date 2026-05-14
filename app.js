@@ -804,6 +804,165 @@ window.obterRankElo = function(percentual) {
 }
 
 window.gerarRankingMensal = function() {
+    const elFiltro = document.getElementById('mesFiltro'); if(!elFiltro) return; const mesFiltro = elFiltro.value; if (!mesFiltro) return;
+    
+    let diasUteisGlobais = window.carregarDiasUteis(mesFiltro); 
+    const bancoDados = window.bancoDadosCloud;
+    
+    let acumuladoMes = {}; 
+    let totalCaixasFrota = 0; let totalViagensFrota = 0; let totalFatMesFrota = 0;
+    
+    // 1. Descobrir qual é o PRIMEIRO DIA ÚTIL REAL (Segunda a Sexta, sem ser feriado)
+    let todasDatasMes = Object.keys(bancoDados).filter(d => d.startsWith(mesFiltro)).sort();
+    let primeiroDiaUtilReal = null;
+    
+    for(let data of todasDatasMes) {
+        let dObj = new Date(data + 'T00:00:00');
+        let diaSemana = dObj.getDay();
+        let temFeriado = Object.values(bancoDados[data]).some(l => l.isFeriado);
+        
+        // Pega o primeiro dia que seja entre Segunda (1) e Sexta (5) e que NÃO seja feriado
+        if(diaSemana >= 1 && diaSemana <= 5 && !temFeriado) {
+            primeiroDiaUtilReal = data;
+            break;
+        }
+    }
+
+    // Inicializa todos os motoristas
+    window.motoristas.forEach(m => {
+        acumuladoMes[m] = { 
+            caixas: 0, viagens: 0, valor: 0, pontos: 0, 
+            diasAptosMotorista: 0, 
+            caiuNaRegraProporcional: false
+        };
+    });
+
+    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        if (dataStr.startsWith(mesFiltro)) {
+            const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
+            
+            for (const [mot, dados] of Object.entries(dadosDia)) {
+                if (acumuladoMes[mot]) {
+                    let statusMot = (dados.status || 'normal').toLowerCase();
+
+                    // REGRA DE OURO: Se no PRIMEIRO DIA ÚTIL REAL ele estava Poli Off, ou se foi desligado em qualquer momento, ativa a proporção!
+                    if (dataStr === primeiroDiaUtilReal && statusMot === 'polioff') {
+                        acumuladoMes[mot].caiuNaRegraProporcional = true;
+                    }
+                    if (statusMot === 'desligado') {
+                        acumuladoMes[mot].caiuNaRegraProporcional = true;
+                    }
+
+                    // CONTA SÓ OS DIAS QUE ELE REALMENTE RODOU (Ignora os dias de Poli Off e Desligado)
+                    if (!isDomingo && !dados.isFeriado) {
+                        if (statusMot !== 'desligado' && statusMot !== 'polioff') {
+                            acumuladoMes[mot].diasAptosMotorista++;
+                        }
+                    }
+
+                    // Soma de Faturamento e Caixas/Pontos
+                    if (!isDomingo && !dados.isFeriado && statusMot === 'normal') {
+                        if(dados.tipoVeiculo === 'cacamba') { acumuladoMes[mot].viagens += dados.servicos; totalViagensFrota += dados.servicos; } 
+                        else { acumuladoMes[mot].caixas += dados.servicos; totalCaixasFrota += dados.servicos; }
+                        acumuladoMes[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
+                    }
+                    acumuladoMes[mot].valor += dados.valor;
+                    totalFatMesFrota += dados.valor;
+                }
+            }
+        }
+    }
+
+    // A MÁGICA DA META PROPORCIONAL (SEM SLA INDIVIDUAL!)
+    function getMetaCalculadaMotorista(mot, info) {
+        let metaDiaria = window.getMetaDiaria(mot);
+        let metaCheiaDoMes = metaDiaria * diasUteisGlobais; 
+        
+        // Se caiu na regra (Poli Off na Segunda ou Desligado), a meta é SÓ sobre os dias que rodou
+        if (info && info.caiuNaRegraProporcional) {
+            if (info.diasAptosMotorista === 0) return 0;
+            let fracaoMes = info.diasAptosMotorista / diasUteisGlobais;
+            return metaCheiaDoMes * fracaoMes; 
+        }
+        
+        // Se não caiu na exceção, é a meta cheia do mês, doa a quem doer!
+        return metaCheiaDoMes; 
+    }
+
+    let ptsRayanna = 0, feitasRayanna = 0;
+    window.motRayanna.forEach(mot => { 
+        let info = acumuladoMes[mot];
+        ptsRayanna += getMetaCalculadaMotorista(mot, info); 
+        if(info) feitasRayanna += info.pontos; 
+    });
+    
+    let ptsJulia = 0, feitasJulia = 0;
+    window.motJulia.forEach(mot => { 
+        let info = acumuladoMes[mot];
+        ptsJulia += getMetaCalculadaMotorista(mot, info); 
+        if(info) feitasJulia += info.pontos; 
+    });
+
+    let ptsGeral = ptsRayanna + ptsJulia; let feitasGeral = feitasRayanna + feitasJulia;
+
+    if(document.getElementById('totalViagensMesGlobal')) document.getElementById('totalViagensMesGlobal').innerText = `${totalViagensFrota} vg`;
+    if(document.getElementById('totalFatMensalLeaderboard')) document.getElementById('totalFatMensalLeaderboard').innerText = `R$ ${totalFatMesFrota.toFixed(2).replace('.', ',')}`;
+
+    function renderizarMeta(feitas, meta, elValor, elFalta) {
+        let perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0; 
+        let faltam = Math.max(0, meta - feitas);
+        
+        let metaFormatada = Number.isInteger(meta) ? meta : meta.toFixed(1);
+        let faltamFormatado = Number.isInteger(faltam) ? faltam : faltam.toFixed(1);
+
+        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${Math.round(feitas)} / ${metaFormatada} cx`;
+        if(document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${faltamFormatado} cx`;
+    }
+    
+    renderizarMeta(feitasGeral, ptsGeral, 'metaGeralGlobal', 'faltaGeralGlobal'); 
+    renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal'); 
+    renderizarMeta(feitasJulia, ptsJulia, 'metaJuliaGlobal', 'faltaJuliaGlobal');
+
+    let rankFinal = Object.keys(acumuladoMes)
+        .map(mot => {
+            let info = acumuladoMes[mot];
+            let metaMensalPontos = getMetaCalculadaMotorista(mot, info);
+            let percentualMeta = metaMensalPontos > 0 ? ((info.pontos / metaMensalPontos) * 100) : 0;
+            return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos, infoBase: info };
+        })
+        .filter(item => item.pontos > 0 || item.valor > 0)
+        .sort((a, b) => b.percentual - a.percentual); 
+
+    const divLista = document.getElementById('listaLeaderboard'); if(!divLista) return; divLista.innerHTML = '';
+    if(rankFinal.length === 0) { divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Sem registros válidos.</div>'; return; }
+
+    rankFinal.forEach((mot, index) => {
+        const eloInfo = window.obterRankElo(mot.percentual); let percentualStr = mot.percentual.toFixed(2).replace('.', ',');
+        let corPercent, bgPercent, borderPercent;
+        if (mot.percentual >= 100) { corPercent = '#10b981'; bgPercent = '#d1fae5'; borderPercent = '#a7f3d0'; } else if (mot.percentual >= 80) { corPercent = '#d97706'; bgPercent = '#fef3c7'; borderPercent = '#fde68a'; } else { corPercent = '#ef4444'; bgPercent = '#fee2e2'; borderPercent = '#fca5a5'; }
+
+        let textoQtd = "";
+        if (window.motOutros.includes(mot.nome)) { if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`; else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`; else textoQtd = `0 cx | ${mot.viagens} vg`; } 
+        else { textoQtd = `${mot.caixas} cx`; }
+
+        let htmlFaltam = ""; 
+        let faltam = mot.metaExata - mot.pontos;
+        
+        if (faltam > 0) {
+            let calcVisual = window.motOutros.includes(mot.nome) ? faltam/2 : faltam;
+            let formatFaltam = Number.isInteger(calcVisual) ? calcVisual : calcVisual.toFixed(1);
+            let txtFaltam = window.motOutros.includes(mot.nome) ? `Faltam ${formatFaltam} vg` : `Faltam ${formatFaltam} cx`;
+            htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
+        } else { htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta OK!</span>`; }
+
+        // Mostra um selinho de aviso se o cara caiu na regra de proporção
+        let seloProporcional = mot.infoBase.caiuNaRegraProporcional ? `<span class="text-[8px] bg-purple-100 text-purple-600 px-1 rounded ml-1 border border-purple-200" title="Meta Ajustada para ${mot.infoBase.diasAptosMotorista} dias rodados">Ajustado</span>` : "";
+
+        const linha = document.createElement('div'); linha.className = 'elo-row';
+        linha.innerHTML = `<div class="posicao">#${index + 1}</div><div class="nome-motorista-rank">${mot.nome} ${seloProporcional}<span class="valor-sub">Fat: R$ ${mot.valor.toFixed(2).replace('.', ',')}</span></div><div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div><div class="valor-destaque text-blue-500 flex items-center">${textoQtd}<span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};">${percentualStr}%</span>${htmlFaltam}</div>`;
+        divLista.appendChild(linha);
+    });
+}
 
 window.gerarPainelFeriados = function() {
     const domInicio = document.getElementById('dataDomInicio') ? document.getElementById('dataDomInicio').value : null; const domFim = document.getElementById('dataDomFim') ? document.getElementById('dataDomFim').value : null;
