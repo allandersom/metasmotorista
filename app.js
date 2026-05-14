@@ -1033,3 +1033,42 @@ window.atualizarGraficosProjecao = function() {
         window.chartInstanciaGeral = new Chart(ctxGeral.getContext('2d'), { type: 'line', data: { labels: labelsGeral, datasets: [{ label: 'Frota', data: dataGeral, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#10b981', fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } } });
     }
 }
+
+// Função que lê o arquivo JSON e envia pro Firebase
+function processarRestauracaoBackup(event) {
+    const arquivo = event.target.files[0];
+    if (!arquivo) return;
+
+    const leitor = new FileReader();
+    
+    leitor.onload = async function(e) {
+        try {
+            const dadosBackup = JSON.parse(e.target.result);
+            
+            const confirmar = confirm(`Arquivo lido com sucesso!\nForam encontrados ${dadosBackup.length} registros.\n\nDeseja injetar esses dados no sistema?`);
+            
+            if (!confirmar) {
+                document.getElementById('inputRestaurarBackup').value = '';
+                return;
+            }
+
+            console.log("Iniciando restauração...");
+
+            // ATENÇÃO: Confirme se a sua coleção no Firebase se chama 'lancamentos' mesmo
+            for (let i = 0; i < dadosBackup.length; i++) {
+                const item = dadosBackup[i];
+                await db.collection("lancamentos").add(item);
+                console.log(`Restaurando: ${i + 1} de ${dadosBackup.length}`);
+            }
+
+            alert("🔥 Backup restaurado com sucesso! Atualize a página para ver os dados.");
+            document.getElementById('inputRestaurarBackup').value = '';
+
+        } catch (erro) {
+            console.error("Erro na restauração:", erro);
+            alert("Deu ruim na leitura do arquivo! Verifique se é um .json válido.");
+        }
+    };
+
+    leitor.readAsText(arquivo);
+}
