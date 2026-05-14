@@ -805,7 +805,10 @@ window.obterRankElo = function(percentual) {
 
 window.gerarRankingMensal = function() {
     const elFiltro = document.getElementById('mesFiltro'); if(!elFiltro) return; const mesFiltro = elFiltro.value; if (!mesFiltro) return;
-    let diasUteisGlobais = window.carregarDiasUteis(mesFiltro); const bancoDados = window.bancoDadosCloud;
+    
+    // Agora o sistema puxa os 20 dias de Maio (ou o que estiver configurado lá em cima)
+    let diasUteisGlobais = window.carregarDiasUteis(mesFiltro); 
+    const bancoDados = window.bancoDadosCloud;
     
     let acumuladoMes = {}; 
     let totalCaixasFrota = 0; let totalViagensFrota = 0; let totalFatMesFrota = 0;
@@ -826,7 +829,7 @@ window.gerarRankingMensal = function() {
     window.motoristas.forEach(m => {
         acumuladoMes[m] = { 
             caixas: 0, viagens: 0, valor: 0, pontos: 0, 
-            diasAptosMotorista: 0, // Conta apenas dias que ele estava apto a rodar
+            diasAptosMotorista: 0, 
             comecouComPoliOff: false,
             foiDesligado: false
         };
@@ -840,19 +843,14 @@ window.gerarRankingMensal = function() {
                     
                     let statusMot = (dados.status || 'normal').toLowerCase();
 
-                    // REGRA 1: Verifica se no primeiro dia útil o cara já começou com Poli Off
                     if (dataStr === primeiroDiaUtilComDados && statusMot === 'polioff') {
                         acumuladoMes[mot].comecouComPoliOff = true;
                     }
-                    // REGRA 2: Verifica se foi desligado da empresa
                     if (statusMot === 'desligado') {
                         acumuladoMes[mot].foiDesligado = true;
                     }
 
-                    // CONTAGEM DE DIAS DE META PROPORCIONAL:
-                    // Se não for domingo nem feriado...
                     if (!isDomingo && !dados.isFeriado) {
-                        // Só conta como dia apto se NÃO foi desligado e NÃO estava com o caminhão quebrado (polioff)
                         if (statusMot !== 'desligado' && statusMot !== 'polioff') {
                             acumuladoMes[mot].diasAptosMotorista++;
                         }
@@ -870,33 +868,38 @@ window.gerarRankingMensal = function() {
         }
     }
 
-    // A MÁGICA ACONTECE AQUI: Função que decide qual é a Meta de cada Motorista
-    function getSlaMotorista(mot, mesFiltro, info) {
-        // Se você travou manualmente a meta dele no botão do cadeado, o sistema obedece
-        if (window.configSlaCloud[mot + "_" + mesFiltro]) return window.configSlaCloud[mot + "_" + mesFiltro];
+    // A MÁGICA DA PROPORÇÃO (A mesma da sua planilha)
+    function getMetaCalculadaMotorista(mot, mesFiltro, info) {
+        let metaDiaria = window.getMetaDiaria(mot);
+        let metaCheiaDoMes = metaDiaria * diasUteisGlobais; // Ex: 8 * 20 = 160
         
-        // Se ele caiu em uma das duas exceções, a meta vira proporcional!
-        if (info && (info.comecouComPoliOff || info.foiDesligado)) {
-            return info.diasAptosMotorista > 0 ? info.diasAptosMotorista : diasUteisGlobais;
+        // Se travou manual, obedece o cadeado
+        if (window.configSlaCloud[mot + "_" + mesFiltro]) {
+            return window.configSlaCloud[mot + "_" + mesFiltro] * metaDiaria;
         }
         
-        // Se ele trabalhou normal, leva a meta global (cheia)
-        return diasUteisGlobais; 
+        // Se caiu na exceção, faz a proporção: (DiasAptos / DiasGlobais) * MetaCheia
+        if (info && (info.comecouComPoliOff || info.foiDesligado)) {
+            if (info.diasAptosMotorista === 0) return 0;
+            let fracaoMes = info.diasAptosMotorista / diasUteisGlobais;
+            return metaCheiaDoMes * fracaoMes; 
+        }
+        
+        // Se for normal, a meta é a cheia do mês
+        return metaCheiaDoMes; 
     }
 
     let ptsRayanna = 0, feitasRayanna = 0;
     window.motRayanna.forEach(mot => { 
         let info = acumuladoMes[mot];
-        let diasUteisMotorista = getSlaMotorista(mot, mesFiltro, info);
-        ptsRayanna += window.getMetaDiaria(mot) * diasUteisMotorista; 
+        ptsRayanna += getMetaCalculadaMotorista(mot, mesFiltro, info); 
         if(info) feitasRayanna += info.pontos; 
     });
     
     let ptsJulia = 0, feitasJulia = 0;
     window.motJulia.forEach(mot => { 
         let info = acumuladoMes[mot];
-        let diasUteisMotorista = getSlaMotorista(mot, mesFiltro, info);
-        ptsJulia += window.getMetaDiaria(mot) * diasUteisMotorista; 
+        ptsJulia += getMetaCalculadaMotorista(mot, mesFiltro, info); 
         if(info) feitasJulia += info.pontos; 
     });
 
@@ -905,11 +908,19 @@ window.gerarRankingMensal = function() {
     if(document.getElementById('totalViagensMesGlobal')) document.getElementById('totalViagensMesGlobal').innerText = `${totalViagensFrota} vg`;
     if(document.getElementById('totalFatMensalLeaderboard')) document.getElementById('totalFatMensalLeaderboard').innerText = `R$ ${totalFatMesFrota.toFixed(2).replace('.', ',')}`;
 
+    // Agora o painel aceita 1 casa decimal para mostrar metas como "484.4"
     function renderizarMeta(feitas, meta, elValor, elFalta) {
-        let perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0; let faltam = Math.max(0, meta - feitas);
-        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${Math.round(feitas)} / ${meta} cx`;
-        if(document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${Math.round(faltam)} cx`;
+        let perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0; 
+        let faltam = Math.max(0, meta - feitas);
+        
+        // Formata a meta para mostrar a casa decimal se houver quebrado (ex: 484.4 em vez de 484)
+        let metaFormatada = Number.isInteger(meta) ? meta : meta.toFixed(1);
+        let faltamFormatado = Number.isInteger(faltam) ? faltam : faltam.toFixed(1);
+
+        if(document.getElementById(elValor)) document.getElementById(elValor).innerText = `${Math.round(feitas)} / ${metaFormatada} cx`;
+        if(document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${faltamFormatado} cx`;
     }
+    
     renderizarMeta(feitasGeral, ptsGeral, 'metaGeralGlobal', 'faltaGeralGlobal'); 
     renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal'); 
     renderizarMeta(feitasJulia, ptsJulia, 'metaJuliaGlobal', 'faltaJuliaGlobal');
@@ -917,16 +928,15 @@ window.gerarRankingMensal = function() {
     let rankFinal = Object.keys(acumuladoMes)
         .map(mot => {
             let info = acumuladoMes[mot];
-            let diasUteisMotorista = getSlaMotorista(mot, mesFiltro, info);
-            let metaMensalPontos = diasUteisMotorista * window.getMetaDiaria(mot);
+            let metaMensalPontos = getMetaCalculadaMotorista(mot, mesFiltro, info);
             let percentualMeta = metaMensalPontos > 0 ? ((info.pontos / metaMensalPontos) * 100) : 0;
-            return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, diasBase: diasUteisMotorista };
+            return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos };
         })
         .filter(item => item.pontos > 0 || item.valor > 0)
         .sort((a, b) => b.percentual - a.percentual); 
 
     const divLista = document.getElementById('listaLeaderboard'); if(!divLista) return; divLista.innerHTML = '';
-    if(rankFinal.length === 0) { divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Sem registros válidos. O elo de todo mundo é Ferro! 🥶</div>'; return; }
+    if(rankFinal.length === 0) { divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Sem registros válidos.</div>'; return; }
 
     rankFinal.forEach((mot, index) => {
         const eloInfo = window.obterRankElo(mot.percentual); let percentualStr = mot.percentual.toFixed(2).replace('.', ',');
@@ -937,14 +947,18 @@ window.gerarRankingMensal = function() {
         if (window.motOutros.includes(mot.nome)) { if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`; else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`; else textoQtd = `0 cx | ${mot.viagens} vg`; } 
         else { textoQtd = `${mot.caixas} cx`; }
 
-        let htmlFaltam = ""; let metaMensalPontos = mot.diasBase * window.getMetaDiaria(mot.nome); let faltam = metaMensalPontos - mot.pontos;
+        let htmlFaltam = ""; 
+        let faltam = mot.metaExata - mot.pontos;
+        
         if (faltam > 0) {
-            let txtFaltam = window.motOutros.includes(mot.nome) ? `Faltam ${Math.ceil(faltam / 2)} vg` : `Faltam ${Math.ceil(faltam)} cx`;
+            let calcVisual = window.motOutros.includes(mot.nome) ? faltam/2 : faltam;
+            let formatFaltam = Number.isInteger(calcVisual) ? calcVisual : calcVisual.toFixed(1);
+            let txtFaltam = window.motOutros.includes(mot.nome) ? `Faltam ${formatFaltam} vg` : `Faltam ${formatFaltam} cx`;
             htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
         } else { htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta OK!</span>`; }
 
         const linha = document.createElement('div'); linha.className = 'elo-row';
-        linha.innerHTML = `<div class="posicao">#${index + 1}</div><div class="nome-motorista-rank">${mot.nome}<span class="valor-sub">Fat: R$ ${mot.valor.toFixed(2).replace('.', ',')}</span></div><div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div><div class="valor-destaque text-blue-500 flex items-center">${textoQtd}<span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};" title="Meta Atingida (SLA: ${mot.diasBase} dias)">${percentualStr}%</span>${htmlFaltam}</div>`;
+        linha.innerHTML = `<div class="posicao">#${index + 1}</div><div class="nome-motorista-rank">${mot.nome}<span class="valor-sub">Fat: R$ ${mot.valor.toFixed(2).replace('.', ',')}</span></div><div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div><div class="valor-destaque text-blue-500 flex items-center">${textoQtd}<span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};" title="Meta Ajustada: ${mot.metaExata.toFixed(1)} cx">${percentualStr}%</span>${htmlFaltam}</div>`;
         divLista.appendChild(linha);
     });
 }
