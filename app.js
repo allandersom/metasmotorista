@@ -106,7 +106,7 @@ window.apagarTudo = async function() {
     }
 }
 
-// A FUNÇÃO MESTRA DE LEITURA DA INTELIGÊNCIA ARTIFICIAL (CORRIGIDA)
+// A FUNÇÃO MESTRA DE LEITURA DA INTELIGÊNCIA ARTIFICIAL (CORRIGIDA - META 8 E ROBERTO 4)
 window.importarDadosIA = function() {
     const jsonText = document.getElementById('codigoIA').value.trim();
     if (!jsonText) { alert("Cole o código gerado pela IA antes de importar!"); return; }
@@ -151,7 +151,6 @@ window.importarDadosIA = function() {
         let isDomingo = diaSemana === 0;
         let isSabado = diaSemana === 6;
 
-        // 🔥 CORREÇÃO DA META AQUI! AGORA ELE PUXA 8 PRA TODOS E 4 PRO ROBERTO CARLOS
         let metaFinanceira = window.getMetaDiaria(mot); 
         let valorExtraPorUnidade = 10;
         
@@ -223,7 +222,6 @@ window.importarDadosIA = function() {
     window.fecharModalSistema();
     alert(`Sucesso! ${inseridos} lançamentos da IA foram injetados no sistema.`);
 }
-// =================================================================
 
 window.gerenciarMotoristas = function() { window.abrirModalGerenciar(); }
 window.abrirModalGerenciar = function() {
@@ -332,43 +330,6 @@ window.toggleTravaGlobais = function() {
     lucide.createIcons();
 }
 
-window.toggleTravaSla = function() {
-    if(!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
-    const inSla = document.getElementById('inputSlaMotorista'); const btnSla = document.getElementById('btnTravaSla'); if(!inSla || !btnSla) return;
-    const elMes = document.getElementById('dataGlobal'); let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
-    let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
-    if(inSla.hasAttribute('readonly')) {
-        inSla.removeAttribute('readonly'); btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>'; btnSla.className = 'text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0';
-        delete window.configSlaCloud[chaveComMes]; window.syncToFirebase(); inSla.value = window.carregarDiasUteis(mesFiltroStr); window.atualizarResumosDoMotorista();
-    } else {
-        inSla.setAttribute('readonly', 'true'); btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>'; btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0'; window.salvarSlaMotorista();
-    }
-    lucide.createIcons();
-}
-
-window.atualizarSlaInput = function() {
-    if(!window.motoristaSelecionado) return;
-    const elMes = document.getElementById('dataGlobal'); let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
-    let globalSla = window.carregarDiasUteis(mesFiltroStr); let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr; let customSla = window.configSlaCloud[chaveComMes];
-    const inSla = document.getElementById('inputSlaMotorista'); const btnSla = document.getElementById('btnTravaSla');
-    if(inSla && btnSla) {
-        if(customSla) { inSla.value = customSla; inSla.setAttribute('readonly', 'true'); btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>'; btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0'; } 
-        else { inSla.value = globalSla; inSla.removeAttribute('readonly'); btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>'; btnSla.className = 'text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0'; }
-    }
-    lucide.createIcons();
-}
-
-window.salvarSlaMotorista = function() {
-    if(!window.motoristaSelecionado) return;
-    const inSla = document.getElementById('inputSlaMotorista'); const btnSla = document.getElementById('btnTravaSla'); const elMes = document.getElementById('dataGlobal');
-    let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
-    if(!inSla) return; let val = parseInt(inSla.value); let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
-    if(val > 0) { window.configSlaCloud[chaveComMes] = val; window.syncToFirebase(); inSla.setAttribute('readonly', 'true');
-        if(btnSla) { btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>'; btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0'; lucide.createIcons(); }
-        window.atualizarResumosDoMotorista();
-    }
-}
-
 window.carregarDiasUteis = function(anoMesStr) {
     let dias = window.configMesesCloud[anoMesStr] || 22; 
     if(document.getElementById('inputDiasUteisLanc')) document.getElementById('inputDiasUteisLanc').value = dias;
@@ -381,6 +342,83 @@ window.salvarDiasUteis = function(origem) {
     let isLancamento = document.getElementById('viewLancamentos') && document.getElementById('viewLancamentos').style.display !== 'none';
     let inputRef = isLancamento ? document.getElementById('dataGlobal') : document.getElementById('mesFiltro');
     if(!inputRef) return; let anoMesStr = inputRef.value; window.configMesesCloud[anoMesStr] = parseInt(valor) || 22; window.syncToFirebase(); window.atualizarResumosGlobais(); window.atualizarSlaInput();
+}
+
+// =======================================================================
+// CALCULADORA CENTRAL DE SLA (SÓ OBEDECE O QUE VOCÊ DIGITAR)
+// =======================================================================
+window.calcularSlaMotorista = function(mot, mesFiltro) {
+    let diasUteisGlobais = window.carregarDiasUteis(mesFiltro);
+    
+    // PRIORIDADE ÚNICA: Se você digitou e trancou no cadeado, ele usa esse número!
+    if (window.configSlaCloud[mot + "_" + mesFiltro] !== undefined) {
+        return window.configSlaCloud[mot + "_" + mesFiltro];
+    }
+
+    // Se o cadeado estiver aberto, usa o Global padrão. Simples assim.
+    return diasUteisGlobais;
+};
+
+// =======================================================================
+// CORREÇÃO DOS BOTÕES DO CADEADO (SLA MANUAL)
+// =======================================================================
+window.toggleTravaSla = function() {
+    if(!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
+    const inSla = document.getElementById('inputSlaMotorista'); const btnSla = document.getElementById('btnTravaSla'); if(!inSla || !btnSla) return;
+    const elMes = document.getElementById('dataGlobal'); let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
+    let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
+    
+    if(inSla.hasAttribute('readonly')) {
+        // Destrancar
+        inSla.removeAttribute('readonly'); 
+        btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>'; 
+        btnSla.className = 'text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0';
+        delete window.configSlaCloud[chaveComMes]; window.syncToFirebase(); 
+        
+        inSla.value = window.calcularSlaMotorista(window.motoristaSelecionado, mesFiltroStr);
+        window.atualizarResumosDoMotorista();
+        window.gerarRankingMensal();
+    } else {
+        // Trancar
+        inSla.setAttribute('readonly', 'true'); 
+        btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>'; 
+        btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0'; 
+        window.salvarSlaMotorista();
+    }
+    lucide.createIcons();
+}
+
+window.atualizarSlaInput = function() {
+    if(!window.motoristaSelecionado) return;
+    const elMes = document.getElementById('dataGlobal'); let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
+    let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr; 
+    let customSla = window.configSlaCloud[chaveComMes];
+    let slaAtivo = window.calcularSlaMotorista(window.motoristaSelecionado, mesFiltroStr);
+
+    const inSla = document.getElementById('inputSlaMotorista'); const btnSla = document.getElementById('btnTravaSla');
+    if(inSla && btnSla) {
+        inSla.value = slaAtivo;
+        if(customSla !== undefined) { 
+            inSla.setAttribute('readonly', 'true'); btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>'; btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0'; 
+        } else { 
+            inSla.removeAttribute('readonly'); btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>'; btnSla.className = 'text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0'; 
+        }
+    }
+    lucide.createIcons();
+}
+
+window.salvarSlaMotorista = function() {
+    if(!window.motoristaSelecionado) return;
+    const inSla = document.getElementById('inputSlaMotorista'); const btnSla = document.getElementById('btnTravaSla'); const elMes = document.getElementById('dataGlobal');
+    let mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
+    if(!inSla) return; let val = parseFloat(inSla.value); let chaveComMes = window.motoristaSelecionado + "_" + mesFiltroStr;
+    if(val >= 0) { 
+        window.configSlaCloud[chaveComMes] = val; window.syncToFirebase(); 
+        inSla.setAttribute('readonly', 'true');
+        if(btnSla) { btnSla.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>'; btnSla.className = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0'; lucide.createIcons(); }
+        window.atualizarResumosDoMotorista();
+        window.gerarRankingMensal();
+    }
 }
 
 window.sincronizarMesData = function() {
@@ -754,7 +792,7 @@ window.gerarRankingPeriodo = function() {
             for (const [mot, dados] of Object.entries(dadosDia)) {
                 if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
                 
-                // MUDANÇA DAQUI: Soma o valor e o extra MESMO se for domingo/feriado!
+                // Soma o valor e o extra MESMO se for domingo/feriado!
                 rankPeriodo[mot].valor += dados.valor;
                 rankPeriodo[mot].extra += dados.valorExtra || 0;
 
@@ -774,7 +812,7 @@ window.gerarRankingPeriodo = function() {
         let porcentagem = metaTotalPeriodo > 0 ? (rankPeriodo[mot].pontos / metaTotalPeriodo) * 100 : 0;
         return { nome: mot, ...rankPeriodo[mot], porcentagem: porcentagem };
     })
-    .filter(item => item.pontos > 0 || item.valor > 0); // Só mostra quem faturou ou fez ponto
+    .filter(item => item.pontos > 0 || item.valor > 0); 
 
     rankArray.sort((a,b) => b.porcentagem - a.porcentagem);
     const divLista = document.getElementById('listaRankingDiario'); if(!divLista) return; divLista.innerHTML = '';
@@ -803,63 +841,25 @@ window.obterRankElo = function(percentual) {
     if (percentual >= 100) return { nome: 'Radiante', classe: 'elo-radiante' }; if (percentual >= 80) return { nome: 'Diamante', classe: 'elo-diamante' }; return { nome: 'Bronze', classe: 'elo-bronze' };
 }
 
+// =======================================================================
+// O RANKING MENSAL (COM A REGRA DE PORCENTAGEM DA SUA PLANILHA E SLA DO CADEADO)
+// =======================================================================
 window.gerarRankingMensal = function() {
     const elFiltro = document.getElementById('mesFiltro'); if(!elFiltro) return; const mesFiltro = elFiltro.value; if (!mesFiltro) return;
     
-    let diasUteisGlobais = window.carregarDiasUteis(mesFiltro); 
+    let diasUteisGlobais = window.carregarDiasUteis(mesFiltro);
     const bancoDados = window.bancoDadosCloud;
-    
     let acumuladoMes = {}; 
     let totalCaixasFrota = 0; let totalViagensFrota = 0; let totalFatMesFrota = 0;
-    
-    // 1. Descobrir qual é o PRIMEIRO DIA ÚTIL REAL do mês (Segunda a Sexta, sem ser feriado)
-    let todasDatasMes = Object.keys(bancoDados).filter(d => d.startsWith(mesFiltro)).sort();
-    let primeiroDiaUtilReal = null;
-    
-    for(let data of todasDatasMes) {
-        let dObj = new Date(data + 'T00:00:00');
-        let diaSemana = dObj.getDay();
-        let temFeriado = Object.values(bancoDados[data]).some(l => l.isFeriado);
-        
-        if(diaSemana >= 1 && diaSemana <= 5 && !temFeriado) {
-            primeiroDiaUtilReal = data;
-            break;
-        }
-    }
 
-    // Inicializa a estrutura de dados de cada motorista
-    window.motoristas.forEach(m => {
-        acumuladoMes[m] = { 
-            caixas: 0, viagens: 0, valor: 0, pontos: 0, 
-            diasAptosMotorista: 0, 
-            caiuNaRegraProporcional: false
-        };
-    });
+    window.motoristas.forEach(m => { acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0, pontos: 0 }; });
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataStr.startsWith(mesFiltro)) {
             const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
-            
             for (const [mot, dados] of Object.entries(dadosDia)) {
                 if (acumuladoMes[mot]) {
                     let statusMot = (dados.status || 'normal').toLowerCase();
-
-                    // Ativa a regra se começou com Poli Off na segunda útil ou se foi desligado
-                    if (dataStr === primeiroDiaUtilReal && statusMot === 'polioff') {
-                        acumuladoMes[mot].caiuNaRegraProporcional = true;
-                    }
-                    if (statusMot === 'desligado') {
-                        acumuladoMes[mot].caiuNaRegraProporcional = true;
-                    }
-
-                    // Conta apenas os dias em que ele REALMENTE rodou/estava apto
-                    if (!isDomingo && !dados.isFeriado) {
-                        if (statusMot !== 'desligado' && statusMot !== 'polioff') {
-                            acumuladoMes[mot].diasAptosMotorista++;
-                        }
-                    }
-
-                    // Acumula produção real
                     if (!isDomingo && !dados.isFeriado && statusMot === 'normal') {
                         if(dados.tipoVeiculo === 'cacamba') { acumuladoMes[mot].viagens += dados.servicos; totalViagensFrota += dados.servicos; } 
                         else { acumuladoMes[mot].caixas += dados.servicos; totalCaixasFrota += dados.servicos; }
@@ -872,34 +872,29 @@ window.gerarRankingMensal = function() {
         }
     }
 
-    // A FÓRMULA MATEMÁTICA BASEADA EM PORCENTAGEM DE SLA
-    function getMetaCalculadaMotorista(mot, info) {
-        let metaDiaria = window.getMetaDiaria(mot);
-        let metaCheiaDoMes = metaDiaria * diasUteisGlobais; 
+    // 🔥 A FÓRMULA DE PROPORÇÃO POR PORCENTAGEM QUE VOCÊ EXIGIU
+    function getMetaCalculadaMotorista(mot) {
+        let slaMotorista = window.calcularSlaMotorista(mot, mesFiltro); // Pega o SLA que tá no painel
+        let metaDiaria = window.getMetaDiaria(mot); // 8 ou 4
+        let metaCheiaDoMes = metaDiaria * diasUteisGlobais; // Ex: 8 * 20 = 160
         
-        // Se o motorista caiu na regra de exceção, calcula a meta por Proporcionalidade de Porcentagem
-        if (info && info.caiuNaRegraProporcional) {
-            if (info.diasAptosMotorista === 0) return 0;
-            
-            let porcentagemBaseSla = info.diasAptosMotorista / diasUteisGlobais;
-            return metaCheiaDoMes * porcentagemBaseSla; 
-        }
+        // Se SLA = 7 e Global = 20 -> porcentagem = 0.35 (35%)
+        let porcentagemDoMes = slaMotorista / diasUteisGlobais; 
         
-        return metaCheiaDoMes; 
+        // Ex: 160 * 35% = 56 caixas
+        return metaCheiaDoMes * porcentagemDoMes; 
     }
 
     let ptsRayanna = 0, feitasRayanna = 0;
     window.motRayanna.forEach(mot => { 
-        let info = acumuladoMes[mot];
-        ptsRayanna += getMetaCalculadaMotorista(mot, info); 
-        if(info) feitasRayanna += info.pontos; 
+        ptsRayanna += getMetaCalculadaMotorista(mot); 
+        if(acumuladoMes[mot]) feitasRayanna += acumuladoMes[mot].pontos; 
     });
     
     let ptsJulia = 0, feitasJulia = 0;
     window.motJulia.forEach(mot => { 
-        let info = acumuladoMes[mot];
-        ptsJulia += getMetaCalculadaMotorista(mot, info); 
-        if(info) feitasJulia += info.pontos; 
+        ptsJulia += getMetaCalculadaMotorista(mot); 
+        if(acumuladoMes[mot]) feitasJulia += acumuladoMes[mot].pontos; 
     });
 
     let ptsGeral = ptsRayanna + ptsJulia; let feitasGeral = feitasRayanna + feitasJulia;
@@ -925,9 +920,9 @@ window.gerarRankingMensal = function() {
     let rankFinal = Object.keys(acumuladoMes)
         .map(mot => {
             let info = acumuladoMes[mot];
-            let metaMensalPontos = getMetaCalculadaMotorista(mot, info);
+            let metaMensalPontos = getMetaCalculadaMotorista(mot);
             let percentualMeta = metaMensalPontos > 0 ? ((info.pontos / metaMensalPontos) * 100) : 0;
-            return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos, infoBase: info };
+            return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos };
         })
         .filter(item => item.pontos > 0 || item.valor > 0)
         .sort((a, b) => b.percentual - a.percentual); 
@@ -940,13 +935,10 @@ window.gerarRankingMensal = function() {
         let corPercent, bgPercent, borderPercent;
         if (mot.percentual >= 100) { corPercent = '#10b981'; bgPercent = '#d1fae5'; borderPercent = '#a7f3d0'; } else if (mot.percentual >= 80) { corPercent = '#d97706'; bgPercent = '#fef3c7'; borderPercent = '#fde68a'; } else { corPercent = '#ef4444'; bgPercent = '#fee2e2'; borderPercent = '#fca5a5'; }
 
-        let textoQtd = "";
-        if (window.motOutros.includes(mot.nome)) { if(mot.caixas > 0 && mot.viagens > 0) textoQtd = `${mot.caixas} cx | ${mot.viagens} vg`; else if (mot.caixas > 0) textoQtd = `${mot.caixas} cx | 0 vg`; else textoQtd = `0 cx | ${mot.viagens} vg`; } 
-        else { textoQtd = `${mot.caixas} cx`; }
-
-        let htmlFaltam = ""; 
+        let textoQtd = window.motOutros.includes(mot.nome) ? (mot.caixas > 0 ? `${mot.caixas} cx | ${mot.viagens} vg` : `0 cx | ${mot.viagens} vg`) : `${mot.caixas} cx`;
         let faltam = mot.metaExata - mot.pontos;
         
+        let htmlFaltam = ""; 
         if (faltam > 0) {
             let calcVisual = window.motOutros.includes(mot.nome) ? faltam/2 : faltam;
             let formatFaltam = Number.isInteger(calcVisual) ? calcVisual : calcVisual.toFixed(1);
@@ -954,7 +946,6 @@ window.gerarRankingMensal = function() {
             htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
         } else { htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta OK!</span>`; }
 
-        // Removido o selo de "Ajustado"
         const inlineHtml = `<div class="posicao">#${index + 1}</div><div class="nome-motorista-rank">${mot.nome}<span class="valor-sub">Fat: R$ ${mot.valor.toFixed(2).replace('.', ',')}</span></div><div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div><div class="valor-destaque text-blue-500 flex items-center">${textoQtd}<span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};">${percentualStr}%</span>${htmlFaltam}</div>`;
         const linha = document.createElement('div'); linha.className = 'elo-row';
         linha.innerHTML = inlineHtml;
@@ -970,7 +961,6 @@ window.gerarPainelFeriados = function() {
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         const dataObj = new Date(dataStr + 'T00:00:00'); const isDomingo = dataObj.getDay() === 0;
         for (const [mot, dados] of Object.entries(dadosDia)) {
-            // Continua exibindo domingos na aba só se tiver feito dinheiro
             if (!(dados.servicos > 0) && (!dados.status || dados.status === 'normal')) continue; 
 
             let obj = { dataStr: dataStr, nome: mot, caixas: dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0, viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0, valor: dados.valor, status: dados.status };
