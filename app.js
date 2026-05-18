@@ -812,7 +812,7 @@ window.gerarRankingMensal = function() {
     let acumuladoMes = {}; 
     let totalCaixasFrota = 0; let totalViagensFrota = 0; let totalFatMesFrota = 0;
     
-    // 1. Descobrir qual é o PRIMEIRO DIA ÚTIL REAL (Segunda a Sexta, sem ser feriado)
+    // 1. Descobrir qual é o PRIMEIRO DIA ÚTIL REAL do mês (Segunda a Sexta, sem ser feriado)
     let todasDatasMes = Object.keys(bancoDados).filter(d => d.startsWith(mesFiltro)).sort();
     let primeiroDiaUtilReal = null;
     
@@ -821,14 +821,13 @@ window.gerarRankingMensal = function() {
         let diaSemana = dObj.getDay();
         let temFeriado = Object.values(bancoDados[data]).some(l => l.isFeriado);
         
-        // Pega o primeiro dia que seja entre Segunda (1) e Sexta (5) e que NÃO seja feriado
         if(diaSemana >= 1 && diaSemana <= 5 && !temFeriado) {
             primeiroDiaUtilReal = data;
             break;
         }
     }
 
-    // Inicializa todos os motoristas
+    // Inicializa a estrutura de dados de cada motorista
     window.motoristas.forEach(m => {
         acumuladoMes[m] = { 
             caixas: 0, viagens: 0, valor: 0, pontos: 0, 
@@ -845,7 +844,7 @@ window.gerarRankingMensal = function() {
                 if (acumuladoMes[mot]) {
                     let statusMot = (dados.status || 'normal').toLowerCase();
 
-                    // REGRA DE OURO: Se no PRIMEIRO DIA ÚTIL REAL ele estava Poli Off, ou se foi desligado em qualquer momento, ativa a proporção!
+                    // Ativa a regra se começou com Poli Off na segunda útil ou se foi desligado
                     if (dataStr === primeiroDiaUtilReal && statusMot === 'polioff') {
                         acumuladoMes[mot].caiuNaRegraProporcional = true;
                     }
@@ -853,14 +852,14 @@ window.gerarRankingMensal = function() {
                         acumuladoMes[mot].caiuNaRegraProporcional = true;
                     }
 
-                    // CONTA SÓ OS DIAS QUE ELE REALMENTE RODOU (Ignora os dias de Poli Off e Desligado)
+                    // Conta apenas os dias em que ele REALMENTE rodou/estava apto
                     if (!isDomingo && !dados.isFeriado) {
                         if (statusMot !== 'desligado' && statusMot !== 'polioff') {
                             acumuladoMes[mot].diasAptosMotorista++;
                         }
                     }
 
-                    // Soma de Faturamento e Caixas/Pontos
+                    // Acumula produção real
                     if (!isDomingo && !dados.isFeriado && statusMot === 'normal') {
                         if(dados.tipoVeiculo === 'cacamba') { acumuladoMes[mot].viagens += dados.servicos; totalViagensFrota += dados.servicos; } 
                         else { acumuladoMes[mot].caixas += dados.servicos; totalCaixasFrota += dados.servicos; }
@@ -873,22 +872,27 @@ window.gerarRankingMensal = function() {
         }
     }
 
-    // A MÁGICA DA META PROPORCIONAL (SEM SLA INDIVIDUAL!)
+    // 🔥 A FÓRMULA MATEMÁTICA DA SUA PLANILHA BASEADA EM PORCENTAGEM DE SLA
     function getMetaCalculadaMotorista(mot, info) {
         let metaDiaria = window.getMetaDiaria(mot);
         let metaCheiaDoMes = metaDiaria * diasUteisGlobais; 
         
-        // Se caiu na regra (Poli Off na Segunda ou Desligado), a meta é SÓ sobre os dias que rodou
+        // Se o motorista caiu na regra de exceção, calcula a meta por Proporcionalidade de Porcentagem
         if (info && info.caiuNaRegraProporcional) {
             if (info.diasAptosMotorista === 0) return 0;
-            let fracaoMes = info.diasAptosMotorista / diasUteisGlobais;
-            return metaCheiaDoMes * fracaoMes; 
+            
+            // Ex: 7 dias de 20 = 0.35 (35%)
+            let porcentagemBaseSla = info.diasAptosMotorista / diasUteisGlobais;
+            
+            // Ex: 160 caixas * 35% = 56 caixas
+            return metaCheiaDoMes * porcentagemBaseSla; 
         }
         
-        // Se não caiu na exceção, é a meta cheia do mês, doa a quem doer!
+        // Padrão sem quebras se rodou o mês estável
         return metaCheiaDoMes; 
     }
 
+    // Calcula os pontos das operadoras somando as metas já ajustadas percentualmente
     let ptsRayanna = 0, feitasRayanna = 0;
     window.motRayanna.forEach(mot => { 
         let info = acumuladoMes[mot];
@@ -908,10 +912,12 @@ window.gerarRankingMensal = function() {
     if(document.getElementById('totalViagensMesGlobal')) document.getElementById('totalViagensMesGlobal').innerText = `${totalViagensFrota} vg`;
     if(document.getElementById('totalFatMensalLeaderboard')) document.getElementById('totalFatMensalLeaderboard').innerText = `R$ ${totalFatMesFrota.toFixed(2).replace('.', ',')}`;
 
+    // Renderização dos painéis com suporte a floats/quebrados na visualização
     function renderizarMeta(feitas, meta, elValor, elFalta) {
         let perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0; 
         let faltam = Math.max(0, meta - feitas);
         
+        // Se o número for quebrado, mostra 1 casa decimal. Se for inteiro, mostra redondo.
         let metaFormatada = Number.isInteger(meta) ? meta : meta.toFixed(1);
         let faltamFormatado = Number.isInteger(faltam) ? faltam : faltam.toFixed(1);
 
@@ -923,6 +929,7 @@ window.gerarRankingMensal = function() {
     renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal'); 
     renderizarMeta(feitasJulia, ptsJulia, 'metaJuliaGlobal', 'faltaJuliaGlobal');
 
+    // Renderização da tabela do Leaderboard Individual
     let rankFinal = Object.keys(acumuladoMes)
         .map(mot => {
             let info = acumuladoMes[mot];
@@ -955,11 +962,11 @@ window.gerarRankingMensal = function() {
             htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
         } else { htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta OK!</span>`; }
 
-        // Mostra um selinho de aviso se o cara caiu na regra de proporção
-        let seloProporcional = mot.infoBase.caiuNaRegraProporcional ? `<span class="text-[8px] bg-purple-100 text-purple-600 px-1 rounded ml-1 border border-purple-200" title="Meta Ajustada para ${mot.infoBase.diasAptosMotorista} dias rodados">Ajustado</span>` : "";
+        let seloProporcional = mot.infoBase.caiuNaRegraProporcional ? `<span class="text-[8px] bg-purple-100 text-purple-600 px-1 rounded ml-1 border border-purple-200" title="Meta Proporcional: ${((mot.infoBase.diasAptosMotorista/diasUteisGlobais)*100).toFixed(0)}% do mês">Ajustado</span>` : "";
 
+        const inlineHtml = `<div class="posicao">#${index + 1}</div><div class="nome-motorista-rank">${mot.nome} ${seloProporcional}<span class="valor-sub">Fat: R$ ${mot.valor.toFixed(2).replace('.', ',')}</span></div><div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div><div class="valor-destaque text-blue-500 flex items-center">${textoQtd}<span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};">${percentualStr}%</span>${htmlFaltam}</div>`;
         const linha = document.createElement('div'); linha.className = 'elo-row';
-        linha.innerHTML = `<div class="posicao">#${index + 1}</div><div class="nome-motorista-rank">${mot.nome} ${seloProporcional}<span class="valor-sub">Fat: R$ ${mot.valor.toFixed(2).replace('.', ',')}</span></div><div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div><div class="valor-destaque text-blue-500 flex items-center">${textoQtd}<span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};">${percentualStr}%</span>${htmlFaltam}</div>`;
+        linha.innerHTML = inlineHtml;
         divLista.appendChild(linha);
     });
 }
