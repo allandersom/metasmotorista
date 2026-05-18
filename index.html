@@ -482,11 +482,11 @@
         </div>
     </main>
 
-    <div id="modalGerenciar" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center animate-fade-in">
+   <div id="modalGerenciar" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center animate-fade-in">
         <div class="bg-white rounded-[2rem] shadow-2xl w-[450px] overflow-hidden flex flex-col">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
-                    <i data-lucide="users-cog" class="w-5 h-5 text-blue-600"></i> Gerenciar Motoristas
+                    <i data-lucide="users-cog" class="w-5 h-5 text-blue-600"></i> Gerenciar: <span id="lblMesGerenciar" class="text-blue-600">Mês</span>
                 </h3>
                 <button onclick="window.fecharModalGerenciar()" class="text-slate-400 hover:text-red-500 transition-colors">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -506,17 +506,17 @@
                     </div>
                 </div>
                 <div class="space-y-2 pt-4 border-t border-slate-100">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Desativar Motorista</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retirar Motorista deste Mês</label>
                     <div class="flex gap-2">
-                        <select id="desativarMotNome" class="input-base flex-1 cursor-pointer"></select>
-                        <button onclick="window.desativarMotoristaModal()" class="bg-red-100 text-red-600 hover:bg-red-500 hover:text-white rounded-xl px-4 font-bold transition-colors">Desativar</button>
+                        <select id="ocultarMotNome" class="input-base flex-1 cursor-pointer"></select>
+                        <button onclick="window.ocultarMotoristaMes()" class="bg-orange-100 text-orange-600 hover:bg-orange-500 hover:text-white rounded-xl px-4 font-bold transition-colors text-sm">Retirar</button>
                     </div>
                 </div>
                 <div class="space-y-2 pt-4 border-t border-slate-100">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reativar Motorista</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adicionar Motorista a este Mês</label>
                     <div class="flex gap-2">
-                        <select id="reativarMotNome" class="input-base flex-1 cursor-pointer"></select>
-                        <button onclick="window.reativarMotoristaModal()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white rounded-xl px-4 font-bold transition-colors">Reativar</button>
+                        <select id="mostrarMotNome" class="input-base flex-1 cursor-pointer"></select>
+                        <button onclick="window.mostrarMotoristaMes()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white rounded-xl px-4 font-bold transition-colors text-sm">Adicionar</button>
                     </div>
                 </div>
                 
