@@ -872,7 +872,7 @@ window.gerarRankingMensal = function() {
         }
     }
 
-    // 🔥 A FÓRMULA MATEMÁTICA DA SUA PLANILHA BASEADA EM PORCENTAGEM DE SLA
+    // A FÓRMULA MATEMÁTICA BASEADA EM PORCENTAGEM DE SLA
     function getMetaCalculadaMotorista(mot, info) {
         let metaDiaria = window.getMetaDiaria(mot);
         let metaCheiaDoMes = metaDiaria * diasUteisGlobais; 
@@ -881,18 +881,13 @@ window.gerarRankingMensal = function() {
         if (info && info.caiuNaRegraProporcional) {
             if (info.diasAptosMotorista === 0) return 0;
             
-            // Ex: 7 dias de 20 = 0.35 (35%)
             let porcentagemBaseSla = info.diasAptosMotorista / diasUteisGlobais;
-            
-            // Ex: 160 caixas * 35% = 56 caixas
             return metaCheiaDoMes * porcentagemBaseSla; 
         }
         
-        // Padrão sem quebras se rodou o mês estável
         return metaCheiaDoMes; 
     }
 
-    // Calcula os pontos das operadoras somando as metas já ajustadas percentualmente
     let ptsRayanna = 0, feitasRayanna = 0;
     window.motRayanna.forEach(mot => { 
         let info = acumuladoMes[mot];
@@ -912,12 +907,10 @@ window.gerarRankingMensal = function() {
     if(document.getElementById('totalViagensMesGlobal')) document.getElementById('totalViagensMesGlobal').innerText = `${totalViagensFrota} vg`;
     if(document.getElementById('totalFatMensalLeaderboard')) document.getElementById('totalFatMensalLeaderboard').innerText = `R$ ${totalFatMesFrota.toFixed(2).replace('.', ',')}`;
 
-    // Renderização dos painéis com suporte a floats/quebrados na visualização
     function renderizarMeta(feitas, meta, elValor, elFalta) {
         let perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0; 
         let faltam = Math.max(0, meta - feitas);
         
-        // Se o número for quebrado, mostra 1 casa decimal. Se for inteiro, mostra redondo.
         let metaFormatada = Number.isInteger(meta) ? meta : meta.toFixed(1);
         let faltamFormatado = Number.isInteger(faltam) ? faltam : faltam.toFixed(1);
 
@@ -929,7 +922,6 @@ window.gerarRankingMensal = function() {
     renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal'); 
     renderizarMeta(feitasJulia, ptsJulia, 'metaJuliaGlobal', 'faltaJuliaGlobal');
 
-    // Renderização da tabela do Leaderboard Individual
     let rankFinal = Object.keys(acumuladoMes)
         .map(mot => {
             let info = acumuladoMes[mot];
@@ -962,9 +954,8 @@ window.gerarRankingMensal = function() {
             htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
         } else { htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta OK!</span>`; }
 
-        let seloProporcional = mot.infoBase.caiuNaRegraProporcional ? `<span class="text-[8px] bg-purple-100 text-purple-600 px-1 rounded ml-1 border border-purple-200" title="Meta Proporcional: ${((mot.infoBase.diasAptosMotorista/diasUteisGlobais)*100).toFixed(0)}% do mês">Ajustado</span>` : "";
-
-        const inlineHtml = `<div class="posicao">#${index + 1}</div><div class="nome-motorista-rank">${mot.nome} ${seloProporcional}<span class="valor-sub">Fat: R$ ${mot.valor.toFixed(2).replace('.', ',')}</span></div><div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div><div class="valor-destaque text-blue-500 flex items-center">${textoQtd}<span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};">${percentualStr}%</span>${htmlFaltam}</div>`;
+        // Removido o selo de "Ajustado"
+        const inlineHtml = `<div class="posicao">#${index + 1}</div><div class="nome-motorista-rank">${mot.nome}<span class="valor-sub">Fat: R$ ${mot.valor.toFixed(2).replace('.', ',')}</span></div><div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div><div class="valor-destaque text-blue-500 flex items-center">${textoQtd}<span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};">${percentualStr}%</span>${htmlFaltam}</div>`;
         const linha = document.createElement('div'); linha.className = 'elo-row';
         linha.innerHTML = inlineHtml;
         divLista.appendChild(linha);
