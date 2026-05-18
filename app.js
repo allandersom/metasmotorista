@@ -1130,28 +1130,35 @@ window.processarRestauracaoBackup = function(event) {
 // =======================================================================
 // APAGAR TODOS OS LANÇAMENTOS DE UM MOTORISTA ESPECÍFICO
 // =======================================================================
+// =======================================================================
+// APAGAR LANÇAMENTOS DO MOTORISTA (APENAS NO MÊS SELECIONADO)
+// =======================================================================
 window.apagarLancamentosMotorista = function() {
     if (!window.motoristaSelecionado) {
         alert("Selecione um motorista primeiro!");
         return;
     }
     
+    // Pega o mês que está selecionado no painel
+    const elMes = document.getElementById('dataGlobal');
+    const mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
     let nome = window.motoristaSelecionado;
     
-    // Trava de segurança para não apagar sem querer
-    let confirmacao = prompt(`⚠️ CUIDADO! Você está prestes a apagar TODOS os lançamentos (passados, presentes e futuros) de ${nome}.\n\nPara confirmar essa exclusão, digite a palavra: APAGAR`);
+    // Confirmação avisando exatamente qual mês será apagado
+    let confirmacao = prompt(`⚠️ CUIDADO! Você está prestes a apagar TODOS os lançamentos de ${nome} apenas no mês de ${mesFiltroStr}.\n\nPara confirmar, digite a palavra: APAGAR`);
     
     if (confirmacao === 'APAGAR') {
         let banco = window.bancoDadosCloud;
         let apagados = 0;
         
-        // Varre todos os dias do banco de dados
+        // Varre o banco de dados
         for (let data in banco) {
-            if (banco[data][nome]) {
+            // Checa se a data começa com o MÊS SELECIONADO e se o motorista tem dados lá
+            if (data.startsWith(mesFiltroStr) && banco[data][nome]) {
                 delete banco[data][nome];
                 apagados++;
                 
-                // Se o dia ficar vazio sem nenhum motorista, apaga o dia também pra limpar o banco
+                // Se o dia ficar vazio, apaga o dia pra limpar o banco
                 if (Object.keys(banco[data]).length === 0) {
                     delete banco[data];
                 }
@@ -1168,12 +1175,11 @@ window.apagarLancamentosMotorista = function() {
             window.gerarPainelFeriados();
             window.atualizarGraficosProjecao();
             
-            // Dá um refresh nos ícones para garantir que não quebrem
             setTimeout(() => { lucide.createIcons(); }, 100);
             
-            alert(`✅ Sucesso! ${apagados} lançamentos de ${nome} foram excluídos do sistema.`);
+            alert(`✅ Sucesso! ${apagados} lançamentos de ${nome} no mês ${mesFiltroStr} foram excluídos.`);
         } else {
-            alert(`Nenhum lançamento encontrado para ${nome}. A ficha dele já está limpa!`);
+            alert(`Nenhum lançamento encontrado para ${nome} no mês de ${mesFiltroStr}. A ficha já está limpa!`);
         }
     } else if (confirmacao !== null) {
         alert("Palavra incorreta. Ação cancelada, nada foi apagado.");
