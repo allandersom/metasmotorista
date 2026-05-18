@@ -332,10 +332,36 @@ window.renderizarSidebar = function() {
         
         if(listaFiltrada.length === 0) return;
         const tituloEl = document.createElement('div'); tituloEl.innerHTML = `${icone} ${titulo}`; ul.appendChild(tituloEl);
+        
         listaFiltrada.forEach(mot => {
             const li = document.createElement('li'); li.className = 'driver-item';
             if (mot === window.motoristaSelecionado) li.classList.add('active');
-            li.textContent = mot; li.onclick = () => window.selecionarMotorista(mot, li); ul.appendChild(li);
+            
+            // 🔥 MÁGICA DA INDEPENDÊNCIA DE MESES
+            let isDesligadoNesteMes = false;
+            let diasComLancamento = Object.keys(window.bancoDadosCloud).filter(d => d.startsWith(mesAtualFiltro) && window.bancoDadosCloud[d][mot]).sort();
+            
+            if (diasComLancamento.length > 0) {
+                // Olha qual foi o último lançamento dele neste mês específico
+                let ultimoDia = diasComLancamento[diasComLancamento.length - 1];
+                if (window.bancoDadosCloud[ultimoDia][mot].status === 'desligado') {
+                    isDesligadoNesteMes = true;
+                }
+            }
+            
+            let isInativoManual = window.motoristasInativos.includes(mot) && diasComLancamento.length === 0;
+
+            // Renderiza o selinho apenas se ele foi desligado NO MÊS ATUAL que você está olhando
+            if (isDesligadoNesteMes) {
+                li.innerHTML = `<span class="text-red-500 w-full block font-black leading-tight">${mot} <span class="text-[9px] opacity-90 ml-1 bg-red-100 text-red-700 px-1 rounded border border-red-200">(Deslig. no Mês)</span></span>`;
+            } else if (isInativoManual) {
+                li.innerHTML = `<span class="text-slate-500 w-full block font-bold leading-tight">${mot} <span class="text-[9px] opacity-70 ml-1 bg-slate-200 px-1 rounded">(Inativo)</span></span>`;
+            } else {
+                li.textContent = mot; 
+            }
+
+            li.onclick = () => window.selecionarMotorista(mot, li); 
+            ul.appendChild(li);
         });
     }
     if(filtroVal === 'todos' || filtroVal === 'dia') criarGrupo('Dia (Rayanna)', window.motRayanna, '☀️');
