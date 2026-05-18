@@ -25,7 +25,7 @@ window.motRayanna = []; window.motJulia = []; window.motOutros = []; window.moto
 window.motoristaSelecionado = null; window.chartInstanciaInd = null; window.chartInstanciaGeral = null; window.diasUteisTravado = true;
 
 window.bancoDadosCloud = {}; window.configMesesCloud = {}; window.configSlaCloud = {}; 
-window.motoristasCustom = {}; window.motoristasInativos = []; 
+window.motoristasCustom = {}; window.motoristasInativos = []; window.motoristasApagados = []; // NOVA VARIÁVEL AQUI
 
 window.calcularPontosMotorista = function(nome, servicos, tipoVeiculo) {
     let metaMot = window.getMetaDiaria(nome); 
@@ -39,10 +39,13 @@ onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
         const data = docSnap.data();
         window.bancoDadosCloud = data.lancamentos || {}; window.configMesesCloud = data.configs || {};
-        window.configSlaCloud = data.slas || {}; window.motoristasCustom = data.motoristasCustom || {}; window.motoristasInativos = data.motoristasInativos || [];
+        window.configSlaCloud = data.slas || {}; window.motoristasCustom = data.motoristasCustom || {}; 
+        window.motoristasInativos = data.motoristasInativos || [];
+        window.motoristasApagados = data.motoristasApagados || []; // LÊ OS APAGADOS DA NUVEM
     } else {
-        window.bancoDadosCloud = {}; window.configMesesCloud = {}; window.configSlaCloud = {}; window.motoristasCustom = {}; window.motoristasInativos = [];
-        setDoc(docRef, { lancamentos: {}, configs: {}, slas: {}, motoristasCustom: {}, motoristasInativos: [] }).catch(err => console.error(err));
+        window.bancoDadosCloud = {}; window.configMesesCloud = {}; window.configSlaCloud = {}; 
+        window.motoristasCustom = {}; window.motoristasInativos = []; window.motoristasApagados = [];
+        setDoc(docRef, { lancamentos: {}, configs: {}, slas: {}, motoristasCustom: {}, motoristasInativos: [], motoristasApagados: [] }).catch(err => console.error(err));
     }
 
     window.reconstruirListasMotoristas();
@@ -61,7 +64,9 @@ onSnapshot(docRef, (docSnap) => {
 
 window.syncToFirebase = function() {
     setDoc(docRef, {
-        lancamentos: window.bancoDadosCloud, configs: window.configMesesCloud, slas: window.configSlaCloud, motoristasCustom: window.motoristasCustom, motoristasInativos: window.motoristasInativos
+        lancamentos: window.bancoDadosCloud, configs: window.configMesesCloud, slas: window.configSlaCloud, 
+        motoristasCustom: window.motoristasCustom, motoristasInativos: window.motoristasInativos,
+        motoristasApagados: window.motoristasApagados // SALVA OS APAGADOS NA NUVEM
     }).catch(err => alert("Erro ao salvar: " + err.message));
 }
 
@@ -79,25 +84,24 @@ window.gerarBackup = function() {
     alert("Backup gerado com sucesso! Guarde o arquivo .json em um local seguro.");
 }
 
-// BOTÃO VERMELHO DO PÂNICO CORRIGIDO COM AWAIT
 window.apagarTudo = async function() {
     let senha = prompt("⚠️ CUIDADO EXTREMO! Isso vai apagar TODOS os lançamentos de TODOS os meses do sistema.\n\nPara confirmar, digite a palavra: APAGAR");
     
     if (senha === 'APAGAR') {
-        window.bancoDadosCloud = {}; // Zera os dados localmente
+        window.bancoDadosCloud = {}; 
         
         try {
-            // AWAIT: Obriga o navegador a esperar o Firebase confirmar que apagou tudo lá na nuvem!
             await setDoc(docRef, {
                 lancamentos: {}, 
                 configs: window.configMesesCloud, 
                 slas: window.configSlaCloud, 
                 motoristasCustom: window.motoristasCustom, 
-                motoristasInativos: window.motoristasInativos
+                motoristasInativos: window.motoristasInativos,
+                motoristasApagados: window.motoristasApagados
             });
             alert("Base de dados zerada com sucesso!");
             window.fecharModalSistema();
-            location.reload(); // Só recarrega a página depois que a nuvem já estiver vazia
+            location.reload(); 
         } catch(e) {
             alert("Erro ao tentar apagar: " + e.message);
         }
@@ -106,7 +110,6 @@ window.apagarTudo = async function() {
     }
 }
 
-// A FUNÇÃO MESTRA DE LEITURA DA INTELIGÊNCIA ARTIFICIAL (CORRIGIDA - META 8 E ROBERTO 4)
 window.importarDadosIA = function() {
     const jsonText = document.getElementById('codigoIA').value.trim();
     if (!jsonText) { alert("Cole o código gerado pela IA antes de importar!"); return; }
@@ -243,8 +246,56 @@ window.reativarMotoristaModal = function() {
     let nome = document.getElementById('reativarMotNome').value; if (!nome) return; window.motoristasInativos = window.motoristasInativos.filter(m => m !== nome); window.syncToFirebase(); window.reconstruirListasMotoristas(); window.fecharModalGerenciar();
 }
 
+// NOVA FUNÇÃO: APAGAR MOTORISTA DEFINITIVO
+window.apagarMotoristaDefinitivo = function() {
+    let nome = prompt("⚠️ ZONA DE PERIGO: Para APAGAR um motorista definitivamente do painel, digite o NOME EXATO dele abaixo:");
+    
+    if (!nome) return;
+    nome = nome.toUpperCase().trim();
+
+    if (!window.motoristas.includes(nome)) {
+        alert(`O motorista "${nome}" não foi encontrado na lista. Verifique a ortografia.`);
+        return;
+    }
+
+    if (confirm(`Tem certeza absoluta que deseja EXCLUIR "${nome}"? Ele sumirá dos rankings e das listas.`)) {
+        // Se for um motorista customizado (adicionado na mão), deleta do banco
+        if (window.motoristasCustom[nome]) {
+            delete window.motoristasCustom[nome];
+        } else {
+            // Se for um motorista fixo da base, adiciona na "blacklist"
+            if (!window.motoristasApagados.includes(nome)) {
+                window.motoristasApagados.push(nome);
+            }
+        }
+        
+        // Remove da lista de inativos (se estiver lá)
+        window.motoristasInativos = window.motoristasInativos.filter(m => m !== nome);
+        
+        // Remove também qualquer SLA customizado que ele tivesse para limpar o banco
+        for (let chave in window.configSlaCloud) {
+            if (chave.startsWith(nome + "_")) delete window.configSlaCloud[chave];
+        }
+
+        window.syncToFirebase();
+        window.reconstruirListasMotoristas();
+        window.fecharModalGerenciar();
+        alert(`🗑️ Motorista ${nome} foi apagado do sistema com sucesso!`);
+        
+        if (window.motoristaSelecionado === nome) {
+            location.reload(); // Atualiza a página se você apagou quem estava selecionado
+        }
+    }
+}
+
 window.reconstruirListasMotoristas = function() {
-    window.motRayanna = [...motRayannaBase]; window.motJulia = [...motJuliaBase]; window.motOutros = [...motOutrosBase];
+    if (!window.motoristasApagados) window.motoristasApagados = [];
+    
+    // Filtra para remover qualquer um que esteja na lista de apagados
+    window.motRayanna = motRayannaBase.filter(m => !window.motoristasApagados.includes(m)); 
+    window.motJulia = motJuliaBase.filter(m => !window.motoristasApagados.includes(m)); 
+    window.motOutros = motOutrosBase.filter(m => !window.motoristasApagados.includes(m));
+    
     for(let mot in window.motoristasCustom) {
         let turno = window.motoristasCustom[mot];
         if(turno === 'dia' && !window.motRayanna.includes(mot)) window.motRayanna.push(mot);
@@ -1110,7 +1161,6 @@ window.atualizarGraficosProjecao = function() {
     }
 }
 
-// Função que lê o arquivo JSON e envia pro Firebase (CORRIGIDA PRO SEU SISTEMA)
 window.processarRestauracaoBackup = function(event) {
     const arquivo = event.target.files[0];
     if (!arquivo) return;
@@ -1121,7 +1171,6 @@ window.processarRestauracaoBackup = function(event) {
         try {
             const dadosBackup = JSON.parse(e.target.result);
             
-            // Verifica se o arquivo é um objeto (Backup) e não um array (Código da IA)
             if (typeof dadosBackup !== 'object' || Array.isArray(dadosBackup)) {
                 alert("O arquivo selecionado não parece ser um backup válido gerado pelo botão do sistema.");
                 document.getElementById('inputRestaurarBackup').value = '';
@@ -1137,16 +1186,11 @@ window.processarRestauracaoBackup = function(event) {
                 return;
             }
 
-            // Mostra a tela de carregamento
             if(document.getElementById('loader')) { document.getElementById('loader').style.display = 'flex'; document.getElementById('loader').style.opacity = '1'; }
 
-            // Substitui os dados atuais pelos dados do Backup!
             window.bancoDadosCloud = dadosBackup;
-
-            // Salva na nuvem usando a sua própria função já configurada
             window.syncToFirebase();
 
-            // Atualiza todos os gráficos e tabelas da tela
             window.sincronizarMesFiltro(); 
             window.atualizarResumosGlobais(); 
             window.gerarRankingPeriodo(); 
@@ -1158,7 +1202,6 @@ window.processarRestauracaoBackup = function(event) {
                 window.atualizarGraficosProjecao(); 
             }
 
-            // Esconde a tela de carregamento
             if(document.getElementById('loader')) { document.getElementById('loader').style.opacity = '0'; setTimeout(()=> document.getElementById('loader').style.display = 'none', 300); }
 
             alert("🔥 Backup restaurado com sucesso! O painel já está atualizado.");
