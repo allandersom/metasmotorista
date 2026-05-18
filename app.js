@@ -680,7 +680,8 @@ window.carregarHistoricoMotorista = function() {
         else if (item.dados.status === 'folga') tagStatus = '<span class="bg-slate-500 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">Folga</span>';
         else if (item.dados.status === 'atestado') tagStatus = '<span class="bg-yellow-400 text-slate-800 px-2 py-0.5 rounded text-[10px] font-black uppercase">Atestado</span>';
         else if (item.dados.status === 'polioff') tagStatus = '<span class="bg-orange-500 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">Poli OFF</span>';
-        else if (item.dados.status === 'licenca') tagStatus = '<span class="bg-purple-500 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">Licença / Desligado</span>';
+        else if (item.dados.status === 'licenca') tagStatus = '<span class="bg-purple-500 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">Licença</span>';
+        else if (item.dados.status === 'desligado') tagStatus = '<span class="bg-red-800 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase shadow-sm">Desligado</span>';
 
         let tagVeiculo = 'POLIGUINDASTE';
         if (item.dados.tipoVeiculo === 'cacamba') tagVeiculo = 'CAÇAMBA';
@@ -1125,4 +1126,56 @@ window.processarRestauracaoBackup = function(event) {
         }
     };
     leitor.readAsText(arquivo);
+}
+// =======================================================================
+// APAGAR TODOS OS LANÇAMENTOS DE UM MOTORISTA ESPECÍFICO
+// =======================================================================
+window.apagarLancamentosMotorista = function() {
+    if (!window.motoristaSelecionado) {
+        alert("Selecione um motorista primeiro!");
+        return;
+    }
+    
+    let nome = window.motoristaSelecionado;
+    
+    // Trava de segurança para não apagar sem querer
+    let confirmacao = prompt(`⚠️ CUIDADO! Você está prestes a apagar TODOS os lançamentos (passados, presentes e futuros) de ${nome}.\n\nPara confirmar essa exclusão, digite a palavra: APAGAR`);
+    
+    if (confirmacao === 'APAGAR') {
+        let banco = window.bancoDadosCloud;
+        let apagados = 0;
+        
+        // Varre todos os dias do banco de dados
+        for (let data in banco) {
+            if (banco[data][nome]) {
+                delete banco[data][nome];
+                apagados++;
+                
+                // Se o dia ficar vazio sem nenhum motorista, apaga o dia também pra limpar o banco
+                if (Object.keys(banco[data]).length === 0) {
+                    delete banco[data];
+                }
+            }
+        }
+        
+        if (apagados > 0) {
+            window.syncToFirebase();
+            window.carregarHistoricoMotorista();
+            window.atualizarResumosDoMotorista();
+            window.atualizarResumosGlobais();
+            window.gerarRankingPeriodo();
+            window.gerarRankingMensal();
+            window.gerarPainelFeriados();
+            window.atualizarGraficosProjecao();
+            
+            // Dá um refresh nos ícones para garantir que não quebrem
+            setTimeout(() => { lucide.createIcons(); }, 100);
+            
+            alert(`✅ Sucesso! ${apagados} lançamentos de ${nome} foram excluídos do sistema.`);
+        } else {
+            alert(`Nenhum lançamento encontrado para ${nome}. A ficha dele já está limpa!`);
+        }
+    } else if (confirmacao !== null) {
+        alert("Palavra incorreta. Ação cancelada, nada foi apagado.");
+    }
 }
