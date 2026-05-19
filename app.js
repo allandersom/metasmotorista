@@ -746,12 +746,13 @@ window.atualizarResumosDoMotorista = function() {
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataStr.startsWith(anoMesFiltro)) {
-            const dObj = new Date(dataStr + 'T00:00:00');
             if (dadosDia[window.motoristaSelecionado]) {
                 let r = dadosDia[window.motoristaSelecionado];
-                if (dObj.getDay() !== 0 && !r.isFeriado && (!r.status || r.status === 'normal')) {
-                    if(r.tipoVeiculo === 'cacamba') totalViagensMes += r.servicos; else totalCaixasMes += r.servicos;
-                    totalPontosMes += (r.pontos !== undefined) ? r.pontos : window.calcularPontosMotorista(window.motoristaSelecionado, r.servicos, r.tipoVeiculo);
+                
+                // 🔥 CAIXAS SOMAM SEMPRE EM DIAS NORMAIS! Não importa se é fim de semana
+                if (!r.status || r.status === 'normal') {
+                    if(r.tipoVeiculo === 'cacamba') totalViagensMes += (r.servicos || 0); else totalCaixasMes += (r.servicos || 0);
+                    totalPontosMes += (r.pontos !== undefined) ? r.pontos : window.calcularPontosMotorista(window.motoristaSelecionado, (r.servicos || 0), r.tipoVeiculo);
                 }
                 totalFatMes += r.valor;
             }
@@ -786,7 +787,9 @@ window.atualizarResumosGlobais = function() {
     if (dataRefStr && bancoDados[dataRefStr]) {
         for (const mot in bancoDados[dataRefStr]) {
             totalDiaGlobal += bancoDados[dataRefStr][mot].valor;
-            if(bancoDados[dataRefStr][mot].tipoVeiculo !== 'cacamba' && (!bancoDados[dataRefStr][mot].status || bancoDados[dataRefStr][mot].status === 'normal')) { caixasDiaGlobal += bancoDados[dataRefStr][mot].servicos; }
+            if(bancoDados[dataRefStr][mot].tipoVeiculo !== 'cacamba' && (!bancoDados[dataRefStr][mot].status || bancoDados[dataRefStr][mot].status === 'normal')) { 
+                caixasDiaGlobal += (bancoDados[dataRefStr][mot].servicos || 0); 
+            }
         }
     }
 
@@ -794,7 +797,10 @@ window.atualizarResumosGlobais = function() {
         if (dataStr.startsWith(mesGlobalStr)) {
             for (const mot in dadosDia) { 
                 totalMesGlobal += dadosDia[mot].valor; 
-                if(dadosDia[mot].tipoVeiculo !== 'cacamba' && (!dadosDia[mot].status || dadosDia[mot].status === 'normal')) { caixasMesGlobal += dadosDia[mot].servicos; }
+                // 🔥 CAIXAS SOMAM GLOBALMENTE INDEPENDENTE DO DIA DA SEMANA
+                if(dadosDia[mot].tipoVeiculo !== 'cacamba' && (!dadosDia[mot].status || dadosDia[mot].status === 'normal')) { 
+                    caixasMesGlobal += (dadosDia[mot].servicos || 0); 
+                }
             }
         }
     }
@@ -812,15 +818,23 @@ window.gerarRankingPeriodo = function() {
     
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataStr >= inicio && dataStr <= fim) {
-            const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
+            const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
+            
             for (const [mot, dados] of Object.entries(dadosDia)) {
                 if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
                 rankPeriodo[mot].valor += dados.valor; rankPeriodo[mot].extra += dados.valorExtra || 0;
 
-                if (!isDomingo && !dados.isFeriado && (!dados.status || dados.status === 'normal')) {
-                    if(dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += dados.servicos; else rankPeriodo[mot].caixas += dados.servicos;
-                    rankPeriodo[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
-                    rankPeriodo[mot].diasTrab += 1;
+                // 🔥 CAIXAS SOMAM NORMALMENTE EM QUALQUER DIA (Sab, Dom, Feriado)
+                if (!dados.status || dados.status === 'normal') {
+                    if(dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += (dados.servicos || 0); 
+                    else rankPeriodo[mot].caixas += (dados.servicos || 0);
+                    
+                    rankPeriodo[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
+                    
+                    // DIAS TRABALHADOS PARA GERAR SLA: SÓ SEG A SEX E NÃO FERIADO
+                    if (diaDaSemana !== 0 && diaDaSemana !== 6 && !dados.isFeriado) {
+                        rankPeriodo[mot].diasTrab += 1;
+                    }
                 }
             }
         }
@@ -868,15 +882,17 @@ window.gerarRankingMensal = function() {
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataStr.startsWith(mesFiltro)) {
-            const isDomingo = new Date(dataStr + 'T00:00:00').getDay() === 0;
             for (const [mot, dados] of Object.entries(dadosDia)) {
                 if (acumuladoMes[mot]) {
                     let statusMot = (dados.status || 'normal').toLowerCase();
-                    if (!isDomingo && !dados.isFeriado && statusMot === 'normal') {
-                        if(dados.tipoVeiculo === 'cacamba') { acumuladoMes[mot].viagens += dados.servicos; totalViagensFrota += dados.servicos; } 
-                        else { acumuladoMes[mot].caixas += dados.servicos; totalCaixasFrota += dados.servicos; }
-                        acumuladoMes[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
+                    
+                    // 🔥 CAIXAS SOMAM INDEPENDENTE DE SER SÁBADO, DOMINGO OU FERIADO
+                    if (statusMot === 'normal') {
+                        if(dados.tipoVeiculo === 'cacamba') { acumuladoMes[mot].viagens += (dados.servicos || 0); totalViagensFrota += (dados.servicos || 0); } 
+                        else { acumuladoMes[mot].caixas += (dados.servicos || 0); totalCaixasFrota += (dados.servicos || 0); }
+                        acumuladoMes[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
                     }
+                    
                     acumuladoMes[mot].valor += dados.valor;
                     totalFatMesFrota += dados.valor;
                 }
@@ -999,7 +1015,7 @@ window.atualizarGraficosProjecao = function() {
     let dadosEvolucaoInd = []; let mapGeral = {}; let stats = { atual: 0, passado: 0 };
     
     let diasTrabalhadosInd = 0; let diasMetaBatidaInd = 0; let somaServicosFisicosReal = 0; let maxServicosDiarios = 0; let dataRecordeFisico = '';
-    let somaPontosDiaDaSemana = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }; const nomesDias = { 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado' };
+    let somaPontosDiaDaSemana = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }; const nomesDias = { 0: 'Domingo', 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado' };
 
     if(document.getElementById('projecaoNomeMotorista')) document.getElementById('projecaoNomeMotorista').innerText = window.motoristaSelecionado || "Ninguém Selecionado";
 
@@ -1009,21 +1025,24 @@ window.atualizarGraficosProjecao = function() {
         
         for (const [mot, dados] of Object.entries(motoristasDia)) {
             let statusN = (!dados.status || dados.status === 'normal');
-            let pts = (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, dados.servicos, dados.tipoVeiculo);
-            let qtdReal = statusN ? dados.servicos : 0;
+            let pts = (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
+            let qtdReal = statusN ? (dados.servicos || 0) : 0;
             
             if (mot === window.motoristaSelecionado) {
-                if (isPeriodoAtual && !dados.isFeriado && diaDaSemana !== 0 && statusN) {
+                // 🔥 CAIXAS SOMAM DE SEGUNDA A SEGUNDA NA ABA PROJEÇÃO
+                if (isPeriodoAtual && statusN) {
                     stats.atual += pts;
-                    if (diaDaSemana >= 1 && diaDaSemana <= 5) {
+                    somaServicosFisicosReal += qtdReal;
+                    if (qtdReal > maxServicosDiarios) { maxServicosDiarios = qtdReal; dataRecordeFisico = data; }
+                    
+                    // WIN RATE E DIAS TRABALHADOS SÓ CONTAM EM DIAS ÚTEIS COMUNS (Seg a Sex sem feriado)
+                    if (diaDaSemana !== 0 && diaDaSemana !== 6 && !dados.isFeriado) {
                         diasTrabalhadosInd++;
                         if (pts >= window.getMetaDiaria(mot)) diasMetaBatidaInd++;
-                        somaServicosFisicosReal += qtdReal;
                     }
-                    if (qtdReal > maxServicosDiarios) { maxServicosDiarios = qtdReal; dataRecordeFisico = data; }
+                    dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
                 }
-                if (isPeriodoPassado && !dados.isFeriado && diaDaSemana !== 0 && statusN) { stats.passado += pts; }
-                if (isPeriodoAtual && statusN) { dadosEvolucaoInd.push({ dataStr: data, pontos: pts }); }
+                if (isPeriodoPassado && statusN) { stats.passado += pts; }
             }
             
             let incluirNoGeral = false;
@@ -1032,7 +1051,7 @@ window.atualizarGraficosProjecao = function() {
             else if (filtroTurno === 'noite' && window.motJulia.includes(mot)) incluirNoGeral = true;
             else if (filtroTurno === 'especial' && window.motOutros.includes(mot)) incluirNoGeral = true;
 
-            if (isPeriodoAtual && incluirNoGeral && !dados.isFeriado && diaDaSemana !== 0 && statusN) {
+            if (isPeriodoAtual && incluirNoGeral && statusN) {
                 pontosDiaGeral += pts; somaPontosDiaDaSemana[diaDaSemana] += pts; 
             }
         }
@@ -1127,9 +1146,7 @@ window.processarRestauracaoBackup = function(event) {
     };
     leitor.readAsText(arquivo);
 }
-// =======================================================================
-// APAGAR TODOS OS LANÇAMENTOS DE UM MOTORISTA ESPECÍFICO
-// =======================================================================
+
 // =======================================================================
 // APAGAR LANÇAMENTOS DO MOTORISTA (APENAS NO MÊS SELECIONADO)
 // =======================================================================
@@ -1139,26 +1156,21 @@ window.apagarLancamentosMotorista = function() {
         return;
     }
     
-    // Pega o mês que está selecionado no painel
     const elMes = document.getElementById('dataGlobal');
     const mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
     let nome = window.motoristaSelecionado;
     
-    // Confirmação avisando exatamente qual mês será apagado
     let confirmacao = prompt(`⚠️ CUIDADO! Você está prestes a apagar TODOS os lançamentos de ${nome} apenas no mês de ${mesFiltroStr}.\n\nPara confirmar, digite a palavra: APAGAR`);
     
     if (confirmacao === 'APAGAR') {
         let banco = window.bancoDadosCloud;
         let apagados = 0;
         
-        // Varre o banco de dados
         for (let data in banco) {
-            // Checa se a data começa com o MÊS SELECIONADO e se o motorista tem dados lá
             if (data.startsWith(mesFiltroStr) && banco[data][nome]) {
                 delete banco[data][nome];
                 apagados++;
                 
-                // Se o dia ficar vazio, apaga o dia pra limpar o banco
                 if (Object.keys(banco[data]).length === 0) {
                     delete banco[data];
                 }
