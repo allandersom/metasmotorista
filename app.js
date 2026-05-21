@@ -657,29 +657,18 @@ window.carregarHistoricoMotorista = function() {
 window.deletarLancamentoEspecifico = async function(dataStr) {
     if(confirm(`Deseja apagar o lançamento do dia ${window.formatarDataParaExibicao(dataStr)}?`)) {
         
-        console.log("Tentando deletar:", dataStr, "para motorista:", window.motoristaSelecionado);
-
-        // 1. Manda o comando DELETE para o banco SQL
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('lancamentos')
             .delete()
-            .match({ 
-                data: dataStr, 
-                motorista_nome: window.motoristaSelecionado 
-            });
+            .eq('data', dataStr)
+            .eq('motorista_nome', window.motoristaSelecionado);
 
         if (error) {
-            console.error("Erro ao excluir do banco:", error);
-            alert("Erro ao excluir do banco: " + error.message);
+            alert("Erro ao excluir: " + error.message);
             return;
         }
 
-        console.log("Exclusão realizada com sucesso no banco.");
-
-        // 2. Recarrega os dados do Supabase para atualizar a tela
         await window.carregarDadosDoSupabase();
-        
-        // 3. Garante que os ícones do Lucide apareçam na tabela recém-montada
         lucide.createIcons();
     }
 }
