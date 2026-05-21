@@ -115,12 +115,23 @@ window.gerarBackup = function() {
 }
 
 window.apagarTudo = async function() {
-    let senha = prompt("⚠️ CUIDADO EXTREMO! Isso vai apagar TODOS os lançamentos de TODOS os meses do sistema.\n\nPara confirmar, digite a palavra: APAGAR");
+    let senha = prompt("⚠️ CUIDADO EXTREMO! Isso vai apagar TODOS os lançamentos da nuvem.\n\nPara confirmar, digite a palavra: APAGAR");
     if (senha === 'APAGAR') {
-        const { error } = await supabase.from('lancamentos').delete().neq('data', '0000-00-00');
-        if(!error) { alert("Base de dados zerada com sucesso!"); window.fecharModalSistema(); location.reload(); }
-        else { alert("Erro ao tentar apagar: " + error.message); }
-    } else if (senha !== null) { alert("Ação cancelada."); }
+        try {
+            // Deleta todos os registros da tabela lancamentos
+            const { error } = await supabase.from('lancamentos').delete().neq('id', 0);
+            
+            if (error) throw error;
+            
+            alert("Base de dados zerada com sucesso!"); 
+            window.fecharModalSistema(); 
+            location.reload(); 
+        } catch(e) { 
+            alert("Erro ao tentar apagar: " + e.message); 
+        }
+    } else if (senha !== null) { 
+        alert("Palavra incorreta. Ação cancelada."); 
+    }
 }
 
 window.importarDadosIA = async function() {
@@ -645,9 +656,31 @@ window.carregarHistoricoMotorista = function() {
 
 window.deletarLancamentoEspecifico = async function(dataStr) {
     if(confirm(`Deseja apagar o lançamento do dia ${window.formatarDataParaExibicao(dataStr)}?`)) {
-        const { error } = await supabase.from('lancamentos').delete().match({ data: dataStr, motorista_nome: window.motoristaSelecionado });
-        if (error) { alert("Erro ao excluir do banco: " + error.message); return; }
+        
+        console.log("Tentando deletar:", dataStr, "para motorista:", window.motoristaSelecionado);
+
+        // 1. Manda o comando DELETE para o banco SQL
+        const { data, error } = await supabase
+            .from('lancamentos')
+            .delete()
+            .match({ 
+                data: dataStr, 
+                motorista_nome: window.motoristaSelecionado 
+            });
+
+        if (error) {
+            console.error("Erro ao excluir do banco:", error);
+            alert("Erro ao excluir do banco: " + error.message);
+            return;
+        }
+
+        console.log("Exclusão realizada com sucesso no banco.");
+
+        // 2. Recarrega os dados do Supabase para atualizar a tela
         await window.carregarDadosDoSupabase();
+        
+        // 3. Garante que os ícones do Lucide apareçam na tabela recém-montada
+        lucide.createIcons();
     }
 }
 
