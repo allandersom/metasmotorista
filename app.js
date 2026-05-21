@@ -1102,16 +1102,25 @@ window.apagarLancamentosMotorista = async function() {
     if (!window.motoristaSelecionado) { alert("Selecione um motorista primeiro!"); return; }
     
     const elMes = document.getElementById('dataGlobal');
-    const mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
-    let nome = window.motoristaSelecionado;
+    const mesFiltroStr = elMes && elMes.value ? elMes.value : new Date().toISOString().substring(0, 7);
     
-    let confirmacao = prompt(`⚠️ CUIDADO! Você está prestes a apagar TODOS os lançamentos de ${nome} apenas no mês de ${mesFiltroStr}.\n\nPara confirmar, digite a palavra: APAGAR`);
+    // Calcula o início e fim do mês para o SQL entender
+    let dataInicio = mesFiltroStr + "-01";
+    let dataFim = mesFiltroStr + "-31";
+    
+    let confirmacao = prompt(`⚠️ CUIDADO! Apagar todos os lançamentos de ${window.motoristaSelecionado} em ${mesFiltroStr}?\n\nDigite APAGAR para confirmar.`);
     
     if (confirmacao === 'APAGAR') {
-        const { error } = await supabase.from('lancamentos').delete().eq('motorista_nome', nome).like('data', `${mesFiltroStr}-%`);
+        const { error } = await supabase
+            .from('lancamentos')
+            .delete()
+            .eq('motorista_nome', window.motoristaSelecionado)
+            .gte('data', dataInicio)
+            .lte('data', dataFim);
+
         if (error) { alert("Erro ao limpar o mês: " + error.message); return; }
+        
         await window.carregarDadosDoSupabase();
-        setTimeout(() => { lucide.createIcons(); }, 100);
-        alert(`✅ Sucesso! Os lançamentos de ${nome} no mês ${mesFiltroStr} foram excluídos do banco.`);
-    } else if (confirmacao !== null) { alert("Palavra incorreta. Ação cancelada."); }
+        alert("✅ Excluído com sucesso!");
+    }
 }
