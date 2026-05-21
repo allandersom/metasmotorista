@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-[#f4f7fa] flex h-screen overflow-hidden text-slate-800 antialiased">
@@ -597,9 +598,20 @@
         </div>
     </div>
 
+    <script>
+        const SUPABASE_URL = "https://ldlqemidjjutrbkjiyir.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_dMnIUJ3FNWhFKm7PmEjxsQ_z5ZhexV9";
+        
+        // Inicializa o objeto global que usaremos para salvar e ler os dados
+        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log("Conectado ao Supabase com sucesso!");
+    </script>
+
     <script type="module" src="app.js"></script>
     <script>
         lucide.createIcons();
+        
+        // Listener para arquivo de anexo mudar nome
         
         // Listener para arquivo de anexo mudar nome
         document.getElementById('anexoObs').addEventListener('change', function(e) {
