@@ -1,20 +1,5 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyCchiBta11qw0ZaXGtJed6fcOTQbye2r8c",
-    authDomain: "metas-de-motorista.firebaseapp.com",
-    projectId: "metas-de-motorista",
-    storageBucket: "metas-de-motorista.firebasestorage.app",
-    messagingSenderId: "754155461930",
-    appId: "1:754155461930:web:481fe9861a17ef444dd253"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const storage = getStorage(app);
-const docRef = doc(db, "sistema", "dados_logistica");
+// Puxa a conexão que foi inicializada lá no index.html
+const supabase = window.supabaseClient;
 
 const motRayannaBase = ["EMERSON JOSE", "JACKSON MOREIRA", "JAMERSON DA SILVA", "JOÃO VICTOR MARTINS", "JOELITON PEREIRA", "JONES ALBUQUERQUE", "LUIZ RODRIGUES", "MANSUETO ROSALVES", "MARCELO ANDRE", "MARIO GOMES", "MATHEUS FELIPE", "ADRIELSON ALVES", "ROBERTO CARLOS", "RÉGIO JOSÉ"];
 const motJuliaBase = ["ELCIDES JOSE", "LUIZ RODRIGO", "MARCONI JOSE", "PLATINIS NILSON", "BRUNO HENRIQUE", "MAYKEL DE SOUZA"];
@@ -35,41 +20,100 @@ window.calcularPontosMotorista = function(nome, servicos, tipoVeiculo) {
     return servicos; 
 }
 
-onSnapshot(docRef, (docSnap) => {
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        window.bancoDadosCloud = data.lancamentos || {}; window.configMesesCloud = data.configs || {};
-        window.configSlaCloud = data.slas || {}; window.motoristasCustom = data.motoristasCustom || {}; 
-        window.motoristasInativos = data.motoristasInativos || [];
-        window.motoristasApagados = data.motoristasApagados || []; 
-        window.visibilidadeCloud = data.visibilidade || {};
-    } else {
-        window.bancoDadosCloud = {}; window.configMesesCloud = {}; window.configSlaCloud = {}; 
+// =======================================================================
+// NOVO CARREGADOR DE DADOS DO SUPABASE (SUTSUBSTITUIU O ONSNAPSHOT)
+// =======================================================================
+async function carregarDadosDoSupabase() {
+    try {
+        // 1. Puxa os Lançamentos do Supabase
+        const { data: lancs, error: err1 } = await supabase.from('lancamentos').select('*');
+        if (err1) throw err1;
+        
+        window.bancoDadosCloud = {};
+        lancs.forEach(l => {
+            if (!window.bancoDadosCloud[l.data]) window.bancoDadosCloud[l.data] = {};
+            window.bancoDadosCloud[l.data][l.motorista_nome] = {
+                servicos: l.quantidade_servicos,
+                valor: parseFloat(l.valor_faturamento),
+                isFeriado: l.is_feriado,
+                ganhouBonusSemana: l.ganhou_bonus_semana,
+                tipoVeiculo: l.tipo_veiculo,
+                valorExtra: parseFloat(l.valor_extra),
+                pontos: l.quantidade_servicos, 
+                observacao: l.observacao,
+                status: l.status_servico
+            };
+        });
+
+        // 2. Puxa as configurações mensais de SLA
+        const { data: configs, error: err2 } = await supabase.from('config_meses').select('*');
+        if (err2) throw err2;
+        window.configMesesCloud = {};
+        configs.forEach(c => {
+            window.configMesesCloud[c.ano_mes] = c.dias_uteis_SLA;
+        });
+
+        // Limpa estados antigos do Firebase que o SQL já resolve por tabelas
         window.motoristasCustom = {}; window.motoristasInativos = []; window.motoristasApagados = []; window.visibilidadeCloud = {};
-        setDoc(docRef, { lancamentos: {}, configs: {}, slas: {}, motoristasCustom: {}, motoristasInativos: [], motoristasApagados: [], visibilidade: {} }).catch(err => console.error(err));
+
+        // Executa as atualizações visuais do seu painel
+        window.reconstruirListasMotoristas();
+        if(window.motoristaSelecionado) {
+            window.carregarHistoricoMotorista(); window.atualizarResumosDoMotorista(); window.atualizarGraficosProjecao(); window.atualizarSlaInput();
+        }
+        window.sincronizarMesFiltro(); window.atualizarResumosGlobais(); window.gerarRankingPeriodo(); window.gerarRankingMensal(); window.gerarPainelFeriados();
+
+        // Remove a tela de carregamento (Loader)
+        setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').style.opacity = '0'; }, 300);
+        setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').style.display = 'none'; }, 800);
+
+    } catch (error) {
+        console.error("ERRO AO CARREGAR DADOS DO SUPABASE:", error);
+        if(document.getElementById('loader')) document.getElementById('loader').style.display = 'none';
     }
-
-    window.reconstruirListasMotoristas();
-
-    if(window.motoristaSelecionado) {
-        window.carregarHistoricoMotorista(); window.atualizarResumosDoMotorista(); window.atualizarGraficosProjecao(); window.atualizarSlaInput();
-    }
-    window.sincronizarMesFiltro(); window.atualizarResumosGlobais(); window.gerarRankingPeriodo(); window.gerarRankingMensal(); window.gerarPainelFeriados();
-
-    setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').style.opacity = '0'; }, 300);
-    setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').style.display = 'none'; }, 800);
-}, (error) => {
-    console.error("ERRO DO FIREBASE:", error);
-    if(document.getElementById('loader')) document.getElementById('loader').style.display = 'none';
-});
-
-window.syncToFirebase = function() {
-    setDoc(docRef, {
-        lancamentos: window.bancoDadosCloud, configs: window.configMesesCloud, slas: window.configSlaCloud, 
-        motoristasCustom: window.motoristasCustom, motoristasInativos: window.motoristasInativos,
-        motoristasApagados: window.motoristasApagados, visibilidade: window.visibilidadeCloud
-    }).catch(err => alert("Erro ao salvar: " + err.message));
 }
+
+// Executa a carga dos dados ao iniciar o site
+carregarDadosDoSupabase();
+
+// NOVA FUNÇÃO DE GRAVAÇÃO DIRETA NO BANCO SQL DA NUVEM
+window.syncToSupabase = async function(dataStr, motoristaNome) {
+    const lanc = window.bancoDadosCloud[dataStr]?.[motoristaNome];
+    if (!lanc) return;
+
+    // Prepara os dados no padrão exato das colunas que criamos no Supabase
+    const dadosParaSalvar = {
+        data: dataStr,
+        motorista_nome: motoristaNome,
+        status_servico: lanc.status,
+        tipo_veiculo: lanc.tipoVeiculo,
+        quantidade_servicos: lanc.servicos,
+        valor_faturamento: lanc.valor,
+        valor_extra: lanc.valorExtra,
+        is_feriado: lanc.isFeriado,
+        ganhou_bonus_semana: lanc.ganhouBonusSemana,
+        observacao: lanc.observacao
+    };
+
+    // Faz um "UPSERT" (Se não existir cria, se já existir atualiza o dia daquele cara)
+    const { error } = await supabase
+        .from('lancamentos')
+        .upsert(dadosParaSalvar, { onConflict: 'data,motorista_nome' });
+
+    if (error) {
+        console.error("Erro ao gravar na nuvem:", error.message);
+        alert("Erro ao sincronizar com o banco: " + error.message);
+    }
+}
+
+// Criamos esse atalho para o resto do seu código não reclamar do nome antigo
+window.syncToFirebase = function() {
+    // Busca o que foi alterado e joga pro banco
+    const elData = document.getElementById('dataLancamento');
+    if(elData && elData.value && window.motoristaSelecionado) {
+        window.syncToSupabase(elData.value, window.motoristaSelecionado);
+    }
+};
 
 window.abrirModalSistema = function() { document.getElementById('modalSistema').classList.remove('hidden'); lucide.createIcons(); }
 window.fecharModalSistema = function() { document.getElementById('modalSistema').classList.add('hidden'); document.getElementById('codigoIA').value = ''; }
@@ -563,19 +607,7 @@ window.salvarLancamento = async function() {
     if (isNaN(servicosInput)) servicosInput = 0;
     if (statusInput !== 'normal') { servicosInput = 0; valorExtraInput = 0; }
 
-    let linkAnexo = "";
-    if (fileInput && fileInput.files.length > 0) {
-        let file = fileInput.files[0];
-        document.getElementById('btnSalvarL').innerHTML = `<div class="spinner w-4 h-4 border-2"></div> Salvando Foto...`;
-        document.getElementById('btnSalvarL').disabled = true;
-        try {
-            let storageRef = ref(storage, 'anexos/' + Date.now() + '_' + file.name);
-            await uploadBytes(storageRef, file); linkAnexo = await getDownloadURL(storageRef);
-        } catch (e) {
-            alert("Erro ao upload da foto."); document.getElementById('btnSalvarL').innerHTML = `<i data-lucide="save" class="w-4 h-4 shrink-0"></i> Gravar`; document.getElementById('btnSalvarL').disabled = false; return;
-        }
-        document.getElementById('btnSalvarL').innerHTML = `<i data-lucide="save" class="w-4 h-4 shrink-0"></i> Gravar`; document.getElementById('btnSalvarL').disabled = false;
-    }
+    let linkAnexo = ""; // Armazenamento de fotos suspenso temporariamente durante a migração
 
     let bancoDados = window.bancoDadosCloud;
     if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
