@@ -168,13 +168,12 @@ function ensureLoginScreen() {
                 <h2>Acesso ao painel</h2>
                 <p>Entre com seu e-mail e senha autorizados.</p>
             </div>
-            <label class="auth-login-label" for="authLoginEmail">E-mail</label>
-            <input id="authLoginEmail" type="email" class="auth-login-input" autocomplete="email" placeholder="voce@empresa.com">
+            <label class="auth-login-label" for="authLoginEmail">Usuário</label>
+            <input id="authLoginEmail" type="text" class="auth-login-input" autocomplete="email" placeholder="seu.usuario">
             <label class="auth-login-label" for="authLoginSenha">Senha</label>
             <input id="authLoginSenha" type="password" class="auth-login-input" autocomplete="current-password" placeholder="Sua senha">
             <p id="authLoginMensagem" class="auth-login-message"></p>
             <button id="authBtnLogin" type="button" class="auth-login-primary"><i data-lucide="log-in"></i>Entrar</button>
-            <button id="authBtnCriarAcesso" type="button" class="auth-login-secondary">Criar primeiro acesso</button>
         </div>
     `;
 
@@ -252,17 +251,29 @@ async function requireLogin() {
 
     await new Promise((resolve) => {
         const login = async () => {
-            const email = byId('authLoginEmail')?.value.trim();
+            const username = byId('authLoginEmail')?.value.trim();
             const password = byId('authLoginSenha')?.value;
 
-            if (!email || !password) {
-                setMessage('Informe e-mail e senha.', true);
+            if (!username || !password) {
+                setMessage('Informe usuário e senha.', true);
                 return;
-            }
+             }
 
             setLoading(true);
             setMessage('Entrando...');
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            const { data: emailEncontrado, error: erroUsuario } = await supabaseClient
+             .rpc('email_por_username', { p_username: username });
+
+               if (erroUsuario || !emailEncontrado) {
+              setLoading(false);
+             setMessage('Usuário não autorizado.', true);
+             return;
+            }
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+             email: emailEncontrado,
+             password
+            });
             setLoading(false);
 
             if (error) {
@@ -312,7 +323,6 @@ async function requireLogin() {
         };
 
         byId('authBtnLogin')?.addEventListener('click', login);
-        byId('authBtnCriarAcesso')?.addEventListener('click', signup);
         byId('authLoginSenha')?.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') login();
         });
