@@ -122,6 +122,10 @@ const { data: lancs, error: erroLancs } = await supabase
             lancs.forEach(l => {
                 if (!window.bancoDadosCloud[l.data]) window.bancoDadosCloud[l.data] = {};
                 window.bancoDadosCloud[l.data][l.motorista_nome] = {
+                    anexoNome: l.anexo_nome,
+                    anexoUrl: l.anexo_url,
+                    : l.anexo_path,
+                    anexoTipo: l.anexo_tipo,
                     servicos: l.quantidade_servicos,
                     valor: parseFloat(l.valor_faturamento) || 0,
                     isFeriado: l.is_feriado,
@@ -212,6 +216,10 @@ window.syncToSupabase = async function(dataStr, motoristaNome) {
     if (!lanc) return;
 
     const dadosParaSalvar = {
+        anexo_nome: lanc.anexoNome || null,
+        anexo_url: lanc.anexoUrl || null,
+        anexo_path: lanc.anexoPath || null,
+        anexo_tipo: lanc.anexoTipo || null, 
         data: dataStr,
         motorista_nome: motoristaNome,
         status_servico: lanc.status,
@@ -859,7 +867,38 @@ const valorNormalBase = valorBase;
 
     const valorFinal = valorNormalBase + valorExtraFinal;
 
+    const arquivoAnexo = document.getElementById('anexoObs')?.files?.[0];
+let dadosAnexo = null;
+
+if (arquivoAnexo) {
+    const nomeSeguro = arquivoAnexo.name.replace(/[^\w.\-]+/g, '_');
+    const caminhoAnexo = `${dataStr}/${window.motoristaSelecionado}/${Date.now()}_${nomeSeguro}`;
+
+    const { error: erroUpload } = await supabase.storage
+        .from('lancamentos-anexos')
+        .upload(caminhoAnexo, arquivoAnexo, { upsert: true });
+
+    if (erroUpload) {
+        alert('Erro ao anexar arquivo: ' + erroUpload.message);
+        return;
+    }
+
+    const { data: urlData } = supabase.storage
+        .from('lancamentos-anexos')
+        .getPublicUrl(caminhoAnexo);
+
+    dadosAnexo = {
+        nome: arquivoAnexo.name,
+        url: urlData.publicUrl,
+        path: caminhoAnexo,
+        tipo: arquivoAnexo.type || '',
+    };
+}
     bancoDados[dataStr][window.motoristaSelecionado] = {
+        anexoNome: dadosAnexo?.nome || lancamentoExistente?.anexoNome || null,
+        anexoUrl: dadosAnexo?.url || lancamentoExistente?.anexoUrl || null,
+        anexoPath: dadosAnexo?.path || lancamentoExistente?.anexoPath || null,
+        anexoTipo: dadosAnexo?.tipo || lancamentoExistente?.anexoTipo || null,
         servicos: servicosFinais,
         valor: valorFinal,
         isFeriado: isFeriadoFinal,
@@ -942,6 +981,9 @@ window.carregarHistoricoMotorista = function() {
         // ✅ Usando a função importada formatarMoeda()
         const extraTxt = item.dados.valorExtra > 0 ? `+ ${formatarMoeda(item.dados.valorExtra)}` : '-';
         const obsText = item.dados.observacao || '-';
+        const anexoHtml = item.dados.anexoUrl
+    ? `<a href="${item.dados.anexoUrl}" target="_blank" class="text-blue-600 font-bold underline">Ver anexo</a>`
+    : '';
         const dataEscaped = item.data.replace(/'/g, "\\'");
 
         tr.innerHTML = `
@@ -950,8 +992,10 @@ window.carregarHistoricoMotorista = function() {
             <td class="text-center font-black">${qtdText}</td>
             <td class="text-center text-blue-600 font-bold">${extraTxt}</td>
             <td class="text-right text-emerald-600 font-black text-sm">${formatarMoeda(item.dados.valor)}</td>
-            <td class="text-xs text-slate-500 max-w-[150px] truncate" title="${obsText}">${obsText}</td>
-            <td class="text-center"><button class="btn-delete" onclick="window.deletarLancamentoEspecifico('${dataEscaped}')">Excluir</button></td>
+            <td class="text-xs text-slate-500 max-w-[180px] truncate" title="${obsText}">
+    ${obsText}
+    ${anexoHtml ? `<br>${anexoHtml}` : ''}
+</td>            <td class="text-center"><button class="btn-delete" onclick="window.deletarLancamentoEspecifico('${dataEscaped}')">Excluir</button></td>
         `;
         tbody.appendChild(tr);
     });
