@@ -39,6 +39,12 @@ import {
     formatarNumeroInteligente,
 } from './src/utils/format.js';
 
+import {
+    calcularValorDia,
+    calcularPontos,
+    getMetaDiaria,
+    getConfigVeiculo,
+} from './src/business/financeiro.js';
 // =============================================================
 // ALIASES PARA O HTML EXISTENTE
 // Enquanto o index.html ainda chama window.formatarDataParaBusca,
@@ -94,17 +100,9 @@ if (document.getElementById('dataProjFim'))       document.getElementById('dataP
 // LÓGICA DE NEGÓCIO — PONTOS
 // (Será migrado para src/business/pontos.js no Passo 2)
 // =============================================================
-window.calcularPontosMotorista = function(nome, servicos, tipoVeiculo) {
-    let metaMot = window.getMetaDiaria(nome);
-    if (tipoVeiculo === 'cacamba')   return servicos * (metaMot / 4);
-    if (tipoVeiculo === 'poli_duplo') return servicos / 2;
-    if (tipoVeiculo === 'misto')     return servicos * (metaMot / 6);
-    return servicos;
-};
-
-window.getMetaDiaria = function(nome) {
-    return nome === 'ROBERTO CARLOS' ? 4 : 8;
-};
+// Aliases — funções agora vêm de src/business/financeiro.js
+window.calcularPontosMotorista = calcularPontos;
+window.getMetaDiaria = getMetaDiaria;
 
 // =============================================================
 // O CÉREBRO: CARREGA TUDO DO SUPABASE
@@ -311,55 +309,17 @@ window.importarDadosIA = async function() {
         const isDomingo = diaSemana === 0;
         const isSabado = diaSemana === 6;
 
-        let metaFinanceira = 4; let valorExtraPorUnidade = 10;
-        if (tipoVeiculoFinal === 'cacamba')    { metaFinanceira = 4; valorExtraPorUnidade = 20; }
-        else if (tipoVeiculoFinal === 'poli_duplo') { metaFinanceira = 8; valorExtraPorUnidade = 10; }
-        else if (tipoVeiculoFinal === 'misto')  { metaFinanceira = 6; valorExtraPorUnidade = 10; }
-
-        let valorNormalBase = 0; let bateuMetaSemana = false;
-
-        if (statusFinal === 'normal') {
-            if (isDomingo || isFeriadoFinal) {
-                valorNormalBase = servicosFinais * 30;
-            } else if (isSabado) {
-                let pontosFeitosSemana = 0; let qtdFeriadosSemana = 0;
-                for (let i = 1; i <= 5; i++) {
-                    const d = new Date(dataObj);
-                    d.setDate(dataObj.getDate() - (6 - i));
-                    // ✅ Usando a função importada em vez de código inline
-                    const dStr = formatarDataParaBusca(d);
-                    const lancamentoDia = window.bancoDadosCloud[dStr]?.[mot];
-                    if (lancamentoDia && lancamentoDia.status === 'normal') {
-                        if (lancamentoDia.isFeriado) qtdFeriadosSemana++;
-                        else pontosFeitosSemana += window.calcularPontosMotorista(mot, lancamentoDia.servicos, lancamentoDia.tipoVeiculo);
-                    }
-                }
-                const metaBaseMotorista = window.getMetaDiaria(mot);
-                const metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseMotorista;
-                const pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
-
-                let divisorParaFisico = 1;
-                if (tipoVeiculoFinal === 'poli_duplo') divisorParaFisico = 0.5;
-                else if (tipoVeiculoFinal === 'cacamba') divisorParaFisico = metaBaseMotorista / 4;
-                else if (tipoVeiculoFinal === 'misto')   divisorParaFisico = metaBaseMotorista / 6;
-
-                const servicosFaltantesFisicos = divisorParaFisico > 0 ? pontosFaltantes / divisorParaFisico : 0;
-                const servicosParaMeta = Math.min(servicosFinais, servicosFaltantesFisicos);
-                const servicosBonus = Math.max(0, servicosFinais - servicosFaltantesFisicos);
-
-                let calcServicosNormais = 0;
-                if (servicosParaMeta >= metaFinanceira) {
-                    calcServicosNormais = 50 + ((servicosParaMeta - metaFinanceira) * valorExtraPorUnidade);
-                }
-                const calcServicosBonus = servicosBonus * (valorExtraPorUnidade * 2);
-                valorNormalBase = calcServicosNormais + calcServicosBonus;
-                bateuMetaSemana = servicosBonus > 0;
-            } else {
-                if (servicosFinais >= metaFinanceira) {
-                    valorNormalBase = 50 + ((servicosFinais - metaFinanceira) * valorExtraPorUnidade);
-                }
-            }
-        }
+        const { valorBase, bateuMetaSemana } = calcularValorDia({
+    motoristaNome: mot,
+    dataStr,
+    servicos: servicosFinais,
+    tipoVeiculo: tipoVeiculoFinal,
+    isFeriado: isFeriadoFinal,
+    status: statusFinal,
+    bancoDados: window.bancoDadosCloud,
+    formatarData: formatarDataParaBusca,
+});
+const valorNormalBase = valorBase;
 
         upsertArray.push({
             data: dataStr,
@@ -816,58 +776,17 @@ window.salvarLancamento = async function() {
     const isDomingo = diaSemana === 0;
     const isSabado = diaSemana === 6;
 
-    let metaFinanceira = 4; let valorExtraPorUnidade = 10;
-    if (tipoVeiculoFinal === 'cacamba')     { metaFinanceira = 4; valorExtraPorUnidade = 20; }
-    else if (tipoVeiculoFinal === 'poli_duplo') { metaFinanceira = 8; valorExtraPorUnidade = 10; }
-    else if (tipoVeiculoFinal === 'misto')   { metaFinanceira = 6; valorExtraPorUnidade = 10; }
-
-    let valorNormalBase = 0; let bateuMetaSemana = false;
-
-    if (statusFinal === 'normal') {
-        if (isDomingo || isFeriadoFinal) {
-            valorNormalBase = servicosFinais * 30;
-        } else if (isSabado) {
-            let pontosFeitosSemana = 0; let qtdFeriadosSemana = 0;
-            for (let i = 1; i <= 5; i++) {
-                const d = new Date(dataObj);
-                d.setDate(dataObj.getDate() - (6 - i));
-                // ✅ Usando a função importada
-                const dStr = formatarDataParaBusca(d);
-                const lancamentoDia = bancoDados[dStr]?.[window.motoristaSelecionado];
-                if (lancamentoDia && (!lancamentoDia.status || lancamentoDia.status === 'normal')) {
-                    if (lancamentoDia.isFeriado) qtdFeriadosSemana++;
-                    else {
-                        const srv = isNaN(lancamentoDia.servicos) ? 0 : lancamentoDia.servicos;
-                        pontosFeitosSemana += window.calcularPontosMotorista(window.motoristaSelecionado, srv, lancamentoDia.tipoVeiculo);
-                    }
-                }
-            }
-            const metaBaseMotorista = window.getMetaDiaria(window.motoristaSelecionado);
-            const metaSemanalPontos = (5 - qtdFeriadosSemana) * metaBaseMotorista;
-            const pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
-
-            let divisorParaFisico = 1;
-            if (tipoVeiculoFinal === 'poli_duplo') divisorParaFisico = 0.5;
-            else if (tipoVeiculoFinal === 'cacamba') divisorParaFisico = metaBaseMotorista / 4;
-            else if (tipoVeiculoFinal === 'misto')   divisorParaFisico = metaBaseMotorista / 6;
-
-            const servicosFaltantesFisicos = divisorParaFisico > 0 ? pontosFaltantes / divisorParaFisico : 0;
-            const servicosParaMeta = Math.min(servicosFinais, servicosFaltantesFisicos);
-            const servicosBonus = Math.max(0, servicosFinais - servicosFaltantesFisicos);
-
-            let calcServicosNormais = 0;
-            if (servicosParaMeta >= metaFinanceira) {
-                calcServicosNormais = 50 + ((servicosParaMeta - metaFinanceira) * valorExtraPorUnidade);
-            }
-            const calcServicosBonus = servicosBonus * (valorExtraPorUnidade * 2);
-            valorNormalBase = calcServicosNormais + calcServicosBonus;
-            bateuMetaSemana = servicosBonus > 0;
-        } else {
-            if (servicosFinais >= metaFinanceira) {
-                valorNormalBase = 50 + ((servicosFinais - metaFinanceira) * valorExtraPorUnidade);
-            }
-        }
-    }
+    const { valorBase, bateuMetaSemana } = calcularValorDia({
+    motoristaNome: window.motoristaSelecionado,
+    dataStr,
+    servicos: servicosFinais,
+    tipoVeiculo: tipoVeiculoFinal,
+    isFeriado: isFeriadoFinal,
+    status: statusFinal,
+    bancoDados: window.bancoDadosCloud,
+    formatarData: formatarDataParaBusca,
+});
+const valorNormalBase = valorBase;
 
     const valorFinal = valorNormalBase + valorExtraFinal;
 
