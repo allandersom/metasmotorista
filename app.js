@@ -111,35 +111,46 @@ window.getMetaDiaria = getMetaDiaria;
 async function carregarDadosDoSupabase() {
     try {
         // 1. Lançamentos
-const { data: lancs, error: erroLancs } = await supabase
-    .from('lancamentos')
-    .select('*')
-    .is('cancelado_em', null);
-            if (erroLancs) throw erroLancs;
+        const { data: lancs, error: erroLancs } = await supabase
+            .from('lancamentos')
+            .select('*')
+            .is('cancelado_em', null);
 
-       window.bancoDadosCloud[l.data][l.motorista_nome] = {
-    anexoNome: l.anexo_nome,
-    anexoUrl: l.anexo_url,
-    anexoPath: l.anexo_path,
-    anexoTipo: l.anexo_tipo,
-    servicos: l.quantidade_servicos,
-    valor: parseFloat(l.valor_faturamento) || 0,
-    isFeriado: l.is_feriado,
-    ganhouBonusSemana: l.ganhou_bonus_semana,
-    tipoVeiculo: l.tipo_veiculo,
-    valorExtra: parseFloat(l.valor_extra) || 0,
-    pontos: l.quantidade_servicos,
-    observacao: l.observacao,
-    status: l.status_servico,
-};
+        if (erroLancs) throw erroLancs;
+
+        window.bancoDadosCloud = {};
+
+        if (lancs) {
+            lancs.forEach(l => {
+                if (!window.bancoDadosCloud[l.data]) {
+                    window.bancoDadosCloud[l.data] = {};
+                }
+
+                window.bancoDadosCloud[l.data][l.motorista_nome] = {
+                    anexoNome: l.anexo_nome,
+                    anexoUrl: l.anexo_url,
+                    anexoPath: l.anexo_path,
+                    anexoTipo: l.anexo_tipo,
+                    servicos: l.quantidade_servicos,
+                    valor: parseFloat(l.valor_faturamento) || 0,
+                    isFeriado: l.is_feriado,
+                    ganhouBonusSemana: l.ganhou_bonus_semana,
+                    tipoVeiculo: l.tipo_veiculo,
+                    valorExtra: parseFloat(l.valor_extra) || 0,
+                    pontos: l.quantidade_servicos,
+                    observacao: l.observacao,
+                    status: l.status_servico,
+                };
             });
         }
 
         // 2. Motoristas
-    const { data: mots, error: erroMots } = await supabase
-    .from('motoristas')
-    .select('*')
-    .neq('status', 'inativo');        if (erroMots) throw erroMots;
+        const { data: mots, error: erroMots } = await supabase
+            .from('motoristas')
+            .select('*')
+            .neq('status', 'inativo');
+
+        if (erroMots) throw erroMots;
 
         window.motRayanna = []; window.motJulia = []; window.motOutros = []; window.motoristas = [];
         if (mots) {
