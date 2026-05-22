@@ -686,13 +686,15 @@ window.mudarAba = function(aba) {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
+
     if (aba === 'lancamentos') {
         document.getElementById('btnTabLancamentos')?.classList.add('active');
         document.getElementById('viewLancamentos') && (document.getElementById('viewLancamentos').style.display = 'block');
     } else if (aba === 'rankings') {
         document.getElementById('btnTabRankings')?.classList.add('active');
         document.getElementById('viewRankings') && (document.getElementById('viewRankings').style.display = 'block');
-        window.gerarRankingPeriodo(); window.gerarRankingMensal();
+        window.gerarRankingPeriodo();
+        window.gerarRankingMensal();
     } else if (aba === 'domferiados') {
         document.getElementById('btnTabDomFeriados')?.classList.add('active');
         document.getElementById('viewDomFeriados') && (document.getElementById('viewDomFeriados').style.display = 'block');
@@ -701,8 +703,7 @@ window.mudarAba = function(aba) {
         document.getElementById('btnTabProjecao')?.classList.add('active');
         document.getElementById('viewProjecao') && (document.getElementById('viewProjecao').style.display = 'block');
         window.atualizarGraficosProjecao();
-    }
-        } else if (aba === 'auditoria') {
+    } else if (aba === 'auditoria') {
         document.getElementById('btnTabAuditoria')?.classList.add('active');
         document.getElementById('viewAuditoria') && (document.getElementById('viewAuditoria').style.display = 'block');
         window.carregarAuditoriaLancamentos();
@@ -710,6 +711,7 @@ window.mudarAba = function(aba) {
 };
 
 window.mudarAba('lancamentos');
+
 
 window.filtrarMotoristas = function() {
     const busca = document.getElementById('buscaMotorista');
