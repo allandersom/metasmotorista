@@ -276,20 +276,7 @@ window.gerarBackup = function() {
 };
 
 window.apagarTudo = async function() {
-    const senha = prompt('⚠️ CUIDADO EXTREMO! Isso vai apagar TODOS os lançamentos da nuvem.\n\nPara confirmar, digite a palavra: APAGAR');
-    if (senha !== 'APAGAR') {
-        if (senha !== null) alert('Palavra incorreta. Ação cancelada.');
-        return;
-    }
-    try {
-        const { error } = await supabase.from('lancamentos').delete().gte('data', '2000-01-01');
-        if (error) throw error;
-        alert('Base de dados zerada com sucesso!');
-        window.fecharModalSistema();
-        location.reload();
-    } catch (e) {
-        alert('Erro ao tentar apagar: ' + e.message);
-    }
+    alert('Exclusão total desativada por segurança.');
 };
 
 window.importarDadosIA = async function() {
