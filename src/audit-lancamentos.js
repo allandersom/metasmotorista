@@ -5,15 +5,15 @@ function sleep(ms) {
 }
 
 async function waitForAppFunctions() {
-    for (let tentativas = 0; tentativas < 80; tentativas += 1) {
+    while (true) {
         if (typeof window.syncToSupabase === 'function'
             && typeof window.deletarLancamentoEspecifico === 'function'
             && typeof window.apagarLancamentosMotorista === 'function') {
             return true;
         }
-        await sleep(100);
+
+        await sleep(300);
     }
-    return false;
 }
 
 async function getUsuarioAtual() {
@@ -214,8 +214,7 @@ async function initAuditLancamentos() {
     if (!supabase?.auth) return;
     if (window.__auditLancamentosAtivo) return;
 
-    const ok = await waitForAppFunctions();
-    if (!ok) return;
+    await waitForAppFunctions();
 
     patchSyncToSupabase();
     patchImportacaoIA();
@@ -224,6 +223,7 @@ async function initAuditLancamentos() {
     patchApagarTudo();
 
     window.__auditLancamentosAtivo = true;
+    console.log('Auditoria de lançamentos ativada.');
 }
 
 initAuditLancamentos();
