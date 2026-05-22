@@ -166,7 +166,7 @@
                         </div>
 
                         <!-- Motorista content -->
-                        <div id="conteudoMotorista" style="display:none;" class="animate-fade-in">
+                        <div id="conteudoMotorista" style="display:none; overflow-y:auto; padding:var(--space-6); flex:1; flex-direction:column;" class="animate-fade-in">
 
                             <!-- Motorista header -->
                             <div class="motorista-header">
@@ -252,14 +252,14 @@
                                     </div>
 
                                     <div class="flex flex-col gap-1 md:col-span-4">
-                                        <label class="flex justify-between items-center">
-                                            Observações
-                                            <span class="attach-label">
+                                        <label class="flex justify-between items-center" style="pointer-events:none;">
+                                            <span>Observações</span>
+                                            <button type="button" onclick="document.getElementById('anexoObs').click()" class="attach-label" style="pointer-events:auto;background:none;border:none;cursor:pointer;font-family:var(--font-ui);">
                                                 <i data-lucide="paperclip"></i>
                                                 Anexar arquivo
-                                                <input type="file" id="anexoObs" class="absolute inset-0 opacity-0 cursor-pointer" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-                                            </span>
+                                            </button>
                                         </label>
+                                        <input type="file" id="anexoObs" style="display:none;">
                                         <textarea id="observacao" rows="2" class="input-base" placeholder="Opcional..."></textarea>
                                         <p id="nomeAnexo" class="hidden"></p>
                                     </div>
