@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGC Logística — Gestão da Frota</title>
+    <title>SGC Logística - Gestão da Frota</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -11,291 +11,279 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="bg-[#f4f7fa] flex h-screen overflow-hidden text-slate-800 antialiased">
 
-    <!-- LOADER -->
     <div id="loader" class="loading-screen">
         <div class="spinner"></div>
-        <p id="loader-text">Conectando à nuvem...</p>
+        <p id="loader-text" style="font-weight: 800; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Conectando à Nuvem...</p>
     </div>
 
-    <!-- SIDEBAR -->
-    <aside id="sidebar">
-        <div class="sidebar-logo">
-            <div class="logo-icon">
-                <i data-lucide="waves" class="w-5 h-5 text-white"></i>
+    <aside id="sidebar" class="w-[280px] bg-[#0b1b3d] text-white flex flex-col shrink-0 h-full relative z-20 shadow-xl overflow-hidden transition-all duration-300">
+        <div class="absolute -bottom-20 -left-20 opacity-5 pointer-events-none">
+            <svg width="300" height="300" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+        </div>
+
+        <div class="p-8 border-b border-white/10 flex items-center gap-4 w-[280px]">
+            <div class="w-12 h-12 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0">
+                <i data-lucide="waves" class="w-7 h-7 text-white"></i>
             </div>
-            <div class="logo-text">
-                <h1>SGC</h1>
-                <p>São Gabriel Transportes</p>
+            <div>
+                <h1 class="text-2xl font-black tracking-tight leading-none">SGC</h1>
+                <p class="text-[8px] font-bold text-blue-300 uppercase tracking-[0.2em] mt-1 whitespace-nowrap">São Gabriel Transportes</p>
             </div>
         </div>
 
-        <nav>
-            <button id="btnTabLancamentos" onclick="window.mudarAba('lancamentos')" class="nav-tab active">
-                <i data-lucide="truck" class="w-4 h-4 shrink-0"></i>
-                Gestão da Frota
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto w-[280px]">
+            <button id="btnTabLancamentos" onclick="window.mudarAba('lancamentos')" class="nav-tab active whitespace-nowrap">
+                <i data-lucide="truck" class="w-5 h-5 shrink-0"></i> Gestão da Frota
             </button>
-            <button id="btnTabRankings" onclick="window.mudarAba('rankings')" class="nav-tab">
-                <i data-lucide="trophy" class="w-4 h-4 shrink-0"></i>
-                Central de Rankings
+            <button id="btnTabRankings" onclick="window.mudarAba('rankings')" class="nav-tab whitespace-nowrap">
+                <i data-lucide="trophy" class="w-5 h-5 shrink-0"></i> Central de Rankings
             </button>
-            <button id="btnTabDomFeriados" onclick="window.mudarAba('domferiados')" class="nav-tab">
-                <i data-lucide="calendar-off" class="w-4 h-4 shrink-0"></i>
-                Domingos &amp; Feriados
+            <button id="btnTabDomFeriados" onclick="window.mudarAba('domferiados')" class="nav-tab whitespace-nowrap">
+                <i data-lucide="calendar-off" class="w-5 h-5 shrink-0"></i> Domingos & Feriados
             </button>
-            <button id="btnTabProjecao" onclick="window.mudarAba('projecao')" class="nav-tab">
-                <i data-lucide="line-chart" class="w-4 h-4 shrink-0"></i>
-                Projeção e BI
+            <button id="btnTabProjecao" onclick="window.mudarAba('projecao')" class="nav-tab whitespace-nowrap">
+                <i data-lucide="line-chart" class="w-5 h-5 shrink-0"></i> Projeção e BI
             </button>
         </nav>
     </aside>
 
-    <!-- MAIN -->
-    <main>
-        <!-- HEADER -->
-        <header>
-            <button onclick="window.toggleSidebar()" class="btn-icon">
-                <i data-lucide="menu"></i>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        <header class="bg-white h-[88px] px-8 border-b border-slate-200 flex justify-between items-center shrink-0">
+            <button onclick="window.toggleSidebar()" class="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-colors">
+                <i data-lucide="menu" class="w-5 h-5"></i>
             </button>
-            <div class="header-actions">
-                <button onclick="window.abrirModalSistema()" class="btn-sistema">
-                    <i data-lucide="settings"></i>
-                    Sistema / Backup
+            <div class="flex items-center gap-4">
+                <button onclick="window.abrirModalSistema()" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-full font-bold text-sm transition-colors">
+                    <i data-lucide="settings" class="w-4 h-4"></i> Sistema / Backup
                 </button>
-                <button class="btn-icon notif-dot">
-                    <i data-lucide="bell"></i>
+                <button class="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-colors relative">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-blue-600 rounded-full border-2 border-white"></span>
                 </button>
             </div>
         </header>
 
-        <!-- CONTENT -->
-        <div class="content-area">
-
-            <!-- ═══════════════════════════════════════════
-                 VIEW: GESTÃO DA FROTA
-            ═══════════════════════════════════════════ -->
-            <div id="viewLancamentos" style="display:block;">
-
-                <!-- Page header -->
-                <div class="page-header">
+        <div class="flex-1 overflow-y-auto p-8 relative w-full">
+            
+            <div id="viewLancamentos" class="w-full space-y-6 relative">
+                
+                <div class="flex justify-between items-end mb-8">
                     <div>
-                        <h2>Gestão Diária da Frota</h2>
-                        <p>Acompanhe e gerencie os turnos da operação.</p>
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Gestão Diária da Frota</h2>
+                        <p class="text-sm text-slate-500 font-medium mt-1">Acompanhe e gerencie os turnos da sua operação.</p>
                     </div>
-                    <div class="date-pill">
-                        <i data-lucide="calendar"></i>
-                        <span>Mês de referência:</span>
-                        <input type="month" id="dataGlobal"
-                            onchange="window.sincronizarMesData(); window.atualizarResumosGlobais(); window.carregarHistoricoMotorista(); window.atualizarResumosDoMotorista();">
+                    <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border shadow-sm">
+                        <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Data de Referência:</span>
+                        <input type="month" id="dataGlobal" onchange="window.sincronizarMesData(); window.atualizarResumosGlobais(); window.carregarHistoricoMotorista(); window.atualizarResumosDoMotorista();" class="bg-transparent text-sm font-bold text-slate-800 outline-none cursor-pointer border-none">
                     </div>
                 </div>
 
-                <!-- Top stat cards -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-
-                    <!-- Dias úteis -->
-                    <div class="stat-card stat-card-plain">
-                        <div>
-                            <div class="stat-label">Dias Úteis Globais (Mês)</div>
-                            <input type="number" id="inputDiasUteisLanc" min="1" max="31"
-                                onchange="window.salvarDiasUteis('lanc')"
-                                class="stat-value-input" readonly>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-3xl p-6 border shadow-sm flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                                <i data-lucide="calendar-days" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 whitespace-nowrap">Dias Úteis Globais (Mês):</p>
+                                <input type="number" id="inputDiasUteisLanc" min="1" max="31" onchange="window.salvarDiasUteis('lanc')" class="text-3xl font-black text-slate-800 w-16 bg-transparent outline-none p-0 border-none whitespace-nowrap" readonly>
+                            </div>
                         </div>
-                        <button id="btnTravaLanc" onclick="window.toggleTravaGlobais()" class="lock-btn">
-                            <i data-lucide="lock"></i>
-                        </button>
+                        <button id="btnTravaLanc" onclick="window.toggleTravaGlobais()" class="text-yellow-500 hover:scale-110 transition-transform bg-yellow-50 p-3 rounded-full shrink-0"><i data-lucide="lock" class="w-5 h-5"></i></button>
+                    </div>
+                    
+                    <div class="bg-emerald-500 rounded-3xl p-6 shadow-lg shadow-emerald-200 flex items-center gap-4 text-white transform hover:-translate-y-1 transition-transform">
+                        <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                            <i data-lucide="truck" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-emerald-100 uppercase tracking-widest mb-1 whitespace-nowrap">TOTAL FROTA (DIA SEL.)</p>
+                            <p class="text-2xl font-black tracking-tight leading-none whitespace-nowrap" id="totalDiaGlobal">R$ 0,00</p>
+                            <p class="text-xs font-bold text-emerald-100 mt-2 whitespace-nowrap" id="caixasDiaGlobal">0 cx</p>
+                        </div>
                     </div>
 
-                    <!-- Total dia -->
-                    <div class="stat-card stat-card-emerald">
-                        <div class="stat-label">Total Frota (Dia Selecionado)</div>
-                        <div class="stat-value" id="totalDiaGlobal">R$ 0,00</div>
-                        <div class="stat-sub" id="caixasDiaGlobal">0 cx</div>
-                    </div>
-
-                    <!-- Total mês -->
-                    <div class="stat-card stat-card-brand">
-                        <div class="stat-label">Total Frota (Mês)</div>
-                        <div class="stat-value" id="totalSemanaGlobal">R$ 0,00</div>
-                        <div class="stat-sub" id="caixasSemanaGlobal">0 cx</div>
+                    <div class="bg-blue-600 rounded-3xl p-6 shadow-lg shadow-blue-200 flex items-center gap-4 text-white transform hover:-translate-y-1 transition-transform">
+                        <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                            <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-1 whitespace-nowrap">TOTAL FROTA (MÊS)</p>
+                            <p class="text-2xl font-black tracking-tight leading-none whitespace-nowrap" id="totalSemanaGlobal">R$ 0,00</p>
+                            <p class="text-xs font-bold text-blue-200 mt-2 whitespace-nowrap" id="caixasSemanaGlobal">0 cx</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Two-column layout: driver list + content -->
-                <div class="flex gap-5" style="height: calc(100vh - 310px);">
-
-                    <!-- Driver List Panel -->
-                    <div class="driver-panel" style="width:280px; flex-shrink:0;">
-                        <div class="driver-panel-header">
-                            <h3>Selecionar Motorista</h3>
-                            <select id="filtroTurno" class="select-turno" onchange="window.renderizarSidebar()">
-                                <option value="todos">Todos os Turnos</option>
-                                <option value="dia">Dia (Rayanna)</option>
-                                <option value="noite">Noite (Júlia)</option>
-                                <option value="especial">Especial (Caçamba)</option>
-                            </select>
-                            <div class="search-row">
-                                <div class="search-wrap">
-                                    <i data-lucide="search"></i>
-                                    <input type="text" id="buscaMotorista" placeholder="Buscar motorista..."
-                                        onkeyup="window.filtrarMotoristas()" class="search-input">
+                <div class="flex gap-8 h-[calc(100vh-270px)] w-full">
+                    
+                    <div class="w-[320px] bg-white rounded-[2rem] border shadow-sm flex flex-col shrink-0 overflow-hidden">
+                        <div class="p-6 pb-2">
+                            <h3 class="font-black text-slate-800 mb-4 whitespace-nowrap">Selecionar Motorista</h3>
+                            <div class="relative mb-3">
+                                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                    <i data-lucide="globe" class="w-4 h-4 text-blue-500"></i>
                                 </div>
-                                <button onclick="window.gerenciarMotoristas()" class="btn-cog" title="Gerenciar Motoristas">
-                                    <i data-lucide="users"></i>
+                                <select id="filtroTurno" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all appearance-none cursor-pointer" onchange="window.renderizarSidebar()">
+                                    <option value="todos">Todos os Turnos</option>
+                                    <option value="dia">Dia (Rayanna)</option>
+                                    <option value="noite">Noite (Júlia)</option>
+                                    <option value="especial">Especial (Caçamba)</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-4 top-3.5 pointer-events-none"></i>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <div class="relative flex-1">
+                                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-3.5"></i>
+                                    <input type="text" id="buscaMotorista" placeholder="Buscar..." onkeyup="window.filtrarMotoristas()" class="w-full bg-white border border-slate-200 text-sm font-medium rounded-xl pl-11 pr-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400">
+                                </div>
+                                <button onclick="window.gerenciarMotoristas()" class="bg-slate-50 hover:bg-blue-50 text-slate-500 hover:text-blue-600 rounded-xl px-3 border border-slate-200 transition-colors shrink-0" title="Gerenciar Motoristas">
+                                    <i data-lucide="users-cog" class="w-5 h-5"></i>
                                 </button>
                             </div>
                         </div>
-                        <div class="driver-list-scroll" id="listaMotoristasContainer">
-                            <ul id="listaMotoristas" class="space-y-px"></ul>
+                        
+                        <div class="flex-1 overflow-y-auto px-2 pb-6" id="listaMotoristasContainer">
+                            <ul id="listaMotoristas" class="space-y-[2px]"></ul>
                         </div>
                     </div>
 
-                    <!-- Content Panel -->
-                    <div class="flex-1 bg-white rounded-[1.5rem] border relative overflow-hidden flex flex-col" style="border-color: var(--gray-150); min-width:0;">
-
-                        <!-- Empty state -->
-                        <div id="estadoVazio" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 p-8 text-center rounded-[1.5rem]">
-                            <div class="empty-icon-wrap">
-                                <i data-lucide="truck"></i>
+                    <div class="flex-1 bg-white rounded-[2rem] border shadow-sm relative overflow-hidden flex flex-col w-full">
+                        
+                        <div id="estadoVazio" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 p-8 text-center">
+                            <div class="relative w-40 h-40 mb-6 flex items-center justify-center">
+                                <div class="absolute inset-0 bg-blue-50 rounded-full scale-150 opacity-50"></div>
+                                <i data-lucide="truck" class="w-20 h-20 text-blue-500 relative z-10 drop-shadow-md"></i>
                             </div>
-                            <h3 style="font-size:14px;font-weight:600;color:var(--gray-600);max-width:240px;line-height:1.5;">
-                                Selecione um turno e clique em um motorista para iniciar.
-                            </h3>
-                            <div class="empty-divider"></div>
+                            <h3 class="text-xl font-black text-slate-800 mb-4 z-10">Selecione um turno e clique em um motorista na lista para iniciar.</h3>
+                            <div class="w-8 h-1 bg-yellow-400 rounded-full z-10"></div>
                         </div>
 
-                        <!-- Motorista content -->
-                        <div id="conteudoMotorista" style="display:none;" class="animate-fade-in">
-
-                            <!-- Motorista header -->
-                            <div class="motorista-header">
-                                <h3 id="nomeMotoristaDisplay">Nome</h3>
-                                <div class="sla-chip">
-                                    <div class="sla-chip-inner">
-                                        <span class="sla-chip-label">SLA (Dias Úteis)</span>
-                                        <input type="number" id="inputSlaMotorista" min="1" max="31" readonly>
-                                    </div>
-                                    <button id="btnTravaSla" onclick="window.toggleTravaSla()">
-                                        <i data-lucide="lock"></i>
-                                    </button>
+                        <div id="conteudoMotorista" style="display: none;" class="flex-1 flex flex-col overflow-y-auto p-8 animate-fade-in w-full">
+                            
+                            <div class="flex justify-between items-start mb-6 w-full">
+                                <div>
+                                    <h3 id="nomeMotoristaDisplay" class="text-3xl font-black text-slate-900 tracking-tight uppercase">Nome</h3>
                                 </div>
-                            </div>
-
-                            <!-- Mini stats -->
-                            <div class="motorista-stats">
-                                <div class="mstat">
-                                    <span class="mstat-label">Dia Selecionado</span>
-                                    <strong id="motoristaTotalDia" class="mstat-value">R$ 0,00</strong>
-                                </div>
-                                <div class="mstat">
-                                    <span class="mstat-label">Semana Atual</span>
-                                    <strong id="motoristaTotalSemana" class="mstat-value">R$ 0,00</strong>
-                                </div>
-                                <div class="mstat span2">
+                                <div class="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl flex items-center gap-3 shadow-sm shrink-0">
                                     <div>
-                                        <span class="mstat-label">Resultados (Mês)</span>
-                                        <strong id="motoristaCaixasMes" class="mstat-value">0 cx | 0 vg</strong>
-                                        <span id="motoristaMetaMes" class="mstat-sub">Meta Mensal: 0 cx | Fat: R$ 0,00</span>
+                                        <p class="text-[9px] font-black text-amber-600 uppercase tracking-widest whitespace-nowrap">SLA (Dias Úteis)</p>
+                                        <input type="number" id="inputSlaMotorista" min="1" max="31" class="bg-transparent font-black text-amber-900 text-lg w-12 outline-none" readonly>
                                     </div>
-                                    <div style="text-align:right;">
-                                        <span class="mstat-label">Previsão Final</span>
-                                        <strong id="motoristaPrevisaoMes" class="mstat-value">0 cx</strong>
+                                    <button id="btnTravaSla" onclick="window.toggleTravaSla()" class="text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0"><i data-lucide="lock" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6 shrink-0 w-full">
+                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl border-b-4 border-b-emerald-500 shadow-sm w-full">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 whitespace-nowrap">Dia Selecionado</span>
+                                    <strong id="motoristaTotalDia" class="text-xl font-black text-slate-800">R$ 0,00</strong>
+                                </div>
+                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl border-b-4 border-b-blue-500 shadow-sm w-full">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 whitespace-nowrap">Semana Atual</span>
+                                    <strong id="motoristaTotalSemana" class="text-xl font-black text-slate-800">R$ 0,00</strong>
+                                </div>
+                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl border-b-4 border-b-indigo-500 shadow-sm lg:col-span-2 flex justify-between items-center w-full">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 whitespace-nowrap">Resultados (Mês)</span>
+                                        <strong id="motoristaCaixasMes" class="text-xl font-black text-slate-800 whitespace-nowrap">0 cx | 0 vg</strong>
+                                        <span id="motoristaMetaMes" class="text-[10px] font-bold text-indigo-500 block mt-1 whitespace-nowrap leading-none">Meta Mensal: 0 cx | Fat: R$ 0,00</span>
+                                    </div>
+                                    <div class="text-right whitespace-nowrap">
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 leading-none">Previsão Final</span>
+                                        <strong id="motoristaPrevisaoMes" class="text-xl font-black text-slate-800 leading-none">0 cx | 0 vg</strong>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Form card -->
-                            <div class="form-card">
-                                <div class="form-card-title">
-                                    <i data-lucide="plus-circle"></i>
-                                    Novo Lançamento
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
-                                    <div class="flex flex-col gap-1">
-                                        <label>Data do Serviço</label>
-                                        <input type="date" id="dataLancamento" class="input-base"
-                                            onchange="window.atualizarResumosDoMotorista(); window.atualizarSlaInput();">
-                                        <div class="feriado-row">
-                                            <input type="checkbox" id="feriado">
-                                            <label for="feriado">É Feriado?</label>
+                            <div class="bg-white border rounded-2xl p-6 shadow-sm mb-6 shrink-0 border-l-4 border-l-blue-500 w-full">
+                                <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Novo Lançamento
+                                </h4>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-start w-full">
+                                    
+                                    <div class="flex flex-col gap-1 w-full">
+                                        <label class="whitespace-nowrap">Data do Serviço:</label>
+                                        <input type="date" id="dataLancamento" class="input-base w-full" onchange="window.atualizarResumosDoMotorista(); window.atualizarSlaInput();">
+                                        <div class="flex items-center gap-2 mt-2 cursor-pointer group whitespace-nowrap">
+                                            <input type="checkbox" id="feriado" class="w-3.5 h-3.5 text-red-500 rounded border-slate-300 focus:ring-red-500">
+                                            <label for="feriado" class="m-0 text-[11px] font-black text-red-500 uppercase cursor-pointer group-hover:text-red-600 transition-colors">É Feriado?</label>
                                         </div>
                                     </div>
 
-                                    <div class="flex flex-col gap-1 mb-[22px]">
-                                        <label>Status</label>
-                                        <select id="statusServico" class="input-base">
-                                            <option value="normal">Trabalhou Normal</option>
-                                            <option value="falta">Falta</option>
-                                            <option value="folga">Folga</option>
-                                            <option value="atestado">Atestado</option>
-                                            <option value="polioff">Poli OFF / Oficina</option>
-                                            <option value="licenca">Licença / Declaração</option>
-                                            <option value="desligado">Desligado 🛑</option>
-                                        </select>
+                                    <div class="flex flex-col gap-1 mb-[22px] w-full">
+<select id="statusServico" class="input-base cursor-pointer w-full text-slate-700 font-bold">
+    <option value="normal">Trabalhou Normal</option>
+    <option value="falta">Falta</option>
+    <option value="folga">Folga</option>
+    <option value="atestado">Atestado</option>
+    <option value="polioff">Poli OFF / Oficina</option>
+    <option value="licenca">Licença / Declaração</option>
+    <option value="desligado">Desligado 🛑</option>
+</select>
                                     </div>
 
-                                    <div class="flex flex-col gap-1 mb-[22px]">
-                                        <label>Veículo</label>
-                                        <select id="tipoVeiculo" class="input-base"></select>
+                                    <div class="flex flex-col gap-1 mb-[22px] w-full">
+                                        <label class="whitespace-nowrap">Veículo:</label>
+                                        <select id="tipoVeiculo" class="input-base cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis w-full"></select>
                                     </div>
 
-                                    <div class="flex flex-col gap-1 mb-[22px]">
-                                        <label>Qtd (Cx/Vg)</label>
-                                        <input type="number" id="servicos" min="0" placeholder="0" class="input-base text-center">
+                                    <div class="flex flex-col gap-1 mb-[22px] w-full">
+                                        <label class="whitespace-nowrap">Qtd (Cx/Vg):</label>
+                                        <input type="number" id="servicos" min="0" placeholder="0" class="input-base text-center font-bold whitespace-nowrap w-full">
                                     </div>
 
-                                    <div class="flex flex-col gap-1 mb-[22px]">
-                                        <label>Extra (R$)</label>
-                                        <input type="number" id="valorExtra" step="0.01" min="0" placeholder="0,00" class="input-base text-center" style="color:var(--brand-600);font-weight:600;">
+                                    <div class="flex flex-col gap-1 mb-[22px] w-full">
+                                        <label class="whitespace-nowrap">Extra (R$):</label>
+                                        <input type="number" id="valorExtra" step="0.01" min="0" placeholder="0.00" class="input-base text-center text-blue-600 font-bold whitespace-nowrap w-full">
                                     </div>
 
-                                    <div class="flex flex-col gap-1 md:col-span-4">
-                                        <label class="flex justify-between items-center">
-                                            Observações
-                                            <span class="attach-label">
-                                                <i data-lucide="paperclip"></i>
-                                                Anexar arquivo
-                                                <input type="file" id="anexoObs" class="absolute inset-0 opacity-0 cursor-pointer" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                                    <div class="flex flex-col gap-1 md:col-span-4 w-full">
+                                        <label class="whitespace-nowrap flex justify-between">
+                                            Observações: 
+                                            <span class="text-[10px] text-slate-400 flex items-center gap-1 cursor-pointer hover:text-blue-500 relative overflow-hidden">
+                                                <i data-lucide="paperclip" class="w-3 h-3"></i> Anexar Arquivo
+                                                <input type="file" id="anexoObs" class="absolute inset-0 opacity-0 cursor-pointer">
                                             </span>
                                         </label>
-                                        <textarea id="observacao" rows="2" class="input-base" placeholder="Opcional..."></textarea>
-                                        <p id="nomeAnexo" class="hidden"></p>
+                                        <textarea id="observacao" rows="2" class="input-base resize-none whitespace-nowrap w-full" placeholder="Opcional"></textarea>
+                                        <p id="nomeAnexo" class="text-[9px] text-blue-500 font-bold hidden mt-1"></p>
                                     </div>
 
-                                    <div class="md:col-span-1 flex items-end h-full" style="padding-bottom:2px;">
-                                        <button id="btnSalvarL" onclick="window.salvarLancamento()" class="btn-primary w-full" style="height:40px;">
-                                            <i data-lucide="save"></i>
-                                            Gravar
+                                    <div class="md:col-span-1 flex items-end pb-[2px] w-full h-full">
+                                        <button id="btnSalvarL" onclick="window.salvarLancamento()" class="btn-primary w-full flex items-center justify-center gap-2 h-[44px] whitespace-nowrap">
+                                            <i data-lucide="save" class="w-4 h-4 shrink-0"></i> Gravar 
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- History table -->
-                            <div class="flex-1" style="min-height:220px;">
-                                <div class="table-header-row">
-                                    <span class="table-section-label">Histórico de Lançamentos</span>
-                                    <button onclick="window.apagarLancamentosMotorista()" class="btn-danger-sm">
-                                        <i data-lucide="trash"></i>
-                                        Apagar mês do motorista
-                                    </button>
-                                </div>
-                                <div class="table-wrap">
-                                    <table id="tabelaHistorico">
-                                        <thead>
+                            <div class="flex-1 min-h-[250px] w-full">
+<div class="flex justify-between items-center mb-4">
+    <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">Histórico de Lançamentos</h4>
+    <button onclick="window.apagarLancamentosMotorista()" class="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg font-bold transition-colors border border-red-200 flex items-center gap-1 shadow-sm">
+        <i data-lucide="trash" class="w-3 h-3"></i> Apagar Mês do Motorista
+    </button>
+</div>                              <div class="border rounded-2xl overflow-hidden shadow-sm w-full">
+                                    <table id="tabelaHistorico" class="w-full">
+                                        <thead class="bg-slate-50 border-b border-slate-200 w-full">
                                             <tr>
-                                                <th>Data</th>
-                                                <th>Status / Veículo</th>
-                                                <th style="text-align:center;">Qtd</th>
-                                                <th style="text-align:center;">Extra</th>
-                                                <th style="text-align:right;">Valor</th>
-                                                <th>Observação</th>
-                                                <th style="text-align:center;">Ação</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase whitespace-nowrap">Data</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase whitespace-nowrap">Status/Veículo</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase text-center whitespace-nowrap">Qtd</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase text-center whitespace-nowrap">Extra</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase text-right whitespace-nowrap">Valor Pagar</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase whitespace-nowrap">Observação / Anexo</th>
+                                                <th class="text-[10px] font-black text-slate-500 uppercase text-center whitespace-nowrap">Ação</th>
                                             </tr>
                                         </thead>
-                                        <tbody></tbody>
+                                        <tbody class="w-full"></tbody>
                                     </table>
                                 </div>
                             </div>
@@ -305,163 +293,134 @@
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════
-                 VIEW: CENTRAL DE RANKINGS
-            ═══════════════════════════════════════════ -->
-            <div id="viewRankings" style="display:none;">
-                <div class="page-header">
+            <div id="viewRankings" class="w-full space-y-6" style="display: none;">
+                <div class="flex justify-between items-end mb-8">
                     <div>
-                        <h2>Central de Rankings</h2>
-                        <p>Classificação e metas das operadoras.</p>
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Central de Rankings</h2>
+                        <p class="text-sm text-slate-500 font-medium mt-1">Classificação e metas das operadoras.</p>
                     </div>
                 </div>
 
-                <!-- Meta cards grid -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-7">
-                    <!-- SLA Global -->
-                    <div class="stat-card stat-card-plain" style="border-radius:var(--r-xl);">
-                        <div>
-                            <div class="stat-label">SLA Global (Mês)</div>
-                            <input type="number" id="inputDiasUteisRank" min="1" max="31"
-                                onchange="window.salvarDiasUteis('rank')"
-                                class="stat-value-input" readonly>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 w-full">
+                    <div class="bg-white p-6 rounded-[1.5rem] border shadow-sm flex flex-col relative overflow-hidden">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 whitespace-nowrap">SLA Global (Mês)</p>
+                        <div class="flex items-center gap-2 mb-2">
+                            <input type="number" id="inputDiasUteisRank" min="1" max="31" onchange="window.salvarDiasUteis('rank')" class="text-3xl font-black text-slate-800 w-16 bg-transparent outline-none p-0 border-none whitespace-nowrap" readonly>
+                            <button id="btnTravaRank" onclick="window.toggleTravaGlobais()" class="text-yellow-500 hover:scale-110 transition-transform shrink-0"><i data-lucide="lock" class="w-5 h-5"></i></button>
                         </div>
-                        <button id="btnTravaRank" onclick="window.toggleTravaGlobais()" class="lock-btn">
-                            <i data-lucide="lock"></i>
-                        </button>
                     </div>
-
-                    <div class="meta-card-green">
-                        <div class="meta-card-label">Meta Geral (Mês)</div>
-                        <div class="meta-card-value" id="metaGeralGlobal">0 / 0 cx</div>
-                        <div class="meta-card-sub" id="faltaGeralGlobal">0% | Faltam 0</div>
+                    <div class="bg-emerald-500 p-6 rounded-[1.5rem] shadow-lg shadow-emerald-200 text-white flex flex-col justify-between">
+                        <span class="text-[10px] font-black text-emerald-100 uppercase tracking-widest whitespace-nowrap">Meta Geral (Mês)</span>
+                        <span class="text-2xl font-black tracking-tight whitespace-nowrap" id="metaGeralGlobal">0 / 0 cx</span>
+                        <span class="text-xs font-bold text-emerald-100 mt-1 whitespace-nowrap" id="faltaGeralGlobal">0% | Faltam 0</span>
                     </div>
-
-                    <div class="meta-card-pink">
-                        <div class="meta-card-label">Meta Rayanna (Mês)</div>
-                        <div class="meta-card-value" id="metaRayannaGlobal">0 / 0 cx</div>
-                        <div class="meta-card-sub" id="faltaRayannaGlobal">0% | Faltam 0</div>
+                    <div class="bg-pink-500 p-6 rounded-[1.5rem] shadow-lg shadow-pink-200 text-white flex flex-col justify-between">
+                        <span class="text-[10px] font-black text-pink-100 uppercase tracking-widest whitespace-nowrap">Meta Rayanna (Mês)</span>
+                        <span class="text-2xl font-black tracking-tight whitespace-nowrap" id="metaRayannaGlobal">0 / 0 cx</span>
+                        <span class="text-xs font-bold text-pink-100 mt-1 whitespace-nowrap" id="faltaRayannaGlobal">0% | Faltam 0</span>
                     </div>
-
-                    <div class="meta-card-indigo">
-                        <div class="meta-card-label">Meta Júlia (Mês)</div>
-                        <div class="meta-card-value" id="metaJuliaGlobal">0 / 0 cx</div>
-                        <div class="meta-card-sub" id="faltaJuliaGlobal">0% | Faltam 0</div>
+                    <div class="bg-indigo-600 p-6 rounded-[1.5rem] shadow-lg shadow-indigo-200 text-white flex flex-col justify-between">
+                        <span class="text-[10px] font-black text-indigo-200 uppercase tracking-widest whitespace-nowrap">Meta Júlia (Mês)</span>
+                        <span class="text-2xl font-black tracking-tight whitespace-nowrap" id="metaJuliaGlobal">0 / 0 cx</span>
+                        <span class="text-xs font-bold text-indigo-200 mt-1 whitespace-nowrap" id="faltaJuliaGlobal">0% | Faltam 0</span>
                     </div>
                 </div>
 
-                <!-- Leaderboard + Período -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Leaderboard Mensal -->
-                    <div class="rank-card">
-                        <div class="rank-card-header">
-                            <h3>Leaderboard Mensal (Elo)</h3>
-                            <input type="month" id="mesFiltro" class="inline-date"
-                                onchange="window.sincronizarMesFiltro(); window.gerarRankingMensal(); window.atualizarGraficosProjecao();">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
+                        <div class="flex justify-between items-center border-b pb-4 mb-4 w-full">
+                            <h3 class="text-xl font-black text-slate-800 whitespace-nowrap">Leaderboard Mensal (Elo)</h3>
+                            <input type="month" id="mesFiltro" class="input-base w-auto font-bold text-slate-700 whitespace-nowrap" onchange="window.sincronizarMesFiltro(); window.gerarRankingMensal(); window.atualizarGraficosProjecao();">
                         </div>
-
-                        <div class="fat-total-badge mb-5">
-                            <span>Faturamento Total (Mês)</span>
-                            <span id="totalFatMensalLeaderboard">R$ 0,00</span>
-                        </div>
-
-                        <div id="listaLeaderboard" class="space-y-2"></div>
-                    </div>
-
-                    <!-- Ranking por Período -->
-                    <div class="rank-card">
-                        <div class="rank-card-header">
-                            <h3>Ranking por Período</h3>
-                            <div class="flex items-center gap-2">
-                                <input type="date" id="dataRankingInicio" class="inline-date" onchange="window.gerarRankingPeriodo()">
-                                <span style="color:var(--gray-400);font-size:12px;font-weight:600;">até</span>
-                                <input type="date" id="dataRankingFim" class="inline-date" onchange="window.gerarRankingPeriodo()">
+                        
+                        <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border mb-6">
+                            <div>
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Faturamento Total (Mês)</span>
+                                <span class="text-xl font-black text-emerald-600" id="totalFatMensalLeaderboard">R$ 0,00</span>
                             </div>
                         </div>
-                        <div id="listaRankingDiario" class="space-y-2"></div>
+
+                        <div id="listaLeaderboard" class="space-y-3 w-full"></div>
+                    </div>
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
+                        <div class="flex justify-between items-center border-b pb-4 mb-6 w-full">
+                            <h3 class="text-xl font-black text-slate-800 whitespace-nowrap">Ranking por Período</h3>
+                            <div class="flex items-center gap-2 whitespace-nowrap">
+                                <input type="date" id="dataRankingInicio" class="input-base w-auto font-bold text-slate-700 whitespace-nowrap" onchange="window.gerarRankingPeriodo()">
+                                <span class="text-slate-400 font-bold whitespace-nowrap">até</span>
+                                <input type="date" id="dataRankingFim" class="input-base w-auto font-bold text-slate-700 whitespace-nowrap" onchange="window.gerarRankingPeriodo()">
+                            </div>
+                        </div>
+                        <div id="listaRankingDiario" class="space-y-3 w-full"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════
-                 VIEW: DOMINGOS & FERIADOS
-            ═══════════════════════════════════════════ -->
-            <div id="viewDomFeriados" style="display:none;">
-                <div class="flex justify-between items-center mb-7 pb-5" style="border-bottom: var(--border-subtle);">
-                    <div>
-                        <h2 style="font-size:22px;font-weight:700;color:var(--gray-900);letter-spacing:-0.025em;">Domingos &amp; Feriados</h2>
-                        <p style="font-size:13px;color:var(--gray-400);margin-top:3px;">Serviços realizados em dias especiais.</p>
-                    </div>
-                    <div class="total-global-badge">
-                        <span class="tg-label">Total Global</span>
-                        <span class="tg-value" id="totalGeralDomFer">R$ 0,00</span>
+            <div id="viewDomFeriados" class="w-full space-y-6" style="display: none;">
+                <div class="flex justify-between items-center mb-8 w-full border-b pb-4">
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap">Domingos & Feriados</h2>
+                    <div class="flex items-center gap-4">
+                        <div class="bg-red-500 rounded-xl px-6 py-2 shadow-lg shadow-red-200 text-white flex flex-col justify-center items-center">
+                            <span class="text-[9px] font-black text-red-100 uppercase tracking-widest">Total Global</span>
+                            <span class="text-lg font-black leading-none" id="totalGeralDomFer">R$ 0,00</span>
+                        </div>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Domingos -->
-                    <div class="rank-card flex flex-col">
-                        <div class="rank-card-header">
-                            <h3>☀️ Domingos</h3>
-                            <div class="datas-range">
-                                <input type="date" id="dataDomInicio" onchange="window.gerarPainelFeriados()">
-                                <span style="color:var(--gray-300);font-weight:700;">–</span>
-                                <input type="date" id="dataDomFim" onchange="window.gerarPainelFeriados()">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full flex flex-col">
+                        <div class="flex justify-between items-center border-b pb-4 mb-6 w-full">
+                            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">☀️ Domingos</h3>
+                            <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border">
+                                <input type="date" id="dataDomInicio" class="bg-transparent text-[11px] font-bold outline-none cursor-pointer" onchange="window.gerarPainelFeriados()">
+                                <span class="text-slate-400 font-bold text-[10px] uppercase">até</span>
+                                <input type="date" id="dataDomFim" class="bg-transparent text-[11px] font-bold outline-none cursor-pointer" onchange="window.gerarPainelFeriados()">
                             </div>
                         </div>
-                        <div id="listaDomingos" class="space-y-2 flex-1"></div>
-                        <div style="margin-top:var(--space-4);padding-top:var(--space-4);border-top:var(--border-subtle);text-align:right;">
-                            <span style="font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;">Total Domingos: </span>
-                            <span style="font-family:var(--font-mono);font-size:17px;font-weight:600;color:var(--danger-500);" id="totalFatDom">R$ 0,00</span>
+                        <div id="listaDomingos" class="space-y-3 w-full flex-1"></div>
+                        <div class="mt-4 pt-4 border-t text-right">
+                            <span class="text-xs font-bold text-slate-500 uppercase">Total Domingos: </span>
+                            <span class="text-lg font-black text-red-500" id="totalFatDom">R$ 0,00</span>
                         </div>
                     </div>
-
-                    <!-- Feriados -->
-                    <div class="rank-card flex flex-col">
-                        <div class="rank-card-header">
-                            <h3>🎉 Feriados</h3>
-                            <div class="datas-range">
-                                <input type="date" id="dataFerInicio" onchange="window.gerarPainelFeriados()">
-                                <span style="color:var(--gray-300);font-weight:700;">–</span>
-                                <input type="date" id="dataFerFim" onchange="window.gerarPainelFeriados()">
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full flex flex-col">
+                        <div class="flex justify-between items-center border-b pb-4 mb-6 w-full">
+                            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">🎉 Feriados</h3>
+                            <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border">
+                                <input type="date" id="dataFerInicio" class="bg-transparent text-[11px] font-bold outline-none cursor-pointer" onchange="window.gerarPainelFeriados()">
+                                <span class="text-slate-400 font-bold text-[10px] uppercase">até</span>
+                                <input type="date" id="dataFerFim" class="bg-transparent text-[11px] font-bold outline-none cursor-pointer" onchange="window.gerarPainelFeriados()">
                             </div>
                         </div>
-                        <div id="listaFeriados" class="space-y-2 flex-1"></div>
-                        <div style="margin-top:var(--space-4);padding-top:var(--space-4);border-top:var(--border-subtle);text-align:right;">
-                            <span style="font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;">Total Feriados: </span>
-                            <span style="font-family:var(--font-mono);font-size:17px;font-weight:600;color:var(--danger-500);" id="totalFatFer">R$ 0,00</span>
+                        <div id="listaFeriados" class="space-y-3 w-full flex-1"></div>
+                        <div class="mt-4 pt-4 border-t text-right">
+                            <span class="text-xs font-bold text-slate-500 uppercase">Total Feriados: </span>
+                            <span class="text-lg font-black text-red-500" id="totalFatFer">R$ 0,00</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════
-                 VIEW: PROJEÇÃO E BI
-            ═══════════════════════════════════════════ -->
-            <div id="viewProjecao" style="display:none;">
-                <div class="proj-header">
+            <div id="viewProjecao" class="w-full space-y-6" style="display: none;">
+                <div class="flex justify-between items-end mb-6 w-full border-b pb-4">
                     <div>
-                        <h2>Projeção e Evolução</h2>
-                        <div class="proj-sub" style="margin-top:6px;font-size:13px;color:var(--gray-400);">
-                            Análise de
-                            <strong id="projecaoNomeMotorista" style="font-weight:700;color:var(--brand-600);text-transform:uppercase;">Ninguém</strong>
-                            no período:
-                            <input type="date" id="dataProjInicio" class="inline-date" style="margin-left:6px;" onchange="window.atualizarGraficosProjecao()">
-                            <span style="margin:0 4px;color:var(--gray-400);font-weight:700;font-size:11px;">ATÉ</span>
-                            <input type="date" id="dataProjFim" class="inline-date" onchange="window.atualizarGraficosProjecao()">
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Projeção e Evolução</h2>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-sm text-slate-500 font-medium">Análise de <strong id="projecaoNomeMotorista" class="text-blue-600 uppercase tracking-wider">Ninguém</strong> no período:</span>
+                            <input type="date" id="dataProjInicio" class="input-base py-1 px-2 text-xs font-bold w-auto cursor-pointer" onchange="window.atualizarGraficosProjecao()">
+                            <span class="text-[10px] text-slate-400 font-black uppercase">até</span>
+                            <input type="date" id="dataProjFim" class="input-base py-1 px-2 text-xs font-bold w-auto cursor-pointer" onchange="window.atualizarGraficosProjecao()">
                         </div>
                     </div>
-                    <div class="proj-filters">
-                        <div class="proj-filter-group">
-                            <span class="proj-filter-label">Motorista (Azul)</span>
-                            <select id="filtroProjMot" onchange="window.selecionarMotoristaProjecao(this.value)" class="proj-filter-select">
+                    <div class="flex items-center gap-4 bg-white p-2.5 rounded-xl border shadow-sm">
+                        <div class="flex flex-col">
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Motorista (Azul)</label>
+                            <select id="filtroProjMot" onchange="window.selecionarMotoristaProjecao(this.value)" class="text-sm font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-2 py-1 outline-none focus:border-blue-500 cursor-pointer">
                                 <option value="">Selecione...</option>
                             </select>
                         </div>
-                        <div class="proj-divider"></div>
-                        <div class="proj-filter-group">
-                            <span class="proj-filter-label">Turno (Verde)</span>
-                            <select id="filtroProjTurno" onchange="window.atualizarGraficosProjecao()" class="proj-filter-select green-select">
+                        <div class="flex flex-col">
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Turno (Verde)</label>
+                            <select id="filtroProjTurno" onchange="window.atualizarGraficosProjecao()" class="text-sm font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1 outline-none focus:border-emerald-500 cursor-pointer">
                                 <option value="todos">Frota Completa</option>
                                 <option value="dia">Dia (Rayanna)</option>
                                 <option value="noite">Noite (Júlia)</option>
@@ -471,229 +430,193 @@
                     </div>
                 </div>
 
-                <!-- Top 3 stats -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-                    <div class="stat-card">
-                        <div class="stat-label">Produção (Período Atual)</div>
-                        <div class="stat-value" id="statMesAtual">0</div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-6">
+                    <div class="bg-white p-6 rounded-[1.5rem] border shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Produção (Período Atual)</p>
+                        <p class="text-3xl font-black text-slate-800" id="statMesAtual">0</p>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Produção (Período Anterior)</div>
-                        <div class="stat-value" id="statMesPassado">0</div>
+                    <div class="bg-white p-6 rounded-[1.5rem] border shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Produção (Período Anterior)</p>
+                        <p class="text-3xl font-black text-slate-800" id="statMesPassado">0</p>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Desempenho vs Anterior</div>
-                        <div id="statCrescimento" style="font-size:16px;font-weight:600;color:var(--gray-800);margin-top:4px;display:flex;align-items:center;gap:8px;">—</div>
-                    </div>
-                </div>
-
-                <!-- Bottom 4 stats -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-7">
-                    <div class="stat-card">
-                        <div class="stat-label">Consistência (Metas)</div>
-                        <div class="stat-value text-brand" id="statWinRate" style="font-size:26px;">0%</div>
-                        <div class="stat-sub" id="statWinRateSub">0 de 0 dias úteis</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Média Diária (Real)</div>
-                        <div class="stat-value" id="statMediaReal">0.0</div>
-                        <div class="stat-sub" id="statMediaNec">SLA pede: 0.0 /dia</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Recorde Pessoal</div>
-                        <div class="stat-value text-warning" id="statRecorde">0</div>
-                        <div class="stat-sub" id="statRecordeData">Sem registro</div>
-                    </div>
-                    <div class="stat-card stat-card-dark">
-                        <div class="stat-label" id="tituloDiaForte">Melhor Dia (Frota)</div>
-                        <div class="stat-value" id="statMelhorDia">N/A</div>
-                        <div class="stat-sub" id="statMelhorDiaPts">Sem dados</div>
+                    <div class="bg-white p-6 rounded-[1.5rem] border shadow-sm flex flex-col justify-center">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Desempenho vs Anterior</p>
+                        <div id="statCrescimento" class="text-lg font-black text-slate-800 flex items-center gap-2">-</div>
                     </div>
                 </div>
 
-                <!-- Charts -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="chart-card">
-                        <h3>Evolução Diária (Período Atual)</h3>
-                        <div style="height:240px;position:relative;">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-8">
+                    <div class="bg-white p-5 rounded-[1.5rem] border shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Consistência (Metas)</p>
+                        <p class="text-2xl font-black text-blue-600" id="statWinRate">0%</p>
+                        <p class="text-[10px] font-bold text-slate-500 mt-1" id="statWinRateSub">0 de 0 dias úteis</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-[1.5rem] border shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Média Diária (Real)</p>
+                        <p class="text-2xl font-black text-slate-800" id="statMediaReal">0.0</p>
+                        <p class="text-[10px] font-bold text-slate-500 mt-1" id="statMediaNec">SLA pede: 0.0 /dia</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-[1.5rem] border shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Recorde Pessoal</p>
+                        <p class="text-2xl font-black text-amber-500" id="statRecorde">0</p>
+                        <p class="text-[10px] font-bold text-slate-500 mt-1" id="statRecordeData">Sem registro</p>
+                    </div>
+                    <div class="bg-slate-800 p-5 rounded-[1.5rem] border border-slate-700 shadow-sm text-white">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1" id="tituloDiaForte">Melhor Dia (Frota)</p>
+                        <p class="text-2xl font-black text-emerald-400" id="statMelhorDia">N/A</p>
+                        <p class="text-[10px] font-bold text-slate-400 mt-1" id="statMelhorDiaPts">0 pts acumulados</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
+                        <h3 class="text-lg font-black text-slate-800 mb-4">Evolução Diária (Período Atual)</h3>
+                        <div class="h-64 w-full relative">
                             <canvas id="chartEvolucaoIndividual"></canvas>
                         </div>
                     </div>
-                    <div class="chart-card">
-                        <h3>Volume Geral da Frota (Período Atual)</h3>
-                        <div style="height:240px;position:relative;">
+                    <div class="bg-white rounded-[2rem] border shadow-sm p-8 w-full">
+                        <h3 class="text-lg font-black text-slate-800 mb-4">Volume Geral da Frota (Período Atual)</h3>
+                        <div class="h-64 w-full relative">
                             <canvas id="chartEvolucaoGeral"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
 
-        </div><!-- /content-area -->
+        </div>
     </main>
 
-    <!-- ═══════════════════════════════════════════════════
-         MODAL: GERENCIAR MOTORISTAS
-    ═══════════════════════════════════════════════════ -->
-    <div id="modalGerenciar" class="modal-backdrop hidden" style="display:none;">
-        <div class="modal-box" style="width:460px;">
-            <div class="modal-header">
-                <h3>
-                    <i data-lucide="users"></i>
-                    Gerenciar: <span class="highlight" id="lblMesGerenciar">Mês</span>
+   <div id="modalGerenciar" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center animate-fade-in">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-[450px] overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <i data-lucide="users-cog" class="w-5 h-5 text-blue-600"></i> Gerenciar: <span id="lblMesGerenciar" class="text-blue-600">Mês</span>
                 </h3>
-                <button onclick="window.fecharModalGerenciar()" class="btn-close">
-                    <i data-lucide="x"></i>
+                <button onclick="window.fecharModalGerenciar()" class="text-slate-400 hover:text-red-500 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div class="modal-body">
-                <!-- Adicionar novo -->
-                <div>
-                    <div class="modal-section-label">Adicionar Novo Motorista</div>
-                    <div class="modal-row">
-                        <input type="text" id="novoMotNome" placeholder="Nome completo..." class="input-base" style="text-transform:uppercase;">
-                        <select id="novoMotTurno" class="input-base" style="width:110px;flex-shrink:0;">
+            <div class="p-6 space-y-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adicionar Novo</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="novoMotNome" placeholder="Nome do motorista..." class="input-base flex-1 uppercase">
+                        <select id="novoMotTurno" class="input-base w-28 cursor-pointer">
                             <option value="dia">Dia</option>
                             <option value="noite">Noite</option>
                             <option value="especial">Caçamba</option>
                         </select>
-                        <button onclick="window.addMotoristaModal()" class="btn-add-plus">+</button>
+                        <button onclick="window.addMotoristaModal()" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 font-bold transition-colors shadow-sm">+</button>
                     </div>
                 </div>
-
-                <div class="border-section">
-                    <div class="modal-section-label">Retirar Motorista deste Mês</div>
-                    <div class="modal-row">
-                        <select id="ocultarMotNome" class="input-base"></select>
-                        <button onclick="window.ocultarMotoristaMes()" class="btn-remove">Retirar</button>
+                <div class="space-y-2 pt-4 border-t border-slate-100">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retirar Motorista deste Mês</label>
+                    <div class="flex gap-2">
+                        <select id="ocultarMotNome" class="input-base flex-1 cursor-pointer"></select>
+                        <button onclick="window.ocultarMotoristaMes()" class="bg-orange-100 text-orange-600 hover:bg-orange-500 hover:text-white rounded-xl px-4 font-bold transition-colors text-sm">Retirar</button>
                     </div>
                 </div>
-
-                <div class="border-section">
-                    <div class="modal-section-label">Adicionar Motorista a este Mês</div>
-                    <div class="modal-row">
-                        <select id="mostrarMotNome" class="input-base"></select>
-                        <button onclick="window.mostrarMotoristaMes()" class="btn-add-sm">Adicionar</button>
+                <div class="space-y-2 pt-4 border-t border-slate-100">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adicionar Motorista a este Mês</label>
+                    <div class="flex gap-2">
+                        <select id="mostrarMotNome" class="input-base flex-1 cursor-pointer"></select>
+                        <button onclick="window.mostrarMotoristaMes()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white rounded-xl px-4 font-bold transition-colors text-sm">Adicionar</button>
                     </div>
                 </div>
-
-                <div class="border-section">
-                    <button type="button" onclick="window.apagarMotoristaDefinitivo()" class="btn-danger-sm w-full justify-center" style="padding:10px;">
-                        <i data-lucide="trash-2"></i>
-                        Excluir Motorista Definitivamente
+                
+                <div class="mt-6 border-t pt-4">
+                    <button type="button" onclick="window.apagarMotoristaDefinitivo()" class="w-full bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 px-4 rounded border border-red-300 transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir Motorista Definitivamente
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════
-         MODAL: SISTEMA & BACKUP
-    ═══════════════════════════════════════════════════ -->
-    <div id="modalSistema" class="modal-backdrop hidden" style="display:none;">
-        <div class="modal-box" style="width:520px;">
-            <div class="modal-header">
-                <h3>
-                    <i data-lucide="settings"></i>
-                    Sistema &amp; Integrações
+    <div id="modalSistema" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center animate-fade-in">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-[500px] overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <i data-lucide="settings" class="w-5 h-5 text-slate-600"></i> Sistema & Integrações
                 </h3>
-                <button onclick="window.fecharModalSistema()" class="btn-close">
-                    <i data-lucide="x"></i>
+                <button onclick="window.fecharModalSistema()" class="text-slate-400 hover:text-red-500 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div class="modal-body">
-
-                <!-- Backup download -->
-                <div class="action-card action-card-blue" onclick="window.gerarBackup()">
-                    <div class="ac-icon">
-                        <i data-lucide="download-cloud"></i>
-                    </div>
-                    <div class="ac-text">
-                        <h4>Baixar Backup Seguro (.json)</h4>
-                        <p>Salva uma cópia exata de todos os dados no seu PC.</p>
-                    </div>
-                </div>
-
-                <!-- Restore -->
-                <div class="action-card action-card-orange" onclick="document.getElementById('inputRestaurarBackup').click()">
-                    <div class="ac-icon">
-                        <i data-lucide="upload-cloud"></i>
-                    </div>
-                    <div class="ac-text">
-                        <h4>Restaurar Backup (.json)</h4>
-                        <p>Envia um arquivo de backup do seu PC de volta ao sistema.</p>
-                    </div>
-                </div>
-                <input type="file" id="inputRestaurarBackup" accept=".json" style="display:none;" onchange="window.processarRestauracaoBackup(event)">
-
-                <!-- IA Import -->
-                <div class="ia-card">
-                    <div class="ia-card-header">
-                        <div class="ia-card-icon">
-                            <i data-lucide="bot"></i>
-                        </div>
+            <div class="p-6 space-y-6">
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col gap-2 cursor-pointer hover:border-blue-500 transition-all group" onclick="window.gerarBackup()">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="download-cloud" class="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform"></i>
                         <div>
-                            <h4>Importar Leitura da IA</h4>
-                            <p>Cole o JSON gerado pela IA e injete os lançamentos.</p>
+                            <h4 class="font-black text-slate-800">Baixar Backup Seguro (.json)</h4>
+                            <p class="text-[11px] text-slate-500">Salva uma cópia exata de todos os dados do sistema no seu PC.</p>
                         </div>
                     </div>
-                    <textarea id="codigoIA" rows="4" class="ia-textarea"
-                        placeholder='[{"data":"2026-04-01","motorista":"NOME","status":"falta","qtd":0}]'></textarea>
-                    <button onclick="window.importarDadosIA()" class="btn-inject">
-                        <i data-lucide="zap"></i>
-                        Injetar Lançamentos
+                </div>
+
+                <div class="bg-orange-50 p-4 rounded-xl border border-orange-200 cursor-pointer hover:border-orange-500 transition-all group mt-2" onclick="document.getElementById('inputRestaurarBackup').click()">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="upload-cloud" class="w-6 h-6 text-orange-500 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <h4 class="font-black text-orange-800">Restaurar Backup (.json)</h4>
+                            <p class="text-[11px] text-orange-600">Envia um arquivo de backup do seu PC de volta para o sistema.</p>
+                        </div>
+                    </div>
+                </div>
+                <input type="file" id="inputRestaurarBackup" accept=".json" style="display: none;" onchange="window.processarRestauracaoBackup(event)">
+                
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 group">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i data-lucide="bot" class="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <h4 class="font-black text-indigo-800">Importar Leitura da IA</h4>
+                            <p class="text-[11px] text-indigo-600">Mande o print da planilha no chat da IA. Cole o código que ela te der abaixo e processe!</p>
+                        </div>
+                    </div>
+                    <textarea id="codigoIA" rows="4" class="w-full bg-white border border-indigo-200 rounded-lg p-3 text-xs font-mono text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 placeholder:text-slate-300 resize-none" placeholder='[{"data": "2026-04-01", "motorista": "EMERSON JOSE", "status": "falta", "qtd": 0} ...]'></textarea>
+                    <button onclick="window.importarDadosIA()" class="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-bold text-sm shadow-sm transition-colors flex justify-center items-center gap-2">
+                        <i data-lucide="zap" class="w-4 h-4"></i> Injetar Lançamentos
                     </button>
                 </div>
 
-                <!-- Danger zone -->
-                <div class="danger-section" onclick="window.apagarTudo()">
-                    <div class="ds-icon">
-                        <i data-lucide="trash-2"></i>
-                    </div>
-                    <div>
-                        <h4>Apagar Todos os Lançamentos</h4>
-                        <p>Atenção: Zera o banco de dados inteiro.</p>
+                <div class="bg-red-50 p-4 rounded-xl border border-red-200 cursor-pointer hover:border-red-500 transition-all group mt-2" onclick="window.apagarTudo()">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="trash-2" class="w-6 h-6 text-red-600 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <h4 class="font-black text-red-800">Apagar Todos os Lançamentos</h4>
+                            <p class="text-[11px] text-red-600">Atenção: Zera o banco de dados inteiro!</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="modal-credit">SGC Logística © 2026</div>
+                <div class="text-[10px] text-slate-400 text-center uppercase tracking-widest font-bold">
+                    SGC Logística © 2026
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script>
         const SUPABASE_URL = "https://ldlqemidjjutrbkjiyir.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_dMnIUJ3FNWhFKm7PmEjxsQ_z5ZhexV9";
+        
+        // Inicializa o objeto global que usaremos para salvar e ler os dados
         window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log("Conectado ao Supabase com sucesso!");
     </script>
 
     <script type="module" src="app.js"></script>
-
     <script>
         lucide.createIcons();
-
-        // Modals: toggle display flex on show
-        const _origRemoveHidden = Element.prototype.classList;
-
-        // Show modals with flex when .hidden is removed
-        const modals = ['modalGerenciar', 'modalSistema'];
-        modals.forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const observer = new MutationObserver(() => {
-                if (!el.classList.contains('hidden')) {
-                    el.style.display = 'flex';
-                } else {
-                    el.style.display = 'none';
-                }
-            });
-            observer.observe(el, { attributes: true, attributeFilter: ['class'] });
-        });
-
-        // Attachment filename display
+        
+        // Listener para arquivo de anexo mudar nome
+        
+        // Listener para arquivo de anexo mudar nome
         document.getElementById('anexoObs').addEventListener('change', function(e) {
-            const nomeEl = document.getElementById('nomeAnexo');
-            if (e.target.files.length > 0) {
+            let nomeEl = document.getElementById('nomeAnexo');
+            if(e.target.files.length > 0) {
                 nomeEl.textContent = '📎 ' + e.target.files[0].name;
                 nomeEl.classList.remove('hidden');
             } else {
