@@ -1,3 +1,5 @@
+import './audit-lancamentos.js';
+
 const supabaseClient = window.supabaseClient;
 
 function byId(id) {
