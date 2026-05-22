@@ -238,12 +238,26 @@ window.syncToSupabase = async function(dataStr, motoristaNome) {
 // MODAL SISTEMA / BACKUP
 // =============================================================
 window.abrirModalSistema = function() {
-    document.getElementById('modalSistema').classList.remove('hidden');
+    const modal = document.getElementById('modalSistema');
+    if (!modal) {
+        alert('Modal de sistema não encontrado no HTML.');
+        return;
+    }
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
     lucide.createIcons();
 };
+
 window.fecharModalSistema = function() {
-    document.getElementById('modalSistema').classList.add('hidden');
-    document.getElementById('codigoIA').value = '';
+    const modal = document.getElementById('modalSistema');
+    if (!modal) return;
+
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+
+    const codigoIA = document.getElementById('codigoIA');
+    if (codigoIA) codigoIA.value = '';
 };
 
 window.gerarBackup = function() {
