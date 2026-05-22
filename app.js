@@ -111,8 +111,11 @@ window.getMetaDiaria = getMetaDiaria;
 async function carregarDadosDoSupabase() {
     try {
         // 1. Lançamentos
-        const { data: lancs, error: erroLancs } = await supabase.from('lancamentos').select('*');
-        if (erroLancs) throw erroLancs;
+const { data: lancs, error: erroLancs } = await supabase
+    .from('lancamentos')
+    .select('*')
+    .is('cancelado_em', null);
+            if (erroLancs) throw erroLancs;
 
         window.bancoDadosCloud = {};
         if (lancs) {
@@ -133,8 +136,10 @@ async function carregarDadosDoSupabase() {
         }
 
         // 2. Motoristas
-        const { data: mots, error: erroMots } = await supabase.from('motoristas').select('*');
-        if (erroMots) throw erroMots;
+    const { data: mots, error: erroMots } = await supabase
+    .from('motoristas')
+    .select('*')
+    .neq('status', 'inativo');        if (erroMots) throw erroMots;
 
         window.motRayanna = []; window.motJulia = []; window.motOutros = []; window.motoristas = [];
         if (mots) {
@@ -420,8 +425,10 @@ window.apagarMotoristaDefinitivo = async function() {
     if (!nome) return;
     nome = nome.toUpperCase().trim();
     if (confirm(`Tem certeza absoluta que deseja EXCLUIR "${nome}"? Ele sumirá dos rankings e das listas.`)) {
-        await supabase.from('motoristas').delete().eq('nome', nome);
-        await window.carregarDadosDoSupabase();
+    await supabase
+    .from('motoristas')
+    .update({ status: 'inativo' })
+    .eq('nome', nome);        await window.carregarDadosDoSupabase();
         window.fecharModalGerenciar();
         alert(`🗑️ Motorista ${nome} apagado com sucesso!`);
         if (window.motoristaSelecionado === nome) location.reload();
@@ -919,44 +926,30 @@ window.carregarHistoricoMotorista = function() {
 };
 
 window.deletarLancamentoEspecifico = async function(dataStr) {
-    if (!window.motoristaSelecionado) { alert('Nenhum motorista selecionado.'); return; }
-    // ✅ Usando a função importada formatarDataParaExibicao()
-    if (!confirm(`Deseja apagar o lançamento do dia ${formatarDataParaExibicao(dataStr)}?`)) return;
+    if (!window.motoristaSelecionado) return;
+
+    const motivo = prompt(`Motivo para cancelar o lançamento de ${formatarDataParaExibicao(dataStr)}:`);
+    if (motivo === null) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
 
     const { error } = await supabase
         .from('lancamentos')
-        .delete()
+        .update({
+            cancelado_em: new Date().toISOString(),
+            cancelado_por: user?.id || null,
+            cancelado_por_email: user?.email || null,
+            motivo_cancelamento: motivo || 'Cancelado pelo sistema',
+        })
         .eq('data', dataStr)
         .eq('motorista_nome', window.motoristaSelecionado);
 
-    if (error) { console.error('Erro ao excluir:', error); alert('Erro ao excluir: ' + error.message); return; }
+    if (error) {
+        alert('Erro ao cancelar: ' + error.message);
+        return;
+    }
+
     await window.carregarDadosDoSupabase();
-    lucide.createIcons();
-};
-
-window.apagarLancamentosMotorista = async function() {
-    if (!window.motoristaSelecionado) { alert('Selecione um motorista primeiro!'); return; }
-
-    const elMes = document.getElementById('dataGlobal');
-    const mesFiltroStr = elMes && elMes.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
-
-    // ✅ Usando as funções importadas
-    const dataInicio = primeiroDiaDoMes(mesFiltroStr);
-    const dataFim = ultimoDiaDoMes(mesFiltroStr);
-
-    const confirmacao = prompt(`⚠️ CUIDADO! Apagar todos os lançamentos de ${window.motoristaSelecionado} em ${mesFiltroStr}?\n\nDigite APAGAR para confirmar.`);
-    if (confirmacao !== 'APAGAR') return;
-
-    const { error } = await supabase
-        .from('lancamentos')
-        .delete()
-        .eq('motorista_nome', window.motoristaSelecionado)
-        .gte('data', dataInicio)
-        .lte('data', dataFim);
-
-    if (error) { alert('Erro ao limpar o mês: ' + error.message); return; }
-    await window.carregarDadosDoSupabase();
-    alert('✅ Excluído com sucesso!');
 };
 
 // =============================================================
