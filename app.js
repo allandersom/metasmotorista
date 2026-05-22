@@ -393,12 +393,44 @@ window.addMotoristaModal = async function() {
     const turno = document.getElementById('novoMotTurno').value;
     const elMes = document.getElementById('dataGlobal');
     const mesAtualFiltro = elMes && elMes.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
-    if (!nome) return;
 
-    await supabase.from('motoristas').upsert({ nome, turno, meta_diaria_padrao: 8, status: 'ativo' }, { onConflict: 'nome' });
-    await supabase.from('visibilidade_mes').upsert({ chave: `${mesAtualFiltro}_${nome}`, status: 'show' }, { onConflict: 'chave' });
+    if (!nome) {
+        alert('Informe o nome do motorista.');
+        return;
+    }
+
+    const { error: erroMotorista } = await supabase
+        .from('motoristas')
+        .upsert({
+            nome,
+            turno,
+            meta_diaria_padrao: 8,
+            status: 'ativo'
+        }, { onConflict: 'nome' });
+
+    if (erroMotorista) {
+        alert('Erro ao cadastrar motorista: ' + erroMotorista.message);
+        return;
+    }
+
+    const { error: erroVisibilidade } = await supabase
+        .from('visibilidade_mes')
+        .upsert({
+            chave: `${mesAtualFiltro}_${nome}`,
+            status: 'show'
+        }, { onConflict: 'chave' });
+
+    if (erroVisibilidade) {
+        alert('Motorista cadastrado, mas erro ao adicionar no mês: ' + erroVisibilidade.message);
+        return;
+    }
+
     await window.carregarDadosDoSupabase();
+
+    document.getElementById('novoMotNome').value = '';
     window.fecharModalGerenciar();
+
+    alert('Motorista cadastrado com sucesso!');
 };
 
 window.ocultarMotoristaMes = async function() {
