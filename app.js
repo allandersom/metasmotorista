@@ -124,7 +124,7 @@ const { data: lancs, error: erroLancs } = await supabase
                 window.bancoDadosCloud[l.data][l.motorista_nome] = {
                     anexoNome: l.anexo_nome,
                     anexoUrl: l.anexo_url,
-                    : l.anexo_path,
+                    anexoPath: l.anexo_path,
                     anexoTipo: l.anexo_tipo,
                     servicos: l.quantidade_servicos,
                     valor: parseFloat(l.valor_faturamento) || 0,
