@@ -878,9 +878,17 @@ const valorNormalBase = valorBase;
 let dadosAnexo = null;
 
 if (arquivoAnexo) {
-    const nomeSeguro = arquivoAnexo.name.replace(/[^\w.\-]+/g, '_');
-    const caminhoAnexo = `${dataStr}/${window.motoristaSelecionado}/${Date.now()}_${nomeSeguro}`;
+    const nomeSeguro = arquivoAnexo.name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w.\-]+/g, '_');
 
+const motoristaSeguro = window.motoristaSelecionado
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\-]+/g, '_');
+
+const caminhoAnexo = `${dataStr}/${motoristaSeguro}/${Date.now()}_${nomeSeguro}`;
     const { error: erroUpload } = await supabase.storage
         .from('lancamentos-anexos')
         .upload(caminhoAnexo, arquivoAnexo, { upsert: true });
