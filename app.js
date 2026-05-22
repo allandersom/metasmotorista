@@ -117,25 +117,21 @@ const { data: lancs, error: erroLancs } = await supabase
     .is('cancelado_em', null);
             if (erroLancs) throw erroLancs;
 
-        window.bancoDadosCloud = {};
-        if (lancs) {
-            lancs.forEach(l => {
-                if (!window.bancoDadosCloud[l.data]) window.bancoDadosCloud[l.data] = {};
-                window.bancoDadosCloud[l.data][l.motorista_nome] = {
-                    anexoNome: l.anexo_nome,
-                    anexoUrl: l.anexo_url,
-                    anexoPath: l.anexo_path,
-                    anexoTipo: l.anexo_tipo,
-                    servicos: l.quantidade_servicos,
-                    valor: parseFloat(l.valor_faturamento) || 0,
-                    isFeriado: l.is_feriado,
-                    ganhouBonusSemana: l.ganhou_bonus_semana,
-                    tipoVeiculo: l.tipo_veiculo,
-                    valorExtra: parseFloat(l.valor_extra) || 0,
-                    pontos: l.quantidade_servicos,
-                    observacao: l.observacao,
-                    status: l.status_servico,
-                };
+       window.bancoDadosCloud[l.data][l.motorista_nome] = {
+    anexoNome: l.anexo_nome,
+    anexoUrl: l.anexo_url,
+    anexoPath: l.anexo_path,
+    anexoTipo: l.anexo_tipo,
+    servicos: l.quantidade_servicos,
+    valor: parseFloat(l.valor_faturamento) || 0,
+    isFeriado: l.is_feriado,
+    ganhouBonusSemana: l.ganhou_bonus_semana,
+    tipoVeiculo: l.tipo_veiculo,
+    valorExtra: parseFloat(l.valor_extra) || 0,
+    pontos: l.quantidade_servicos,
+    observacao: l.observacao,
+    status: l.status_servico,
+};
             });
         }
 
