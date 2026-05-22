@@ -1,3 +1,5 @@
+import '../auth-gate.js';
+
 /**
  * src/utils/date.js
  *
