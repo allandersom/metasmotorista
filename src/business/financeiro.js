@@ -10,30 +10,6 @@ import {
     formatarNumeroInteligente,
 } from '../utils/format.js';
 
-/**
- * src/business/financeiro.js
- *
- * RESPONSABILIDADE ÚNICA: Cálculo de remuneração dos motoristas.
- *
- * REGRA DE OURO deste arquivo:
- * - Nenhuma função aqui toca no DOM
- * - Nenhuma função aqui chama o Supabase
- * - Nenhuma função aqui lê window.*
- * - TUDO que precisa vem por parâmetro e retorna um valor
- *
- * Isso é chamado de "função pura" — mesmos parâmetros = mesmo resultado,
- * sempre. É o tipo de código mais fácil de testar e de confiar.
- *
- * QUANDO O CLIENTE PEDIR UMA MUDANÇA DE REGRA:
- * Você abre ESTE arquivo, muda EM UM LUGAR, e pronto.
- * Não precisa caçar em app.js inteiro.
- */
-
-// =============================================================
-// CONFIGURAÇÃO DOS VEÍCULOS
-// A única fonte de verdade sobre metas e valores por veículo.
-// =============================================================
-
 const VEICULOS_CONFIG = {
     poliguindaste: {
         metaFinanceira: 4,
@@ -57,29 +33,14 @@ const VEICULOS_CONFIG = {
     },
 };
 
-/**
- * Retorna a configuração de um veículo.
- * Se o tipo não existir, retorna poliguindaste como padrão.
- */
 export function getConfigVeiculo(tipoVeiculo) {
     return VEICULOS_CONFIG[tipoVeiculo] || VEICULOS_CONFIG.poliguindaste;
 }
 
-// =============================================================
-// CÁLCULO DE PONTOS
-// =============================================================
-
-/**
- * Retorna a meta diária de pontos de um motorista.
- */
 export function getMetaDiaria(nome) {
     return nome === 'ROBERTO CARLOS' ? 4 : 8;
 }
 
-/**
- * Calcula os pontos de produtividade de um motorista em um dia.
- * Pontos normalizam a comparação entre tipos de veículo diferentes.
- */
 export function calcularPontos(nome, servicos, tipoVeiculo) {
     const meta = getMetaDiaria(nome);
     if (tipoVeiculo === 'cacamba')    return servicos * (meta / 4);
@@ -88,32 +49,25 @@ export function calcularPontos(nome, servicos, tipoVeiculo) {
     return servicos;
 }
 
-// =============================================================
-// CÁLCULO DE VALOR — DIA NORMAL
-// =============================================================
-
 function calcularValorDiaNormal(servicos, config) {
     if (servicos < config.metaFinanceira) return 0;
     return 50 + ((servicos - config.metaFinanceira) * config.valorExtraPorUnidade);
 }
 
-// =============================================================
-// CÁLCULO DE VALOR — DOMINGO E FERIADO
-// =============================================================
-
 function calcularValorDomingoFeriado(servicos) {
     return servicos * 30;
 }
 
-// =============================================================
-// CÁLCULO DE VALOR — SÁBADO
-// =============================================================
+function getMetaFisicaDiariaSabado(nome, tipoVeiculo) {
+    if (tipoVeiculo === 'cacamba') return 4;
+    if (tipoVeiculo === 'misto') return 6;
+    return getMetaDiaria(nome);
+}
 
 function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, bancoDados, formatarData }) {
     const config = getConfigVeiculo(tipoVeiculo);
-    const metaDiaria = getMetaDiaria(motoristaNome);
 
-    let pontosFeitosSemana = 0;
+    let servicosFeitosSemana = 0;
     let qtdFeriadosSemana = 0;
 
     for (let i = 1; i <= 5; i++) {
@@ -127,27 +81,17 @@ function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, ba
                 qtdFeriadosSemana++;
             } else {
                 const srv = isNaN(lancDia.servicos) ? 0 : lancDia.servicos;
-                pontosFeitosSemana += calcularPontos(motoristaNome, srv, lancDia.tipoVeiculo);
+                servicosFeitosSemana += srv;
             }
         }
     }
 
-    const metaSemanalPontos = (5 - qtdFeriadosSemana) * metaDiaria;
-    const pontosFaltantes = Math.max(0, metaSemanalPontos - pontosFeitosSemana);
-
-    let divisorParaFisico = 1;
-    if (tipoVeiculo === 'poli_duplo') divisorParaFisico = 0.5;
-    else if (tipoVeiculo === 'cacamba') divisorParaFisico = metaDiaria / 4;
-    else if (tipoVeiculo === 'misto')   divisorParaFisico = metaDiaria / 6;
-
-    const servicosFaltantesFisicos = divisorParaFisico > 0 ? pontosFaltantes / divisorParaFisico : 0;
+    const metaSemanalFisica = (5 - qtdFeriadosSemana) * getMetaFisicaDiariaSabado(motoristaNome, tipoVeiculo);
+    const servicosFaltantesFisicos = Math.max(0, metaSemanalFisica - servicosFeitosSemana);
     const servicosParaMeta = Math.min(servicos, servicosFaltantesFisicos);
-    const servicosBonus    = Math.max(0, servicos - servicosFaltantesFisicos);
+    const servicosBonus = Math.max(0, servicos - servicosFaltantesFisicos);
 
-    const valorParaMeta = servicosParaMeta >= config.metaFinanceira
-        ? 50 + ((servicosParaMeta - config.metaFinanceira) * config.valorExtraPorUnidade)
-        : 0;
-
+    const valorParaMeta = calcularValorDiaNormal(servicosParaMeta, config);
     const valorBonus = servicosBonus * (config.valorExtraPorUnidade * 2);
 
     return {
@@ -156,26 +100,6 @@ function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, ba
     };
 }
 
-// =============================================================
-// FUNÇÃO PRINCIPAL PÚBLICA
-// =============================================================
-
-/**
- * Calcula o valor a pagar para um motorista em um determinado dia.
- * Esta é a ÚNICA função que o app.js precisa chamar.
- *
- * @param {Object} params
- * @param {string}   params.motoristaNome
- * @param {string}   params.dataStr        - formato "YYYY-MM-DD"
- * @param {number}   params.servicos
- * @param {string}   params.tipoVeiculo
- * @param {boolean}  params.isFeriado
- * @param {string}   params.status         - 'normal' | 'falta' | 'folga' | ...
- * @param {Object}   params.bancoDados     - window.bancoDadosCloud
- * @param {Function} params.formatarData   - formatarDataParaBusca(date) => string
- *
- * @returns {{ valorBase: number, bateuMetaSemana: boolean }}
- */
 export function calcularValorDia({
     motoristaNome,
     dataStr,
@@ -216,10 +140,6 @@ export function calcularValorDia({
         bateuMetaSemana: false,
     };
 }
-
-// =============================================================
-// PATCH TEMPORÁRIO DOS RANKINGS
-// =============================================================
 
 function ehDiaEspecialRanking(dataStr, dados) {
     const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
