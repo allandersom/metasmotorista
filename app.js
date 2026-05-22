@@ -681,8 +681,9 @@ window.toggleSidebar = function() {
 
 window.mudarAba = function(aba) {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria'].forEach(id => {
-     const el = document.getElementById(id);
+
+    ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria'].forEach(id => {
+        const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
     if (aba === 'lancamentos') {
@@ -701,12 +702,14 @@ window.mudarAba = function(aba) {
         document.getElementById('viewProjecao') && (document.getElementById('viewProjecao').style.display = 'block');
         window.atualizarGraficosProjecao();
     }
-    else if (aba === 'auditoria') {
-    document.getElementById('btnTabAuditoria')?.classList.add('active');
-    document.getElementById('viewAuditoria') && (document.getElementById('viewAuditoria').style.display = 'block');
-    window.carregarAuditoriaLancamentos();
-}
+        } else if (aba === 'auditoria') {
+        document.getElementById('btnTabAuditoria')?.classList.add('active');
+        document.getElementById('viewAuditoria') && (document.getElementById('viewAuditoria').style.display = 'block');
+        window.carregarAuditoriaLancamentos();
+    }
 };
+
+window.mudarAba('lancamentos');
 
 window.filtrarMotoristas = function() {
     const busca = document.getElementById('buscaMotorista');
