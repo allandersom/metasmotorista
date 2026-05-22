@@ -1042,20 +1042,16 @@ window.atualizarResumosGlobais = function() {
     }
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-    if (dataEstaNoMes(dataStr, anoMesFiltro) && dadosDia[window.motoristaSelecionado]) {
-        const r = dadosDia[window.motoristaSelecionado];
-        const diaObj = new Date(dataStr + 'T00:00:00');
-        const isDomingo = diaObj.getDay() === 0;
-        const diaEspecial = isDomingo || r.isFeriado;
-
-        if ((!r.status || r.status === 'normal') && !diaEspecial) {
-            if (r.tipoVeiculo === 'cacamba') totalViagensMes += (r.servicos || 0);
-            else totalCaixasMes += (r.servicos || 0);
-            totalPontosMes += (r.pontos !== undefined) ? r.pontos : window.calcularPontosMotorista(window.motoristaSelecionado, (r.servicos || 0), r.tipoVeiculo);
+        // ✅ Usando a função importada dataEstaNoMes()
+        if (dataEstaNoMes(dataStr, mesGlobalStr)) {
+            for (const mot in dadosDia) {
+                totalMesGlobal += dadosDia[mot].valor;
+                if (dadosDia[mot].tipoVeiculo !== 'cacamba' && (!dadosDia[mot].status || dadosDia[mot].status === 'normal')) {
+                    caixasMesGlobal += (dadosDia[mot].servicos || 0);
+                }
+            }
         }
-        totalFatMes += r.valor;
     }
-}
 
     // ✅ Usando as funções importadas
     if (document.getElementById('totalDiaGlobal'))    document.getElementById('totalDiaGlobal').innerText = formatarMoeda(totalDiaGlobal);
@@ -1078,25 +1074,23 @@ window.gerarRankingPeriodo = function() {
     let rankPeriodo = {};
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-    if (dataEstaNoIntervalo(dataStr, inicio, fim)) {
-        const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
-        const isDomingo = diaDaSemana === 0;
+        // ✅ Usando a função importada dataEstaNoIntervalo()
+        if (dataEstaNoIntervalo(dataStr, inicio, fim)) {
+            const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
+            for (const [mot, dados] of Object.entries(dadosDia)) {
+                if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
+                rankPeriodo[mot].valor += dados.valor;
+                rankPeriodo[mot].extra += dados.valorExtra || 0;
 
-        for (const [mot, dados] of Object.entries(dadosDia)) {
-            if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
-            rankPeriodo[mot].valor += dados.valor;
-            rankPeriodo[mot].extra += dados.valorExtra || 0;
-
-            const diaEspecial = isDomingo || dados.isFeriado;
-            if ((!dados.status || dados.status === 'normal') && !diaEspecial) {
-                if (dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += (dados.servicos || 0);
-                else rankPeriodo[mot].caixas += (dados.servicos || 0);
-                rankPeriodo[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
-                if (diaDaSemana !== 0 && diaDaSemana !== 6 && !dados.isFeriado) rankPeriodo[mot].diasTrab += 1;
+                if (!dados.status || dados.status === 'normal') {
+                    if (dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += (dados.servicos || 0);
+                    else rankPeriodo[mot].caixas += (dados.servicos || 0);
+                    rankPeriodo[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
+                    if (diaDaSemana !== 0 && diaDaSemana !== 6 && !dados.isFeriado) rankPeriodo[mot].diasTrab += 1;
+                }
             }
         }
     }
-}
 
     const rankArray = Object.keys(rankPeriodo).map(mot => {
         const metaTotalPeriodo = window.getMetaDiaria(mot) * rankPeriodo[mot].diasTrab;
@@ -1151,27 +1145,24 @@ window.gerarRankingMensal = function() {
 
     window.motoristas.forEach(m => { acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0, pontos: 0 }; });
 
-   for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-    if (dataEstaNoMes(dataStr, mesFiltro)) {
-        const diaObj = new Date(dataStr + 'T00:00:00');
-        const isDomingo = diaObj.getDay() === 0;
-
-        for (const [mot, dados] of Object.entries(dadosDia)) {
-            if (acumuladoMes[mot]) {
-                const statusMot = (dados.status || 'normal').toLowerCase();
-                const diaEspecial = isDomingo || dados.isFeriado;
-
-                if (statusMot === 'normal' && !diaEspecial) {
-                    if (dados.tipoVeiculo === 'cacamba') { acumuladoMes[mot].viagens += (dados.servicos || 0); totalViagensFrota += (dados.servicos || 0); }
-                    else { acumuladoMes[mot].caixas += (dados.servicos || 0); totalCaixasFrota += (dados.servicos || 0); }
-                    acumuladoMes[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
+    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        // ✅ Usando a função importada dataEstaNoMes()
+        if (dataEstaNoMes(dataStr, mesFiltro)) {
+            for (const [mot, dados] of Object.entries(dadosDia)) {
+                if (acumuladoMes[mot]) {
+                    const statusMot = (dados.status || 'normal').toLowerCase();
+                    if (statusMot === 'normal') {
+                        if (dados.tipoVeiculo === 'cacamba') { acumuladoMes[mot].viagens += (dados.servicos || 0); totalViagensFrota += (dados.servicos || 0); }
+                        else { acumuladoMes[mot].caixas += (dados.servicos || 0); totalCaixasFrota += (dados.servicos || 0); }
+                        acumuladoMes[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
+                    }
+                    acumuladoMes[mot].valor += dados.valor;
+                    totalFatMesFrota += dados.valor;
                 }
-                acumuladoMes[mot].valor += dados.valor;
-                totalFatMesFrota += dados.valor;
             }
         }
     }
-}
+
     function getMetaCalculadaMotorista(mot) {
         const slaMotorista = window.calcularSlaMotorista(mot, mesFiltro);
         const metaDiaria = window.getMetaDiaria(mot);
