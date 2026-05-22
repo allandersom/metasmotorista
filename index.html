@@ -48,6 +48,10 @@
                 <i data-lucide="line-chart" class="w-4 h-4 shrink-0"></i>
                 Projeção e BI
             </button>
+            <button id="btnTabAuditoria" onclick="window.mudarAba('auditoria')" class="nav-tab">
+    <i data-lucide="history" class="w-4 h-4 shrink-0"></i>
+    Auditoria
+</button>
         </nav>
     </aside>
 
@@ -527,7 +531,42 @@
                     </div>
                 </div>
             </div>
+            <div id="viewAuditoria" style="display:none;">
+    <div class="page-header">
+        <div>
+            <h2>Auditoria</h2>
+            <p>Veja quem criou, editou ou excluiu lançamentos.</p>
+        </div>
+        <button onclick="window.carregarAuditoriaLancamentos()" class="btn-sistema">
+            <i data-lucide="refresh-cw"></i>
+            Atualizar
+        </button>
+    </div>
 
+    <div class="rank-card">
+        <div class="table-wrap">
+            <table id="tabelaAuditoria">
+                <thead>
+                    <tr>
+                        <th>Quando</th>
+                        <th>Ação</th>
+                        <th>Usuário</th>
+                        <th>Motorista</th>
+                        <th>Data Serviço</th>
+                        <th>Resumo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" class="text-center text-slate-400 font-medium py-8">
+                            Clique em Atualizar para carregar a auditoria.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
         </div><!-- /content-area -->
     </main>
 

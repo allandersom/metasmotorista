@@ -681,8 +681,8 @@ window.toggleSidebar = function() {
 
 window.mudarAba = function(aba) {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-    ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao'].forEach(id => {
-        const el = document.getElementById(id);
+['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria'].forEach(id => {
+     const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
     if (aba === 'lancamentos') {
@@ -701,6 +701,11 @@ window.mudarAba = function(aba) {
         document.getElementById('viewProjecao') && (document.getElementById('viewProjecao').style.display = 'block');
         window.atualizarGraficosProjecao();
     }
+    else if (aba === 'auditoria') {
+    document.getElementById('btnTabAuditoria')?.classList.add('active');
+    document.getElementById('viewAuditoria') && (document.getElementById('viewAuditoria').style.display = 'block');
+    window.carregarAuditoriaLancamentos();
+}
 };
 
 window.filtrarMotoristas = function() {
@@ -1441,6 +1446,100 @@ window.atualizarGraficosProjecao = function() {
         });
     }
 };
+
+// =============================================================
+// AUDITORIA
+// =============================================================
+window.carregarAuditoriaLancamentos = async function() {
+    const tbody = document.querySelector('#tabelaAuditoria tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-slate-400 font-medium py-8">Carregando auditoria...</td></tr>';
+
+    const { data, error } = await supabase
+        .from('lancamentos_historico')
+        .select('*')
+        .order('criado_em', { ascending: false })
+        .limit(100);
+
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 font-bold py-8">Erro ao carregar auditoria: ${error.message}</td></tr>`;
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-slate-400 font-medium py-8">Nenhum histórico encontrado.</td></tr>';
+        return;
+    }
+
+    const acaoLabel = {
+        criar: 'Criou',
+        editar: 'Editou',
+        excluir: 'Excluiu',
+        excluir_mes_motorista: 'Apagou mês',
+        excluir_tudo: 'Apagou tudo',
+        importar_ia: 'Importou IA',
+    };
+
+    function formatarDataHora(valor) {
+        if (!valor) return '-';
+        return new Date(valor).toLocaleString('pt-BR');
+    }
+
+    function resumoMudanca(item) {
+        const antes = item.dados_antes || {};
+        const depois = item.dados_depois || {};
+
+        if (item.acao === 'criar') {
+            return `Qtd: ${depois.quantidade_servicos ?? '-'} | Valor: ${formatarMoeda(Number(depois.valor_faturamento || 0))}`;
+        }
+
+        if (item.acao === 'editar') {
+            const partes = [];
+
+            if (antes.quantidade_servicos !== depois.quantidade_servicos) {
+                partes.push(`Qtd: ${antes.quantidade_servicos ?? '-'} → ${depois.quantidade_servicos ?? '-'}`);
+            }
+
+            if (Number(antes.valor_faturamento || 0) !== Number(depois.valor_faturamento || 0)) {
+                partes.push(`Valor: ${formatarMoeda(Number(antes.valor_faturamento || 0))} → ${formatarMoeda(Number(depois.valor_faturamento || 0))}`);
+            }
+
+            if ((antes.status_servico || '') !== (depois.status_servico || '')) {
+                partes.push(`Status: ${antes.status_servico || '-'} → ${depois.status_servico || '-'}`);
+            }
+
+            return partes.length ? partes.join(' | ') : 'Alterou dados do lançamento';
+        }
+
+        if (item.acao === 'excluir') {
+            return `Excluiu qtd ${antes.quantidade_servicos ?? '-'} no valor ${formatarMoeda(Number(antes.valor_faturamento || 0))}`;
+        }
+
+        return item.observacao || '-';
+    }
+
+    tbody.innerHTML = '';
+
+    data.forEach(item => {
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+            <td class="text-slate-700 font-bold">${formatarDataHora(item.criado_em)}</td>
+            <td class="font-black">${acaoLabel[item.acao] || item.acao}</td>
+            <td class="text-xs text-slate-600">${item.usuario_email || '-'}</td>
+            <td class="font-bold">${item.motorista_nome || '-'}</td>
+            <td>${item.data_servico ? formatarDataParaExibicao(item.data_servico) : '-'}</td>
+            <td class="text-xs text-slate-500">${resumoMudanca(item)}</td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+
+    lucide.createIcons();
+};
+
+
 
 // =============================================================
 // RESTAURAÇÃO DE BACKUP
