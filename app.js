@@ -150,7 +150,7 @@ async function carregarDadosDoSupabase() {
         // 3. Dias Úteis
         const { data: configs } = await supabase.from('config_meses').select('*');
         window.configMesesCloud = {};
-        if (configs) configs.forEach(c => window.configMesesCloud[c.ano_mes] = c.dias_uteis_SLA);
+        if (configs) configs.forEach(c => window.configMesesCloud[c.ano_mes] = c.dias_uteis_sla);
 
         // 4. SLAs individuais
         const { data: slas } = await supabase.from('config_slas').select('*');
@@ -555,7 +555,7 @@ window.salvarDiasUteis = async function(origem) {
 
     const { error } = await supabase
         .from('config_meses')
-        .upsert({ ano_mes: anoMes, dias_uteis_SLA: dias }, { onConflict: 'ano_mes' });
+        .upsert({ ano_mes: anoMes, dias_uteis_sla: dias }, { onConflict: 'ano_mes' });
 
     if (error) {
         console.error('Erro ao salvar dias úteis:', error.message);
