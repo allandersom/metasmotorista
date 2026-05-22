@@ -710,10 +710,6 @@
 
     <script>
         lucide.createIcons();
-
-        // Modals: toggle display flex on show
-        const _origRemoveHidden = Element.prototype.classList;
-
         // Show modals with flex when .hidden is removed
         const modals = ['modalGerenciar', 'modalSistema'];
         modals.forEach(id => {
