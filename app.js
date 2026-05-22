@@ -539,11 +539,30 @@ window.salvarDiasUteis = async function(origem) {
     const valor = origem === 'lanc'
         ? document.getElementById('inputDiasUteisLanc').value
         : document.getElementById('inputDiasUteisRank').value;
-    const isLancamento = document.getElementById('viewLancamentos') && document.getElementById('viewLancamentos').style.display !== 'none';
-    const inputRef = isLancamento ? document.getElementById('dataGlobal') : document.getElementById('mesFiltro');
-    if (!inputRef) return;
+
     const dias = parseInt(valor) || 22;
-    await supabase.from('config_meses').upsert({ ano_mes: inputRef.value, dias_uteis_SLA: dias }, { onConflict: 'ano_mes' });
+    if (dias < 1 || dias > 31) return;
+
+    // Pega o mês sempre do dataGlobal ou mesFiltro, independente da aba
+    const elGlobal = document.getElementById('dataGlobal');
+    const elFiltro = document.getElementById('mesFiltro');
+
+    const mesRef = elGlobal?.value || elFiltro?.value;
+    if (!mesRef) return;
+
+    // Garante que usa só YYYY-MM
+    const anoMes = mesRef.substring(0, 7);
+
+    const { error } = await supabase
+        .from('config_meses')
+        .upsert({ ano_mes: anoMes, dias_uteis_SLA: dias }, { onConflict: 'ano_mes' });
+
+    if (error) {
+        console.error('Erro ao salvar dias úteis:', error.message);
+        alert('Erro ao salvar dias úteis: ' + error.message);
+        return;
+    }
+
     await window.carregarDadosDoSupabase();
 };
 
