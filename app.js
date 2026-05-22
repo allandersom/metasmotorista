@@ -28,7 +28,7 @@ import {
     primeiroDiaDoMes,
     dataEstaNoMes,
     dataEstaNoIntervalo,
-} from './src/utils/date.js';
+} from './src/utils/src/utils/date.js';
 
 import {
     formatarMoeda,
@@ -37,7 +37,7 @@ import {
     formatarQuantidadeMista,
     formatarPercentual,
     formatarNumeroInteligente,
-} from './src/utils/format.js';
+} from './src/utils/src/utils/format.js';
 
 // =============================================================
 // ALIASES PARA O HTML EXISTENTE
