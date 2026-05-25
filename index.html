@@ -699,7 +699,15 @@
                         <button onclick="window.mostrarMotoristaMes()" class="btn-add-sm">Adicionar</button>
                     </div>
                 </div>
-
+            <div class="border-section" id="secaoReativarAdmin" style="display:none;">
+             <div class="modal-section-label">Reativar Motorista Inativo (Apenas Admin)</div>
+             <div class="modal-row">
+             <select id="reativarMotNome" class="input-base">
+            <option value="">Selecione para reativar...</option>
+            </select>
+        <button onclick="window.reativarMotorista()" class="btn-add-sm">Reativar</button>
+    </div>
+</div>         
                 <div class="border-section">
                     <button type="button" onclick="window.apagarMotoristaDefinitivo()" class="btn-danger-sm w-full justify-center" style="padding:10px;">
                         <i data-lucide="trash-2"></i>

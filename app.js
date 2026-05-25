@@ -148,28 +148,37 @@ async function carregarDadosDoSupabase() {
             });
         }
 
-        // 2. Motoristas
+        // =============================================================
+        // 2. Motoristas (ATUALIZADO PARA TRAZER OS INATIVOS TAMBÉM)
+        // =============================================================
         const { data: mots, error: erroMots } = await supabase
             .from('motoristas')
-            .select('*')
-            .neq('status', 'inativo');
+            .select('*'); // Removemos o filtro de inativos daqui para o Admin poder ver
 
         if (erroMots) throw erroMots;
 
-        window.motRayanna = [];
-        window.motJulia = [];
-        window.motOutros = [];
+        window.motRayanna = []; 
+        window.motJulia = []; 
+        window.motOutros = []; 
         window.motoristas = [];
+        window.motoristasInativos = []; // Nova lista global na memória
 
         if (mots) {
             mots.forEach(m => {
-                window.motoristas.push(m.nome);
-                if (m.turno === 'dia')        window.motRayanna.push(m.nome);
-                else if (m.turno === 'noite') window.motJulia.push(m.nome);
-                else                          window.motOutros.push(m.nome);
+                if (m.status === 'inativo') {
+                    // Se está inativo, vai para a lista de reativação
+                    window.motoristasInativos.push(m.nome);
+                } else {
+                    // Se está ativo, segue o fluxo normal do app
+                    window.motoristas.push(m.nome);
+                    if (m.turno === 'dia')        window.motRayanna.push(m.nome);
+                    else if (m.turno === 'noite')   window.motJulia.push(m.nome);
+                    else                           window.motOutros.push(m.nome);
+                }
             });
         }
         window.motoristas.sort();
+        window.motoristasInativos.sort();
 
         // 3. Dias Úteis
         const { data: configs } = await supabase.from('config_meses').select('*');
@@ -377,18 +386,20 @@ window.importarDadosIA = async function () {
 // =============================================================
 // GERENCIAR MOTORISTAS
 // =============================================================
-window.gerenciarMotoristas = function () { window.abrirModalGerenciar(); };
+window.gerenciarMotoristas = function() { window.abrirModalGerenciar(); };
 
-window.abrirModalGerenciar = function () {
-    const modal    = document.getElementById('modalGerenciar');
+window.abrirModalGerenciar = function() {
+    const modal = document.getElementById('modalGerenciar');
     const selOcultar = document.getElementById('ocultarMotNome');
     const selMostrar = document.getElementById('mostrarMotNome');
-    const elMes    = document.getElementById('dataGlobal');
-    const mesAtualFiltro = elMes?.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
+    const selReativar = document.getElementById('reativarMotNome');
+    const secaoReativar = document.getElementById('secaoReativarAdmin');
+    const elMes = document.getElementById('dataGlobal');
+    const mesAtualFiltro = elMes && elMes.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
+    const funcao = window.usuarioAtualFuncao || 'operador';
 
-    const lblMes = document.getElementById('lblMesGerenciar');
-    if (lblMes) lblMes.innerText = mesAtualFiltro;
-
+    if (document.getElementById('lblMesGerenciar')) document.getElementById('lblMesGerenciar').innerText = mesAtualFiltro;
+    
     selOcultar.innerHTML = '<option value="">Selecione quem retirar...</option>';
     selMostrar.innerHTML = '<option value="">Selecione quem adicionar...</option>';
 
@@ -399,20 +410,36 @@ window.abrirModalGerenciar = function () {
         else           selMostrar.innerHTML += `<option value="${m}">${m}</option>`;
     });
 
+    if (funcao === 'admin') {
+        if (secaoReativar) secaoReativar.style.display = 'block';
+        if (selReativar) {
+            selReativar.innerHTML = '<option value="">Selecione para reativar...</option>';
+            window.motoristasInativos.forEach(m => {
+                selReativar.innerHTML += `<option value="${m}">${m}</option>`;
+            });
+        }
+        const btnDef = document.querySelector('button[onclick="window.apagarMotoristaDefinitivo()"]');
+        if (btnDef) btnDef.style.display = 'flex';
+    } else {
+        if (secaoReativar) secaoReativar.style.display = 'none';
+        const btnDef = document.querySelector('button[onclick="window.apagarMotoristaDefinitivo()"]');
+        if (btnDef) btnDef.style.display = 'none';
+    }
+
     modal.classList.remove('hidden');
     lucide.createIcons();
 };
 
-window.fecharModalGerenciar = function () {
+window.fecharModalGerenciar = function() {
     document.getElementById('modalGerenciar').classList.add('hidden');
     document.getElementById('novoMotNome').value = '';
 };
 
-window.addMotoristaModal = async function () {
-    const nome  = document.getElementById('novoMotNome').value.toUpperCase().trim();
+window.addMotoristaModal = async function() {
+    const nome = document.getElementById('novoMotNome').value.toUpperCase().trim();
     const turno = document.getElementById('novoMotTurno').value;
     const elMes = document.getElementById('dataGlobal');
-    const mesAtualFiltro = elMes?.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
+    const mesAtualFiltro = elMes && elMes.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
 
     if (!nome) { alert('Informe o nome do motorista.'); return; }
 
@@ -426,7 +453,7 @@ window.addMotoristaModal = async function () {
         .from('visibilidade_mes')
         .upsert({ chave: `${mesAtualFiltro}_${nome}`, status: 'show' }, { onConflict: 'chave' });
 
-    if (erroVisibilidade) { alert('Motorista cadastrado, mas erro ao adicionar no mês: ' + erroVisibilidade.message); return; }
+    if (erroVisibilidade) { alert('Erro ao adicionar no mês: ' + erroVisibilidade.message); return; }
 
     await window.carregarDadosDoSupabase();
     document.getElementById('novoMotNome').value = '';
@@ -434,42 +461,72 @@ window.addMotoristaModal = async function () {
     alert('Motorista cadastrado com sucesso!');
 };
 
-window.ocultarMotoristaMes = async function () {
+window.ocultarMotoristaMes = async function() {
     const nome = document.getElementById('ocultarMotNome').value;
     const elMes = document.getElementById('dataGlobal');
-    const mesAtualFiltro = elMes?.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
+    const mesAtualFiltro = elMes && elMes.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
     if (!nome) return;
     await supabase.from('visibilidade_mes').upsert({ chave: `${mesAtualFiltro}_${nome}`, status: 'hide' }, { onConflict: 'chave' });
     await window.carregarDadosDoSupabase();
     window.fecharModalGerenciar();
 };
 
-window.mostrarMotoristaMes = async function () {
+window.mostrarMotoristaMes = async function() {
     const nome = document.getElementById('mostrarMotNome').value;
     const elMes = document.getElementById('dataGlobal');
-    const mesAtualFiltro = elMes?.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
+    const mesAtualFiltro = elMes && elMes.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
     if (!nome) return;
     await supabase.from('visibilidade_mes').upsert({ chave: `${mesAtualFiltro}_${nome}`, status: 'show' }, { onConflict: 'chave' });
     await window.carregarDadosDoSupabase();
     window.fecharModalGerenciar();
 };
 
-window.apagarMotoristaDefinitivo = async function () {
-    let nome = prompt('⚠️ ZONA DE PERIGO: Para APAGAR um motorista definitivamente do painel, digite o NOME EXATO dele abaixo:');
+window.reativarMotorista = async function() {
+    if (window.usuarioAtualFuncao !== 'admin') {
+        alert('Erro: Apenas administradores podem ativar motoristas.');
+        return;
+    }
+
+    const nome = document.getElementById('reativarMotNome').value;
+    if (!nome) { alert('Selecione um motorista para reativar.'); return; }
+
+    const { error } = await supabase
+        .from('motoristas')
+        .update({ status: 'ativo' })
+        .eq('nome', nome);
+
+    if (error) { alert('Erro ao reativar: ' + error.message); return; }
+
+    await window.carregarDadosDoSupabase();
+    window.fecharModalGerenciar();
+    alert(`✅ Motorista ${nome} reativado com sucesso!`);
+};
+
+window.apagarMotoristaDefinitivo = async function() {
+    if (window.usuarioAtualFuncao !== 'admin') {
+        alert('Erro: Apenas administradores podem desativar motoristas.');
+        return;
+    }
+
+    let nome = prompt('⚠️ DESATIVAR MOTORISTA: Para desligar um motorista do painel geral, digite o NOME EXATO dele abaixo:');
     if (!nome) return;
     nome = nome.toUpperCase().trim();
 
-    if (confirm(`Tem certeza absoluta que deseja EXCLUIR "${nome}"? Ele sumirá dos rankings e das listas.`)) {
-        await supabase.from('motoristas').update({ status: 'inativo' }).eq('nome', nome);
+    if (confirm(`Tem certeza que deseja desativar "${nome}"?\n\nTranquilo: Todos os lançamentos passados dele serão MANTIDOS intactos nos relatórios.`)) {
+        const { error } = await supabase
+            .from('motoristas')
+            .update({ status: 'inativo' })
+            .eq('nome', nome);
+
+        if (error) { alert('Erro ao desativar: ' + error.message); return; }
+
         await window.carregarDadosDoSupabase();
         window.fecharModalGerenciar();
-        alert(`🗑️ Motorista ${nome} apagado com sucesso!`);
+        alert(`🗑️ Motorista ${nome} desativado com sucesso! Histórico preservado.`);
         if (window.motoristaSelecionado === nome) location.reload();
     }
 };
 
-// =============================================================
-// SIDEBAR E LISTAS
 // =============================================================
 window.reconstruirListasMotoristas = function () {
     window.renderizarSidebar();
