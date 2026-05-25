@@ -1872,3 +1872,124 @@ window.processarRestauracaoBackup = function (event) {
     const elInput = document.getElementById('inputRestaurarBackup');
     if (elInput) elInput.value = '';
 };
+
+// =============================================================
+// MÓDULO: ROTA DO DIA (MODO PLANILHA EXCEL)
+// =============================================================
+
+// Seta a data de hoje automaticamente ao carregar
+document.addEventListener('DOMContentLoaded', () => {
+    const elData = document.getElementById('dataPlanilhaRota');
+    if(elData) {
+        // Usa o fuso horário local correto
+        const dataHoje = new Date();
+        const offset = dataHoje.getTimezoneOffset() * 60000;
+        elData.value = new Date(dataHoje.getTime() - offset).toISOString().split('T')[0];
+    }
+});
+
+window.marcarPlanilhaNaoSalva = function() {
+    const btn = document.getElementById('btnSalvarPlanilha');
+    if (btn) {
+        btn.innerHTML = '<i data-lucide="alert-circle"></i> Alterações não salvas *';
+        btn.style.backgroundColor = '#d97706';
+        lucide.createIcons();
+    }
+};
+
+window.carregarPlanilhaRota = async function() {
+    const dataStr = document.getElementById('dataPlanilhaRota').value;
+    const turno = document.getElementById('turnoPlanilhaRota').value;
+    if (!dataStr || !turno) return;
+
+    // 1. Gera as colunas (Nomes dos Motoristas)
+    let motoristasTurno = [];
+    if (turno === 'dia') motoristasTurno = window.motRayanna || [];
+    else if (turno === 'noite') motoristasTurno = window.motJulia || [];
+    else motoristasTurno = window.motOutros || [];
+
+    const head = document.getElementById('planilhaHead');
+    const body = document.getElementById('planilhaBody');
+
+    if (motoristasTurno.length === 0) {
+        head.innerHTML = '<tr><th>Sem motoristas cadastrados neste turno</th></tr>';
+        body.innerHTML = '<tr><td></td></tr>';
+        return;
+    }
+
+    let trHead = '<tr>';
+    motoristasTurno.forEach(mot => {
+        trHead += `<th style="text-transform:uppercase; color:navy;">${mot}</th>`;
+    });
+    trHead += '</tr>';
+    head.innerHTML = trHead;
+
+    // 2. Busca no Supabase
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('rotas_planilha')
+            .select('conteudo_html')
+            .eq('data', dataStr)
+            .eq('turno', turno)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data && data.conteudo_html) {
+            body.innerHTML = data.conteudo_html;
+        } else {
+            // Gera 15 linhas em branco para a pessoa colar por cima
+            let linhasVazias = '';
+            for (let i = 0; i < 15; i++) {
+                linhasVazias += '<tr>';
+                motoristasTurno.forEach(() => { linhasVazias += '<td></td>'; });
+                linhasVazias += '</tr>';
+            }
+            body.innerHTML = linhasVazias;
+        }
+
+        const btn = document.getElementById('btnSalvarPlanilha');
+        btn.innerHTML = '<i data-lucide="save"></i> Salvar Planilha';
+        btn.style.backgroundColor = '';
+        lucide.createIcons();
+
+    } catch (err) {
+        console.error("Erro ao carregar planilha:", err);
+    }
+};
+
+window.salvarPlanilhaRota = async function() {
+    const dataStr = document.getElementById('dataPlanilhaRota').value;
+    const turno = document.getElementById('turnoPlanilhaRota').value;
+    const bodyHtml = document.getElementById('planilhaBody').innerHTML;
+
+    if (!dataStr) { alert("Escolha uma data válida."); return; }
+
+    const btn = document.getElementById('btnSalvarPlanilha');
+    btn.innerHTML = '<i data-lucide="loader" class="animate-spin"></i> Salvando...';
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('rotas_planilha')
+            .upsert({
+                data: dataStr,
+                turno: turno,
+                conteudo_html: bodyHtml
+            }, { onConflict: 'data,turno' });
+
+        if (error) throw error;
+
+        btn.innerHTML = '<i data-lucide="check"></i> Salvo com Sucesso!';
+        btn.style.backgroundColor = '#10b981';
+        setTimeout(() => {
+            btn.innerHTML = '<i data-lucide="save"></i> Salvar Planilha';
+            btn.style.backgroundColor = '';
+            lucide.createIcons();
+        }, 3000);
+
+    } catch (err) {
+        console.error("Erro ao salvar:", err);
+        alert("Erro ao salvar a planilha: " + err.message);
+        btn.innerHTML = '<i data-lucide="save"></i> Tentar Novamente';
+    }
+};
