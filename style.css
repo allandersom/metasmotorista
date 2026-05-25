@@ -1402,3 +1402,74 @@ input[type="month"] {
 .tabela-planilha td * {
     max-width: 100%;
 }
+
+/* =========================================================
+   ROTA DO DIA - VISUAL MODERNO (TIPO REACT/NEXT)
+   ========================================================= */
+.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.tabela-moderna {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: max-content;
+    min-width: 100%;
+}
+
+.tabela-moderna th, .tabela-moderna td {
+    border-right: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    vertical-align: middle;
+}
+
+/* Congela o cabeçalho no topo */
+.tabela-moderna th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    text-align: center;
+    background-color: #f8fafc;
+}
+
+/* Congela a coluna 1 (#) e a coluna 2 (Motorista) */
+.tabela-moderna .col-fixa-1 {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: #ffffff;
+    width: 40px;
+    text-align: center;
+    font-weight: 600;
+    color: #94a3b8;
+}
+.tabela-moderna .col-fixa-2 {
+    position: sticky;
+    left: 40px; /* Largura da col 1 */
+    z-index: 10;
+    background-color: #ffffff;
+    min-width: 200px;
+    font-weight: 700;
+    color: #334155;
+    font-size: 12px;
+}
+
+/* Quando cruza o cabeçalho e a coluna fixa, precisa ficar por cima de tudo */
+.tabela-moderna th.col-fixa-1, .tabela-moderna th.col-fixa-2 {
+    z-index: 30;
+}
+
+/* Onde você clica para colar do Excel */
+.tabela-moderna td:focus {
+    outline: 2px solid #6366f1;
+    outline-offset: -2px;
+}
+.tabela-moderna td * {
+    max-width: 100%;
+}
