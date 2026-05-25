@@ -738,8 +738,9 @@ window.toggleSidebar = function() {
 window.mudarAba = function(aba) {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
 
-['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas'].forEach(id => {        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
+['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas'].forEach(id => {        
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
     });
 
     if (aba === 'lancamentos') {
