@@ -1,6 +1,8 @@
 // =============================================================
 // IMPORTS
 // =============================================================
+import { apagarMesMotorista } from './src/services/lancamentosService.js';
+
 import {
     formatarDataParaBusca,
     formatarDataParaExibicao,
@@ -1928,4 +1930,38 @@ window.processarRestauracaoBackup = function (event) {
     alert('Atenção: A função de restaurar backup via arquivo está temporariamente desativada no modo SQL para evitar corrupção de dados.');
     const elInput = document.getElementById('inputRestaurarBackup');
     if (elInput) elInput.value = '';
+};
+
+// =============================================================
+// APAGAR MÊS DO MOTORISTA (Via Service)
+// =============================================================
+window.apagarLancamentosMotorista = async function() {
+    if (!window.motoristaSelecionado) {
+        alert('Selecione um motorista na lista lateral primeiro.');
+        return;
+    }
+
+    const elMes = document.getElementById('dataGlobal');
+    const mesAtual = elMes && elMes.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
+
+    const confirmacao = confirm(`⚠️ ATENÇÃO!\n\nTem certeza que deseja apagar TODOS os lançamentos de ${window.motoristaSelecionado} no mês ${mesAtual}?`);
+    if (!confirmacao) return;
+
+    try {
+        // CHAMA A FUNÇÃO LIMPA QUE VEM DO SEU NOVO ARQUIVO DE SERVIÇO!
+        await apagarMesMotorista(window.supabaseClient, window.motoristaSelecionado, mesAtual);
+
+        alert(`✅ Todos os lançamentos de ${window.motoristaSelecionado} em ${mesAtual} foram apagados com sucesso!`);
+        
+        await window.carregarDadosDoSupabase();
+        
+        if (typeof window.carregarHistoricoMotorista === 'function') {
+            window.carregarHistoricoMotorista();
+            window.atualizarResumosDoMotorista();
+        }
+
+    } catch (error) {
+        console.error('Erro ao apagar mês:', error);
+        alert('Erro ao apagar lançamentos: ' + error.message);
+    }
 };
