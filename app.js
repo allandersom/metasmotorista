@@ -182,8 +182,25 @@ async function carregarDadosDoSupabase() {
         window.sincronizarMesFiltro();
         window.atualizarResumosGlobais();
         window.gerarRankingPeriodo();
+    // ... final da sua função carregarDadosDoSupabase ...
         window.gerarRankingMensal();
         window.gerarPainelFeriados();
+
+        // SUBSTITUA A CHAMADA DA RESTRIÇÃO POR ISSO AQUI:
+        setTimeout(() => {
+            window.aplicarRestricoesInterface(); 
+        }, 500); // 500 milissegundos de espera para garantir que o AuthGate terminou
+
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+    } catch (error) {
+        console.error('ERRO AO CARREGAR:', error);
+        alert('Erro ao carregar dados: ' + error.message);
+    }
+}
 
         // ✅ REGRAS DE PERMISSÃO APLICADAS AQUI
         window.aplicarRestricoesInterface(); 
