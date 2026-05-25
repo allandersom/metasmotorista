@@ -1,23 +1,5 @@
-/**
- * app.js — VERSÃO REFATORADA (Passo 1)
- *
- * O QUE MUDOU NESTE PASSO:
- * ✅ As funções de data foram REMOVIDAS daqui
- * ✅ Agora importamos essas funções de src/utils/date.js
- * ✅ As formatações de valor foram REMOVIDAS daqui
- * ✅ Agora importamos de src/utils/format.js
- * ✅ window.formatarDataParaBusca e window.formatarDataParaExibicao
- *    ainda existem como aliases para não quebrar o HTML existente
- *
- * O QUE NÃO MUDOU:
- * ❌ Todo o resto do app continua igual — sem risco de quebrar nada
- *
- * PRÓXIMO PASSO (Passo 2):
- * → Extrair calcularValorDia para src/business/financeiro.js
- */
-
 // =============================================================
-// IMPORTS — As funções que saíram deste arquivo
+// IMPORTS 
 // =============================================================
 import {
     formatarDataParaBusca,
