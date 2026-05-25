@@ -1361,3 +1361,44 @@ input[type="month"] {
     padding: 2px;
     cursor: pointer;
 }
+
+/* =========================================================
+   ROTA DO DIA - MODO PLANILHA
+   ========================================================= */
+.planilha-container::-webkit-scrollbar { width: 10px; height: 10px; }
+.planilha-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+
+.tabela-planilha {
+    border-collapse: collapse;
+    width: max-content;
+    min-width: 100%;
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+}
+
+.tabela-planilha th, .tabela-planilha td {
+    border: 1px solid #000;
+    padding: 6px;
+    text-align: center;
+    vertical-align: middle;
+    min-width: 150px;
+    height: 30px;
+}
+
+.tabela-planilha th {
+    background-color: #f3f4f6;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 0 #000;
+}
+
+.tabela-planilha td:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+}
+
+.tabela-planilha td * {
+    max-width: 100%;
+}
