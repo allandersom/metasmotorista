@@ -1,20 +1,4 @@
-/**
- * app.js — VERSÃO REFATORADA (Passo 1)
- *
- * O QUE MUDOU NESTE PASSO:
- * ✅ As funções de data foram REMOVIDAS daqui
- * ✅ Agora importamos essas funções de src/utils/date.js
- * ✅ As formatações de valor foram REMOVIDAS daqui
- * ✅ Agora importamos de src/utils/format.js
- * ✅ window.formatarDataParaBusca e window.formatarDataParaExibicao
- *    ainda existem como aliases para não quebrar o HTML existente
- *
- * O QUE NÃO MUDOU:
- * ❌ Todo o resto do app continua igual — sem risco de quebrar nada
- *
- * PRÓXIMO PASSO (Passo 2):
- * → Extrair calcularValorDia para src/business/financeiro.js
- */
+
 
 // =============================================================
 // IMPORTS — As funções que saíram deste arquivo
@@ -201,31 +185,7 @@ async function carregarDadosDoSupabase() {
         window.gerarRankingMensal();
         window.gerarPainelFeriados();
 
-        const loader = document.getElementById('loader');
-        if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
-        }
-    } catch (error) {
-        console.error('ERRO AO CARREGAR:', error);
-        alert('Erro ao carregar dados: ' + error.message);
-    }
-    // O CÉREBRO: CARREGA TUDO DO SUPABASE
-async function carregarDadosDoSupabase() {
-    try {
-        // ... (todo o carregamento de lançamentos, motoristas, visibilidade) ...
-
-        window.reconstruirListasMotoristas();
-        if (window.motoristaSelecionado) {
-            // ...
-        }
-        window.sincronizarMesFiltro();
-        window.atualizarResumosGlobais();
-        window.gerarRankingPeriodo();
-        window.gerarRankingMensal();
-        window.gerarPainelFeriados();
-
-        // ADICIONE A CHAMADA AQUI! ↓
+        // ✅ REGRAS DE PERMISSÃO APLICADAS AQUI
         window.aplicarRestricoesInterface(); 
 
         const loader = document.getElementById('loader');
@@ -237,7 +197,6 @@ async function carregarDadosDoSupabase() {
         console.error('ERRO AO CARREGAR:', error);
         alert('Erro ao carregar dados: ' + error.message);
     }
-}
 }
 
 window.carregarDadosDoSupabase = carregarDadosDoSupabase;
@@ -1845,36 +1804,28 @@ window.processarRestauracaoBackup = function(event) {
 };
 
 window.aplicarRestricoesInterface = function() {
+    // Se por acaso a variável não existir, assume 'operador' por segurança
     const funcao = window.usuarioAtualFuncao || 'operador';
 
     if (funcao === 'operador') {
-        // 1. Esconder o botão de Sistema / Backup (selecionando exatamente pela função onclick)
-        const btnSistema = document.querySelector('button[onclick="window.abrirModalSistema()"]');
-        if (btnSistema) btnSistema.style.display = 'none';
+        console.log('🔒 Modo Operador ativado. Ocultando abas sensíveis...');
 
-        // 2. Esconder a aba de Auditoria no menu lateral
+        // 1. ESCONDER A ABA "GESTÃO DA FROTA"
+        const abaFrota = document.getElementById('btnTabLancamentos');
+        if (abaFrota) abaFrota.style.display = 'none';
+
+        // 2. ESCONDER A ABA "AUDITORIA"
         const abaAuditoria = document.getElementById('btnTabAuditoria');
         if (abaAuditoria) abaAuditoria.style.display = 'none';
 
-        // 3. Esconder botões de Excluir mês do motorista e Excluir Definitivamente
-        const btnApagarMes = document.querySelector('button[onclick="window.apagarLancamentosMotorista()"]');
-        if (btnApagarMes) btnApagarMes.style.display = 'none';
-        
-        const btnExcluirMotoristaDef = document.querySelector('button[onclick="window.apagarMotoristaDefinitivo()"]');
-        if (btnExcluirMotoristaDef) btnExcluirMotoristaDef.style.display = 'none';
+        // 3. Esconder botão de Sistema / Backup
+        const btnSistema = document.querySelector('.btn-sistema[onclick="window.abrirModalSistema()"]');
+        if (btnSistema) btnSistema.style.display = 'none';
 
-        // 4. Esconder cadeados que travam os Dias Úteis e SLA
-        const botoesTrava = ['btnTravaLanc', 'btnTravaRank', 'btnTravaSla'];
-        botoesTrava.forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) btn.style.display = 'none';
-        });
-
-        // 5. Opcional: Impedir que editem a meta de Dias Úteis removendo o input
-        const inputsDiasUteis = ['inputDiasUteisLanc', 'inputDiasUteisRank', 'inputSlaMotorista'];
-        inputsDiasUteis.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) input.setAttribute('readonly', 'true');
-        });
+        // 4. COMO ESCONDEMOS A TELA PRINCIPAL, PRECISAMOS REDIRECIONAR O OPERADOR:
+        // Puxa o operador automaticamente para a tela de "Rota do Dia" (ou 'rankings', se preferir)
+        window.mudarAba('rotas'); 
+    } else {
+        console.log('🔓 Modo Admin ativado. Acesso total.');
     }
 };
