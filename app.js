@@ -210,7 +210,8 @@ async function carregarDadosDoSupabase() {
             loader.style.opacity = '0';
             setTimeout(() => { loader.style.display = 'none'; }, 500);
         }
-    } catch (error) {
+    } 
+    catch (error) {
         console.error('ERRO AO CARREGAR:', error);
         alert('Erro ao carregar dados: ' + error.message);
     }
