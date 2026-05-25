@@ -13,13 +13,11 @@
 </head>
 <body>
 
-    <!-- LOADER -->
     <div id="loader" class="loading-screen">
         <div class="spinner"></div>
         <p id="loader-text">Conectando ao banco de dados...</p>
     </div>
 
-    <!-- SIDEBAR -->
     <aside id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">
@@ -59,14 +57,12 @@
 
     <button id="btnTabRotas" onclick="window.mudarAba('rotas')" class="nav-tab">
         <i data-lucide="map" class="w-4 h-4 shrink-0"></i>
-        Rota do Dia (manutenção
+        Rota do Dia (Planilha)
     </button>
 </nav>
     </aside>
 
-    <!-- MAIN -->
     <main>
-        <!-- HEADER -->
         <header>
             <button onclick="window.toggleSidebar()" class="btn-icon">
                 <i data-lucide="menu"></i>
@@ -82,15 +78,10 @@
             </div>
         </header>
 
-        <!-- CONTENT -->
         <div class="content-area">
 
-            <!-- ═══════════════════════════════════════════
-                 VIEW: GESTÃO DA FROTA
-            ═══════════════════════════════════════════ -->
             <div id="viewLancamentos" style="display:block;">
 
-                <!-- Page header -->
                 <div class="page-header">
                     <div>
                         <h2>Gestão Diária da Frota</h2>
@@ -104,10 +95,8 @@
                     </div>
                 </div>
 
-                <!-- Top stat cards -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
 
-                    <!-- Dias úteis -->
                     <div class="stat-card stat-card-plain">
                         <div>
                             <div class="stat-label">Dias Úteis Globais (Mês)</div>
@@ -120,14 +109,12 @@
                         </button>
                     </div>
 
-                    <!-- Total dia -->
                     <div class="stat-card stat-card-emerald">
                         <div class="stat-label">Total Frota (Dia Selecionado)</div>
                         <div class="stat-value" id="totalDiaGlobal">R$ 0,00</div>
                         <div class="stat-sub" id="caixasDiaGlobal">0 cx</div>
                     </div>
 
-                    <!-- Total mês -->
                     <div class="stat-card stat-card-brand">
                         <div class="stat-label">Total Frota (Mês)</div>
                         <div class="stat-value" id="totalSemanaGlobal">R$ 0,00</div>
@@ -135,10 +122,8 @@
                     </div>
                 </div>
 
-                <!-- Two-column layout: driver list + content -->
                 <div class="flex gap-5" style="height: calc(100vh - 310px);">
 
-                    <!-- Driver List Panel -->
                     <div class="driver-panel" style="width:280px; flex-shrink:0;">
                         <div class="driver-panel-header">
                             <h3>Selecionar Motorista</h3>
@@ -164,10 +149,8 @@
                         </div>
                     </div>
 
-                    <!-- Content Panel -->
                     <div class="flex-1 bg-white rounded-[1.5rem] border relative overflow-hidden flex flex-col" style="border-color: var(--gray-150); min-width:0;">
 
-                        <!-- Empty state -->
                         <div id="estadoVazio" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 p-8 text-center rounded-[1.5rem]">
                             <div class="empty-icon-wrap">
                                 <i data-lucide="truck"></i>
@@ -178,10 +161,8 @@
                             <div class="empty-divider"></div>
                         </div>
 
-                        <!-- Motorista content -->
                         <div id="conteudoMotorista" style="display:none; overflow-y:auto; padding:var(--space-6); flex:1; flex-direction:column;" class="animate-fade-in">
 
-                            <!-- Motorista header -->
                             <div class="motorista-header">
                                 <h3 id="nomeMotoristaDisplay">Nome</h3>
                                 <div class="sla-chip">
@@ -195,7 +176,6 @@
                                 </div>
                             </div>
 
-                            <!-- Mini stats -->
                             <div class="motorista-stats">
                                 <div class="mstat">
                                     <span class="mstat-label">Dia Selecionado</span>
@@ -218,7 +198,6 @@
                                 </div>
                             </div>
 
-                            <!-- Form card -->
                             <div class="form-card">
                                 <div class="form-card-title">
                                     <i data-lucide="plus-circle"></i>
@@ -286,7 +265,6 @@
                                 </div>
                             </div>
 
-                            <!-- History table -->
                             <div class="flex-1" style="min-height:220px;">
                                 <div class="table-header-row">
                                     <span class="table-section-label">Histórico de Lançamentos</span>
@@ -318,9 +296,6 @@
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════
-                 VIEW: CENTRAL DE RANKINGS
-            ═══════════════════════════════════════════ -->
             <div id="viewRankings" style="display:none;">
                 <div class="page-header">
                     <div>
@@ -329,9 +304,7 @@
                     </div>
                 </div>
 
-                <!-- Meta cards grid -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-7">
-                    <!-- SLA Global -->
                     <div class="stat-card stat-card-plain" style="border-radius:var(--r-xl);">
                         <div>
                             <div class="stat-label">SLA Global (Mês)</div>
@@ -363,9 +336,7 @@
                     </div>
                 </div>
 
-                <!-- Leaderboard + Período -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Leaderboard Mensal -->
                     <div class="rank-card">
                         <div class="rank-card-header">
                             <h3>Leaderboard Mensal (Elo)</h3>
@@ -381,7 +352,6 @@
                         <div id="listaLeaderboard" class="space-y-2"></div>
                     </div>
 
-                    <!-- Ranking por Período -->
                     <div class="rank-card">
                         <div class="rank-card-header">
                             <h3>Ranking por Período</h3>
@@ -396,9 +366,6 @@
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════
-                 VIEW: DOMINGOS & FERIADOS
-            ═══════════════════════════════════════════ -->
             <div id="viewDomFeriados" style="display:none;">
                 <div class="flex justify-between items-center mb-7 pb-5" style="border-bottom: var(--border-subtle);">
                     <div>
@@ -412,7 +379,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Domingos -->
                     <div class="rank-card flex flex-col">
                         <div class="rank-card-header">
                             <h3>☀️ Domingos</h3>
@@ -429,7 +395,6 @@
                         </div>
                     </div>
 
-                    <!-- Feriados -->
                     <div class="rank-card flex flex-col">
                         <div class="rank-card-header">
                             <h3>🎉 Feriados</h3>
@@ -448,9 +413,6 @@
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════
-                 VIEW: PROJEÇÃO E BI
-            ═══════════════════════════════════════════ -->
             <div id="viewProjecao" style="display:none;">
                 <div class="proj-header">
                     <div>
@@ -484,7 +446,6 @@
                     </div>
                 </div>
 
-                <!-- Top 3 stats -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
                     <div class="stat-card">
                         <div class="stat-label">Produção (Período Atual)</div>
@@ -500,7 +461,6 @@
                     </div>
                 </div>
 
-                <!-- Bottom 4 stats -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-7">
                     <div class="stat-card">
                         <div class="stat-label">Consistência (Metas)</div>
@@ -524,7 +484,6 @@
                     </div>
                 </div>
 
-                <!-- Charts -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="chart-card">
                         <h3>Evolução Diária (Período Atual)</h3>
@@ -540,124 +499,78 @@
                     </div>
                 </div>
             </div>
+
             <div id="viewAuditoria" style="display:none;">
-    <div class="page-header">
-        <div>
-            <h2>Auditoria</h2>
-            <p>Veja quem criou, editou ou excluiu lançamentos.</p>
-        </div>
-        <button onclick="window.carregarAuditoriaLancamentos()" class="btn-sistema">
-            <i data-lucide="refresh-cw"></i>
-            Atualizar
-        </button>
-    </div>
+                <div class="page-header">
+                    <div>
+                        <h2>Auditoria</h2>
+                        <p>Veja quem criou, editou ou excluiu lançamentos.</p>
+                    </div>
+                    <button onclick="window.carregarAuditoriaLancamentos()" class="btn-sistema">
+                        <i data-lucide="refresh-cw"></i>
+                        Atualizar
+                    </button>
+                </div>
 
-    <div class="rank-card">
-        <div class="table-wrap">
-            <table id="tabelaAuditoria">
-                <thead>
-                    <tr>
-                        <th>Quando</th>
-                        <th>Ação</th>
-                        <th>Usuário</th>
-                        <th>Motorista</th>
-                        <th>Data Serviço</th>
-                        <th>Resumo</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="6" class="text-center text-slate-400 font-medium py-8">
-                            Clique em Atualizar para carregar a auditoria.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-        <div id="viewRotas" style="display:none;">
-    <div class="page-header">
-        <div>
-            <h2>Rota do Dia</h2>
-            <p>Organize os serviços por motorista.</p>
-        </div>
-        <div class="date-pill">
-            <i data-lucide="calendar"></i>
-            <span>Data:</span>
-            <input type="date" id="dataRotaDia" onchange="window.carregarRotasDia()">
-        </div>
-    </div>
-
-    <div class="form-card mb-5">
-        <div class="form-card-title">
-            <i data-lucide="plus-circle"></i>
-            Adicionar Serviço
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-            <div>
-                <label>Motorista</label>
-                <select id="rotaMotorista" class="input-base"></select>
+                <div class="rank-card">
+                    <div class="table-wrap">
+                        <table id="tabelaAuditoria">
+                            <thead>
+                                <tr>
+                                    <th>Quando</th>
+                                    <th>Ação</th>
+                                    <th>Usuário</th>
+                                    <th>Motorista</th>
+                                    <th>Data Serviço</th>
+                                    <th>Resumo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-slate-400 font-medium py-8">
+                                        Clique em Atualizar para carregar a auditoria.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            <div class="md:col-span-2">
-                <label>Serviço</label>
-                <input id="rotaDescricao" class="input-base" placeholder="Descrição/endereço...">
+            <div id="viewRotas" style="display:none; height: calc(100vh - 100px); flex-direction: column;">
+                <div class="page-header" style="flex-shrink: 0; margin-bottom: 10px;">
+                    <div>
+                        <h2>Rota do Dia (Modo Planilha)</h2>
+                        <p>Edição livre. Copie e cole direto do Excel/Sheets!</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="date-pill">
+                            <i data-lucide="calendar"></i>
+                            <input type="date" id="dataPlanilhaRota" onchange="window.carregarPlanilhaRota()">
+                        </div>
+                        <select id="turnoPlanilhaRota" class="input-base" style="width: auto;" onchange="window.carregarPlanilhaRota()">
+                            <option value="dia">Turno Dia</option>
+                            <option value="noite">Turno Noite</option>
+                            <option value="especial">Especial</option>
+                        </select>
+                        <button onclick="window.salvarPlanilhaRota()" class="btn-primary" id="btnSalvarPlanilha">
+                            <i data-lucide="save"></i> Salvar Planilha
+                        </button>
+                    </div>
+                </div>
+
+                <div class="planilha-container" style="flex: 1; overflow: auto; background: white; border: 1px solid var(--gray-200); border-radius: 8px;">
+                    <table class="tabela-planilha" id="tabelaPlanilhaRota">
+                        <thead id="planilhaHead">
+                            </thead>
+                        <tbody id="planilhaBody" contenteditable="true" spellcheck="false" oninput="window.marcarPlanilhaNaoSalva()">
+                            </tbody>
+                    </table>
+                </div>
             </div>
 
-            <div>
-                <label>Qtd</label>
-                <input id="rotaQuantidade" type="number" class="input-base" placeholder="0">
-            </div>
+        </div></main>
 
-            <div>
-                <label>Célula</label>
-                <select id="rotaStatus" class="input-base">
-                    <option value="realizado">Realizado</option>
-                    <option value="carro_quebrado">Carro quebrado</option>
-                    <option value="cancelado">Cancelado</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Texto</label>
-                <select id="rotaTipoTexto" class="input-base">
-                    <option value="troca">Troca</option>
-                    <option value="colocacao">Colocação</option>
-                    <option value="retirada">Retirada</option>
-                </select>
-            </div>
-
-            <div class="md:col-span-5">
-                <label>Observação</label>
-                <input id="rotaObservacao" class="input-base" placeholder="Opcional...">
-            </div>
-
-            <button onclick="window.salvarServicoRota()" class="btn-primary">
-                <i data-lucide="save"></i>
-                Salvar
-            </button>
-        </div>
-    </div>
-
-    <div class="rota-legenda">
-        <span class="rota-legenda-item verde">Realizado</span>
-        <span class="rota-legenda-item vermelho">Carro quebrado</span>
-        <span class="rota-legenda-item laranja">Cancelado</span>
-        <span class="rota-texto-preto">Troca</span>
-        <span class="rota-texto-vermelho">Colocação</span>
-        <span class="rota-texto-azul">Retirada</span>
-    </div>
-
-    <div id="rotaDiaBoard" class="rota-board"></div>
-</div>
-        </div><!-- /content-area -->
-    </main>
-
-    <!-- ═══════════════════════════════════════════════════
-         MODAL: GERENCIAR MOTORISTAS
-    ═══════════════════════════════════════════════════ -->
     <div id="modalGerenciar" class="modal-backdrop hidden" style="display:none;">
         <div class="modal-box" style="width:460px;">
             <div class="modal-header">
@@ -670,7 +583,6 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Adicionar novo -->
                 <div>
                     <div class="modal-section-label">Adicionar Novo Motorista</div>
                     <div class="modal-row">
@@ -718,9 +630,6 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════
-         MODAL: SISTEMA & BACKUP
-    ═══════════════════════════════════════════════════ -->
     <div id="modalSistema" class="modal-backdrop hidden" style="display:none;">
         <div class="modal-box" style="width:520px;">
             <div class="modal-header">
@@ -734,7 +643,6 @@
             </div>
             <div class="modal-body">
 
-                <!-- Backup download -->
                 <div class="action-card action-card-blue" onclick="window.gerarBackup()">
                     <div class="ac-icon">
                         <i data-lucide="download-cloud"></i>
@@ -745,7 +653,6 @@
                     </div>
                 </div>
 
-                <!-- Restore -->
                 <div class="action-card action-card-orange" onclick="document.getElementById('inputRestaurarBackup').click()">
                     <div class="ac-icon">
                         <i data-lucide="upload-cloud"></i>
@@ -757,7 +664,6 @@
                 </div>
                 <input type="file" id="inputRestaurarBackup" accept=".json" style="display:none;" onchange="window.processarRestauracaoBackup(event)">
 
-                <!-- IA Import -->
                 <div class="ia-card">
                     <div class="ia-card-header">
                         <div class="ia-card-icon">
@@ -781,7 +687,6 @@
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script>
         const SUPABASE_URL = "https://ldlqemidjjutrbkjiyir.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_dMnIUJ3FNWhFKm7PmEjxsQ_z5ZhexV9";
