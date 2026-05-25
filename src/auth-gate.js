@@ -6,6 +6,24 @@ function byId(id) {
     return document.getElementById(id);
 }
 
+// ==========================================
+// NOVA FUNÇÃO: Busca o perfil do usuário
+// ==========================================
+async function carregarPerfilUsuario(userId) {
+    const { data, error } = await supabaseClient
+        .from('perfis')
+        .select('funcao')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (error || !data) {
+        console.warn('Perfil não encontrado, assumindo padrão: operador');
+        window.usuarioAtualFuncao = 'operador';
+    } else {
+        window.usuarioAtualFuncao = data.funcao;
+    }
+}
+
 function injectAuthStyles() {
     if (byId('authGateStyles')) return;
 
@@ -240,6 +258,8 @@ async function requireLogin() {
 
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
+        // ATUALIZADO: Carrega a função caso o usuário dê refresh na página
+        await carregarPerfilUsuario(session.user.id);
         setAppVisible(true);
         ensureLogout(session);
         return;
@@ -281,6 +301,9 @@ async function requireLogin() {
                 return;
             }
 
+            // ATUALIZADO: Carrega a função logo após fazer o login com sucesso
+            await carregarPerfilUsuario(data.user.id);
+
             screen.remove();
             setAppVisible(true);
             ensureLogout(data.session);
@@ -312,6 +335,8 @@ async function requireLogin() {
             }
 
             if (data.session) {
+                // ATUALIZADO: Carrega a função no cadastro automático (geralmente será operador)
+                await carregarPerfilUsuario(data.user.id);
                 screen.remove();
                 setAppVisible(true);
                 ensureLogout(data.session);
