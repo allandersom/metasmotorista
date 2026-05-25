@@ -589,7 +589,64 @@
         </div>
     </div>
 
-    <div class="form-card mb-5">
+<div class="form-card mb-5">
+    <div class="form-card-title">
+        <i data-lucide="clipboard-list"></i>
+        Serviços da Rota
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+        <div>
+            <label>Motorista</label>
+            <select id="rotaMotorista" class="input-base"></select>
+        </div>
+
+        <div>
+            <label>Grupo</label>
+            <select id="rotaCategoria" class="input-base">
+                <option value="trocas">Trocas</option>
+                <option value="coleta_distante">Coleta Distante</option>
+                <option value="encher_na_hora">Encher na Hora</option>
+                <option value="colocacoes">Colocações</option>
+                <option value="retiradas">Retiradas</option>
+                <option value="compactadora">Compactadora</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Célula</label>
+            <select id="rotaStatus" class="input-base">
+                <option value="realizado">Realizado</option>
+                <option value="carro_quebrado">Carro quebrado</option>
+                <option value="cancelado">Cancelado</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Texto</label>
+            <select id="rotaTipoTexto" class="input-base">
+                <option value="troca">Troca</option>
+                <option value="colocacao">Colocação</option>
+                <option value="retirada">Retirada</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Qtd</label>
+            <input id="rotaQuantidade" type="number" class="input-base" placeholder="0">
+        </div>
+
+        <button onclick="window.salvarServicosColadosRota()" class="btn-primary">
+            <i data-lucide="save"></i>
+            Salvar
+        </button>
+
+        <div class="md:col-span-6">
+            <label>Copiar e colar serviços</label>
+            <textarea id="rotaServicosColados" rows="5" class="input-base" placeholder="Cole um serviço por linha..."></textarea>
+        </div>
+    </div>
+</div>
         <div class="form-card-title">
             <i data-lucide="plus-circle"></i>
             Adicionar Serviço
