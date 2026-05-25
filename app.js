@@ -95,6 +95,7 @@ if (document.getElementById('dataFerInicio'))     document.getElementById('dataF
 if (document.getElementById('dataFerFim'))        document.getElementById('dataFerFim').value = hojeStr;
 if (document.getElementById('dataProjInicio'))    document.getElementById('dataProjInicio').value = startStr;
 if (document.getElementById('dataProjFim'))       document.getElementById('dataProjFim').value = hojeStr;
+if (document.getElementById('dataRotaDia'))       document.getElementById('dataRotaDia').value = hojeStr;
 
 // =============================================================
 // LÓGICA DE NEGÓCIO — PONTOS
@@ -737,8 +738,7 @@ window.toggleSidebar = function() {
 window.mudarAba = function(aba) {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
 
-    ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria'].forEach(id => {
-        const el = document.getElementById(id);
+['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas'].forEach(id => {        const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
 
@@ -758,11 +758,15 @@ window.mudarAba = function(aba) {
         document.getElementById('btnTabProjecao')?.classList.add('active');
         document.getElementById('viewProjecao') && (document.getElementById('viewProjecao').style.display = 'block');
         window.atualizarGraficosProjecao();
-    } else if (aba === 'auditoria') {
-        document.getElementById('btnTabAuditoria')?.classList.add('active');
-        document.getElementById('viewAuditoria') && (document.getElementById('viewAuditoria').style.display = 'block');
-        window.carregarAuditoriaLancamentos();
-    }
+        } else if (aba === 'auditoria') {
+    document.getElementById('btnTabAuditoria')?.classList.add('active');
+    document.getElementById('viewAuditoria') && (document.getElementById('viewAuditoria').style.display = 'block');
+    window.carregarAuditoriaLancamentos();
+    } else if (aba === 'rotas') {
+    document.getElementById('btnTabRotas')?.classList.add('active');
+    document.getElementById('viewRotas') && (document.getElementById('viewRotas').style.display = 'block');
+    window.carregarRotasDia();
+}
 };
 
 window.mudarAba('lancamentos');
@@ -1536,7 +1540,177 @@ window.atualizarGraficosProjecao = function() {
         });
     }
 };
+// =============================================================
+// ROTA DO DIA
+// =============================================================
+window.carregarRotasDia = async function() {
+    const dataRota = document.getElementById('dataRotaDia')?.value || getHojeStr();
+    const board = document.getElementById('rotaDiaBoard');
+    const selectMotorista = document.getElementById('rotaMotorista');
 
+    if (!board) return;
+
+    if (selectMotorista) {
+        const selecionado = selectMotorista.value;
+        selectMotorista.innerHTML = '<option value="">Selecione...</option>';
+
+        window.motoristas.forEach(nome => {
+            selectMotorista.innerHTML += `<option value="${nome}">${nome}</option>`;
+        });
+
+        if (window.motoristas.includes(selecionado)) {
+            selectMotorista.value = selecionado;
+        }
+    }
+
+    board.innerHTML = '<div class="text-slate-400 font-bold p-4">Carregando rota...</div>';
+
+    const { data, error } = await supabase
+        .from('rotas_dia')
+        .select('*')
+        .eq('data', dataRota)
+        .order('ordem', { ascending: true })
+        .order('criado_em', { ascending: true });
+
+    if (error) {
+        board.innerHTML = `<div class="text-red-500 font-bold p-4">Erro ao carregar rota: ${error.message}</div>`;
+        return;
+    }
+
+    window.renderizarRotasDia(data || []);
+};
+
+window.renderizarRotasDia = function(rotas) {
+    const board = document.getElementById('rotaDiaBoard');
+    if (!board) return;
+
+    const porMotorista = {};
+
+    window.motoristas.forEach(nome => {
+        porMotorista[nome] = [];
+    });
+
+    rotas.forEach(rota => {
+        if (!porMotorista[rota.motorista_nome]) {
+            porMotorista[rota.motorista_nome] = [];
+        }
+
+        porMotorista[rota.motorista_nome].push(rota);
+    });
+
+    board.innerHTML = '';
+
+    Object.entries(porMotorista).forEach(([motorista, lista]) => {
+        const coluna = document.createElement('div');
+        coluna.className = 'rota-coluna';
+
+        const servicosHtml = lista.length
+            ? lista.map(rota => window.htmlCardRota(rota)).join('')
+            : '<div class="rota-vazio">Sem serviços</div>';
+
+        coluna.innerHTML = `
+            <div class="rota-coluna-header">
+                <strong>${motorista}</strong>
+                <span>${lista.length} serviço(s)</span>
+            </div>
+            <div class="rota-coluna-body">
+                ${servicosHtml}
+            </div>
+        `;
+
+        board.appendChild(coluna);
+    });
+
+    lucide.createIcons();
+};
+
+window.htmlCardRota = function(rota) {
+    const classeStatus = {
+        realizado: 'rota-card-verde',
+        carro_quebrado: 'rota-card-vermelho',
+        cancelado: 'rota-card-laranja',
+    }[rota.status_celula] || 'rota-card-verde';
+
+    const classeTexto = {
+        troca: 'rota-fonte-preta',
+        colocacao: 'rota-fonte-vermelha',
+        retirada: 'rota-fonte-azul',
+    }[rota.tipo_texto] || 'rota-fonte-preta';
+
+    const qtd = rota.quantidade ? `<div class="rota-qtd">${rota.quantidade}</div>` : '';
+    const obs = rota.observacao ? `<div class="rota-obs">${rota.observacao}</div>` : '';
+
+    return `
+        <div class="rota-card ${classeStatus}">
+            <button class="rota-card-delete" onclick="window.excluirServicoRota('${rota.id}')" title="Excluir">
+                <i data-lucide="x"></i>
+            </button>
+            <div class="${classeTexto} rota-descricao">${rota.descricao}</div>
+            ${qtd}
+            ${obs}
+        </div>
+    `;
+};
+
+window.salvarServicoRota = async function() {
+    const dataRota = document.getElementById('dataRotaDia')?.value || getHojeStr();
+    const motorista = document.getElementById('rotaMotorista')?.value;
+    const descricao = document.getElementById('rotaDescricao')?.value.trim();
+    const quantidade = parseFloat(document.getElementById('rotaQuantidade')?.value || '0') || null;
+    const statusCelula = document.getElementById('rotaStatus')?.value || 'realizado';
+    const tipoTexto = document.getElementById('rotaTipoTexto')?.value || 'troca';
+    const observacao = document.getElementById('rotaObservacao')?.value.trim() || null;
+
+    if (!motorista) {
+        alert('Selecione um motorista.');
+        return;
+    }
+
+    if (!descricao) {
+        alert('Informe o serviço.');
+        return;
+    }
+
+    const { error } = await supabase
+        .from('rotas_dia')
+        .insert({
+            data: dataRota,
+            motorista_nome: motorista,
+            descricao,
+            quantidade,
+            status_celula: statusCelula,
+            tipo_texto: tipoTexto,
+            observacao,
+            ordem: Date.now(),
+        });
+
+    if (error) {
+        alert('Erro ao salvar serviço: ' + error.message);
+        return;
+    }
+
+    document.getElementById('rotaDescricao').value = '';
+    document.getElementById('rotaQuantidade').value = '';
+    document.getElementById('rotaObservacao').value = '';
+
+    await window.carregarRotasDia();
+};
+
+window.excluirServicoRota = async function(id) {
+    if (!confirm('Excluir este serviço da rota?')) return;
+
+    const { error } = await supabase
+        .from('rotas_dia')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        alert('Erro ao excluir serviço: ' + error.message);
+        return;
+    }
+
+    await window.carregarRotasDia();
+};
 // =============================================================
 // AUDITORIA
 // =============================================================

@@ -49,6 +49,10 @@
                 Projeção e BI
             </button>
             <button id="btnTabAuditoria" onclick="window.mudarAba('auditoria')" class="nav-tab">
+            <button id="btnTabRotas" onclick="window.mudarAba('rotas')" class="nav-tab">
+             <i data-lucide="map" class="w-4 h-4 shrink-0"></i>
+             Rota do Dia
+</button>            
     <i data-lucide="history" class="w-4 h-4 shrink-0"></i>
     Auditoria
 </button>
@@ -566,6 +570,82 @@
             </table>
         </div>
     </div>
+</div>
+        <div id="viewRotas" style="display:none;">
+    <div class="page-header">
+        <div>
+            <h2>Rota do Dia</h2>
+            <p>Organize os serviços por motorista.</p>
+        </div>
+        <div class="date-pill">
+            <i data-lucide="calendar"></i>
+            <span>Data:</span>
+            <input type="date" id="dataRotaDia" onchange="window.carregarRotasDia()">
+        </div>
+    </div>
+
+    <div class="form-card mb-5">
+        <div class="form-card-title">
+            <i data-lucide="plus-circle"></i>
+            Adicionar Serviço
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+            <div>
+                <label>Motorista</label>
+                <select id="rotaMotorista" class="input-base"></select>
+            </div>
+
+            <div class="md:col-span-2">
+                <label>Serviço</label>
+                <input id="rotaDescricao" class="input-base" placeholder="Descrição/endereço...">
+            </div>
+
+            <div>
+                <label>Qtd</label>
+                <input id="rotaQuantidade" type="number" class="input-base" placeholder="0">
+            </div>
+
+            <div>
+                <label>Célula</label>
+                <select id="rotaStatus" class="input-base">
+                    <option value="realizado">Realizado</option>
+                    <option value="carro_quebrado">Carro quebrado</option>
+                    <option value="cancelado">Cancelado</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Texto</label>
+                <select id="rotaTipoTexto" class="input-base">
+                    <option value="troca">Troca</option>
+                    <option value="colocacao">Colocação</option>
+                    <option value="retirada">Retirada</option>
+                </select>
+            </div>
+
+            <div class="md:col-span-5">
+                <label>Observação</label>
+                <input id="rotaObservacao" class="input-base" placeholder="Opcional...">
+            </div>
+
+            <button onclick="window.salvarServicoRota()" class="btn-primary">
+                <i data-lucide="save"></i>
+                Salvar
+            </button>
+        </div>
+    </div>
+
+    <div class="rota-legenda">
+        <span class="rota-legenda-item verde">Realizado</span>
+        <span class="rota-legenda-item vermelho">Carro quebrado</span>
+        <span class="rota-legenda-item laranja">Cancelado</span>
+        <span class="rota-texto-preto">Troca</span>
+        <span class="rota-texto-vermelho">Colocação</span>
+        <span class="rota-texto-azul">Retirada</span>
+    </div>
+
+    <div id="rotaDiaBoard" class="rota-board"></div>
 </div>
         </div><!-- /content-area -->
     </main>
