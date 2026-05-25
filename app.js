@@ -186,10 +186,10 @@ async function carregarDadosDoSupabase() {
         window.gerarRankingMensal();
         window.gerarPainelFeriados();
 
-        // SUBSTITUA A CHAMADA DA RESTRIÇÃO POR ISSO AQUI:
+        // ✅ REGRAS DE PERMISSÃO APLICADAS AQUI
         setTimeout(() => {
-            window.aplicarRestricoesInterface(); 
-        }, 500); // 500 milissegundos de espera para garantir que o AuthGate terminou
+            window.aplicarRestricoesInterface();
+        }, 500);
 
         const loader = document.getElementById('loader');
         if (loader) {
