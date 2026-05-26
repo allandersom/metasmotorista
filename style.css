@@ -1473,3 +1473,63 @@ input[type="month"] {
 .tabela-moderna td * {
     max-width: 100%;
 }
+
+/* ========================================
+   CADASTRO MOTORISTAS PREMIUM
+======================================== */
+
+.cadastro-layout{
+    display:grid;
+    grid-template-columns:380px 1fr;
+    gap:28px;
+    align-items:start;
+}
+
+.driver-form-card,
+.driver-table-card{
+    position:relative;
+    overflow:hidden;
+
+    background:rgba(255,255,255,.88);
+    backdrop-filter:blur(18px);
+
+    border:1px solid rgba(255,255,255,.7);
+
+    border-radius:28px;
+    padding:28px;
+
+    box-shadow:
+        0 2px 6px rgba(15,23,42,.03),
+        0 14px 40px rgba(15,23,42,.05);
+}
+
+.driver-form-card::before,
+.driver-table-card::before{
+    content:'';
+    position:absolute;
+    inset:0;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(99,102,241,.05),
+            transparent 35%
+        );
+
+    pointer-events:none;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    margin-bottom:18px;
+}
+
+.form-label{
+    font-size:11px;
+    font-weight:700;
+    color:#94a3b8;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+}

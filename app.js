@@ -2052,16 +2052,36 @@ window.carregarMotoristas = async function() {
   }
 };
 
-// Renderizar tabela
 window.renderizarTabelaMotoristasModal = function(motoristas = []) {
-  const tbody = document.getElementById('tabelaCadastroMotoristas');
+  const container = document.getElementById('tabelaCadastroMotoristas');
   
   if (!motoristas || motoristas.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:32px; color:#999;">Nenhum motorista cadastrado</td></tr>';
+    container.innerHTML = '<div style="text-align:center; padding:32px; color:#999;">Nenhum motorista cadastrado</div>';
     return;
   }
 
-  tbody.innerHTML = motoristas.map(m => {
+  container.innerHTML = motoristas.map(m => {
+    const isDemitido = !!m.data_demissao;
+    const nomeVisual = isDemitido 
+        ? `<span style="text-decoration: line-through; color: #ef4444;">${m.nome}</span> <span style="font-size:10px; background:#fee2e2; color:#b91c1c; padding:2px 4px; border-radius:4px;">(Inativo)</span>` 
+        : m.nome;
+    
+    return `
+    <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:12px; display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.1); opacity:${isDemitido ? '0.6' : '1'};">
+      <div>
+        <div style="font-weight:700; font-size:15px; color:#1f2937;">${nomeVisual}</div>
+        <div style="display:grid; grid-template-columns:auto auto auto; gap:12px; margin-top:8px; font-size:12px; color:#6b7280;">
+          <span>📅 ${m.data_admissao ? new Date(m.data_admissao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>
+          <span>🚗 ${m.turno === 'dia' ? '☀️ Dia' : m.turno === 'noite' ? '🌙 Noite' : '🚛 Especial'}</span>
+          <span>🆔 ${m.cnh || '—'}</span>
+        </div>
+      </div>
+      <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:#0ea5e9; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600; white-space:nowrap;">✏️ Editar</button>
+    </div>`;
+  }).join('');
+  
+  document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s) (${motoristas.filter(m => !m.data_demissao).length} ativos)`;
+};
     const isDemitido = !!m.data_demissao;
     const nomeVisual = isDemitido 
         ? `<span style="text-decoration: line-through; color: #ef4444;">${m.nome}</span> <span style="font-size:10px; background:#fee2e2; color:#b91c1c; padding:2px 4px; border-radius:4px; margin-left:4px;">INATIVO</span>` 
