@@ -7,9 +7,9 @@ function sleep(ms) {
 async function waitForAppFunctions() {
     while (true) {
         if (typeof window.syncToSupabase === 'function'
-            && typeof window.deletarLancamentoEspecifico === 'function'
-            return true;
-        }
+    && typeof window.deletarLancamentoEspecifico === 'function') {
+    return true;
+}
 
         await sleep(300);
     }
