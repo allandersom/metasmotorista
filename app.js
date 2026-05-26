@@ -2084,6 +2084,11 @@ window.salvarCadastroMotorista = async function() {
   const cnh = document.getElementById('cadCnh').value;
   const cnh_venc = document.getElementById('cadCnhVenc').value;
   const obs = document.getElementById('cadObs').value;
+  const epi = [
+    document.getElementById('cadEpiCamisa').value,
+    document.getElementById('cadEpiBota').value,
+    document.getElementById('cadEpiCalca').value
+].filter(Boolean).join(' | ');
 
   if (!nome || !turno) {
     alert('❌ Nome e Turno são obrigatórios!');
