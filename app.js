@@ -2100,6 +2100,7 @@ window.salvarCadastroMotorista = async function() {
         telefone,
         cnh,
         cnh_venc,
+        epi
         observacao: obs,
         status: 'ativo'
       }]);
@@ -2116,6 +2117,9 @@ window.salvarCadastroMotorista = async function() {
     document.getElementById('cadCnh').value = '';
     document.getElementById('cadCnhVenc').value = '';
     document.getElementById('cadObs').value = '';
+    document.getElementById('cadEpiCamisa').value = '';
+document.getElementById('cadEpiBota').value = '';
+document.getElementById('cadEpiCalca').value = '';
 
     // Recarregar a lista na tela
     window.carregarMotoristas();
@@ -2143,7 +2147,10 @@ window.abrirModalEditarMotorista = async function(nome) {
   document.getElementById('editNascimento').value = motorista.nascimento || '';
   document.getElementById('editAdmissao').value = motorista.admissao || '';
   document.getElementById('editDemissao').value = motorista.demissao || '';
-  document.getElementById('editEpi').value = motorista.epi || '';
+ const epiParts = (motorista.epi || '').split(' | ');
+document.getElementById('editEpiCamisa').value = epiParts[0] || '';
+document.getElementById('editEpiBota').value = epiParts[1] || '';
+document.getElementById('editEpiCalca').value = epiParts[2] || '';
   document.getElementById('editObs').value = motorista.observacao || '';
 
   document.getElementById('modalEditarMotorista').classList.remove('hidden');
@@ -2165,7 +2172,11 @@ const cnh_venc = document.getElementById('editCnhVenc').value || null;
 const nascimento = document.getElementById('editNascimento').value || null;
 const admissao = document.getElementById('editAdmissao').value || null;
 const demissao = document.getElementById('editDemissao').value || null;
-  const epi = document.getElementById('editEpi').value;
+  const epi = [
+    document.getElementById('editEpiCamisa').value,
+    document.getElementById('editEpiBota').value,
+    document.getElementById('editEpiCalca').value
+].filter(Boolean).join(' | ');
   const obs = document.getElementById('editObs').value;
 
   try {

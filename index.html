@@ -695,7 +695,20 @@
 
                         <div>
                             <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Tamanhos de EPIs (Camisa, Bota, etc)</label>
-                            <input id="cadEpi" type="text" placeholder="Ex: Bota 42, Camisa G, Calça 40" class="input-base" style="width:100%;">
+                            <div style="display:flex;gap:8px;width:100%;">
+    <select id="cadEpiCamisa" class="input-base" style="flex:1;">
+        <option value="">Camisa</option>
+        <option>P</option><option>M</option><option>G</option><option>GG</option><option>XGG</option>
+    </select>
+    <select id="cadEpiBota" class="input-base" style="flex:1;">
+        <option value="">Bota</option>
+        <option>38</option><option>39</option><option>40</option><option>41</option><option>42</option><option>43</option><option>44</option><option>45</option><option>46</option>
+    </select>
+    <select id="cadEpiCalca" class="input-base" style="flex:1;">
+        <option value="">Calça</option>
+        <option>36</option><option>38</option><option>40</option><option>42</option><option>44</option><option>46</option><option>48</option>
+    </select>
+</div>
                         </div>
 
                         <div>
@@ -947,7 +960,20 @@
 
                 <div class="form-group">
                     <label class="form-label">Tamanho EPI</label>
-                    <input id="editEpi" type="text" class="input-base" placeholder="Ex: Bota 42, G">
+                    <div style="display:flex;gap:8px;">
+    <select id="editEpiCamisa" class="input-base" style="flex:1;">
+        <option value="">Camisa</option>
+        <option>P</option><option>M</option><option>G</option><option>GG</option><option>XGG</option>
+    </select>
+    <select id="editEpiBota" class="input-base" style="flex:1;">
+        <option value="">Bota</option>
+        <option>38</option><option>39</option><option>40</option><option>41</option><option>42</option><option>43</option><option>44</option><option>45</option><option>46</option>
+    </select>
+    <select id="editEpiCalca" class="input-base" style="flex:1;">
+        <option value="">Calça</option>
+        <option>36</option><option>38</option><option>40</option><option>42</option><option>44</option><option>46</option><option>48</option>
+    </select>
+</div>
                 </div>
 
                 <!-- Observação (full-width) -->
