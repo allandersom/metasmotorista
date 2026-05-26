@@ -596,7 +596,6 @@
                 </div>
             </div>
 
-        <!-- ===================== ABA CADASTRO DE MOTORISTAS ===================== -->
         <div id="viewCadastro" style="display:none;">
 
             <div class="page-header" style="margin-bottom: 24px;">
@@ -606,77 +605,112 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
-
-                <!-- FORMULÁRIO DE CADASTRO -->
-                <div class="rank-card" style="padding: 24px;">
-                    <h3 style="font-size:15px; font-weight:700; color:var(--gray-100); margin-bottom:20px; display:flex; align-items:center; gap:8px;">
-                        <i data-lucide="user-plus" style="width:16px;height:16px;color:var(--brand-400);"></i>
-                        Novo Motorista
-                    </h3>
-
-                    <!-- Nome -->
-                    <div style="margin-bottom:14px;">
-                        <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Nome Completo *</label>
-                        <input id="cadNome" type="text" placeholder="Ex: JOÃO DA SILVA"
-                            style="width:100%; text-transform:uppercase;"
-                            class="input-base" oninput="this.value=this.value.toUpperCase()">
-                    </div>
-
-                    <!-- Turno -->
-                    <div style="margin-bottom:14px;">
-                        <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Turno *</label>
-                        <select id="cadTurno" class="input-base" style="width:100%;">
-                            <option value="dia">☀️ Dia (Rayanna)</option>
-                            <option value="noite">🌙 Noite (Júlia)</option>
-                            <option value="especial">🚛 Especial (Caçamba)</option>
-                        </select>
-                    </div>
-
-                    <!-- CPF -->
-                    <div style="margin-bottom:14px;">
-                        <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">CPF</label>
-                        <input id="cadCpf" type="text" placeholder="000.000.000-00" class="input-base" style="width:100%;" maxlength="14" oninput="window.formatarCpf(this)">
-                    </div>
-
-                    <!-- Telefone -->
-                    <div style="margin-bottom:14px;">
-                        <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Telefone / WhatsApp</label>
-                        <input id="cadTelefone" type="text" placeholder="(00) 00000-0000" class="input-base" style="width:100%;" maxlength="15" oninput="window.formatarTelefone(this)">
-                    </div>
-
-                    <!-- CNH -->
-                    <div style="margin-bottom:14px;">
-                        <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Categoria CNH</label>
-                        <select id="cadCnh" class="input-base" style="width:100%;">
-                            <option value="">Não informado</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                            <option value="E">E</option>
-                        </select>
-                    </div>
-
-                    <!-- Vencimento CNH -->
-                    <div style="margin-bottom:14px;">
-                        <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Vencimento CNH</label>
-                        <input id="cadCnhVenc" type="date" class="input-base" style="width:100%;">
-                    </div>
-
-                    <!-- Observação -->
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Observação</label>
-                        <textarea id="cadObs" rows="3" placeholder="Informações adicionais..."
-                            class="input-base" style="width:100%; resize:vertical; font-family:inherit;"></textarea>
-                    </div>
-
-                    <button onclick="window.salvarCadastroMotorista()" class="btn-add-plus" style="width:100%; height:42px; font-size:14px; border-radius:8px;">
-                        <i data-lucide="plus" style="width:16px;height:16px;display:inline;margin-right:6px;"></i>
-                        Cadastrar Motorista
-                    </button>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+                <div class="stat-card stat-card-brand">
+                    <div class="stat-label">Total Motoristas</div>
+                    <div class="stat-value" id="totalMotoristas">0</div>
+                    <div class="stat-sub" id="motoristasMes">0 este mês</div>
                 </div>
 
-                <!-- LISTA DE MOTORISTAS -->
+                <div class="stat-card stat-card-emerald">
+                    <div class="stat-label">Motoristas Ativos</div>
+                    <div class="stat-value" id="motoristasAtivos">0</div>
+                    <div class="stat-sub" id="percentualAtivos">0%</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Inativos / Demitidos</div>
+                    <div class="stat-value" id="motoristasInativos">0</div>
+                    <div class="stat-sub" id="percentualInativos">0%</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
+
+                <div class="driver-panel" style="width: 100%;">
+                    <div class="driver-panel-header">
+                        <h3 style="display:flex; align-items:center; gap:8px; margin:0;">
+                            <i data-lucide="user-plus" style="width:16px;height:16px;color:var(--brand-400);"></i>
+                            Novo Motorista
+                        </h3>
+                    </div>
+                    <div style="padding: var(--space-6); display:flex; flex-direction:column; gap:var(--space-4);">
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Nome Completo *</label>
+                            <input id="cadNome" type="text" placeholder="Ex: JOÃO DA SILVA"
+                                style="width:100%; text-transform:uppercase;"
+                                class="input-base" oninput="this.value=this.value.toUpperCase()">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Turno *</label>
+                            <select id="cadTurno" class="input-base" style="width:100%;">
+                                <option value="dia">☀️ Dia (Rayanna)</option>
+                                <option value="noite">🌙 Noite (Júlia)</option>
+                                <option value="especial">🚛 Especial (Caçamba)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">CPF</label>
+                            <input id="cadCpf" type="text" placeholder="000.000.000-00" class="input-base" style="width:100%;" maxlength="14" oninput="window.formatarCpf(this)">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Telefone / WhatsApp</label>
+                            <input id="cadTelefone" type="text" placeholder="(00) 00000-0000" class="input-base" style="width:100%;" maxlength="15" oninput="window.formatarTelefone(this)">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Categoria CNH</label>
+                            <select id="cadCnh" class="input-base" style="width:100%;">
+                                <option value="">Não informado</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="E">E</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Vencimento CNH</label>
+                            <input id="cadCnhVenc" type="date" class="input-base" style="width:100%;">
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
+                            <div style="flex:1;">
+                                <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Nascimento</label>
+                                <input id="cadNascimento" type="date" class="input-base" style="width:100%;">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Admissão</label>
+                                <input id="cadAdmissao" type="date" class="input-base" style="width:100%;">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Data de Demissão </label>
+                            <input id="cadDemissao" type="date" class="input-base" style="width:100%;">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Tamanhos de EPIs (Camisa, Bota, etc)</label>
+                            <input id="cadEpi" type="text" placeholder="Ex: Bota 42, Camisa G, Calça 40" class="input-base" style="width:100%;">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Observação</label>
+                            <textarea id="cadObs" rows="3" placeholder="Informações adicionais..."
+                                class="input-base" style="width:100%; resize:vertical; font-family:inherit;"></textarea>
+                        </div>
+
+                        <button onclick="window.salvarCadastroMotorista()" style="height:42px; font-size:14px;" class="btn-add-plus">
+                            <i data-lucide="plus" style="width:16px;height:16px;display:inline;margin-right:6px;"></i>
+                            Cadastrar Motorista
+                        </button>
+                    </div>
+                </div>
+
                 <div class="rank-card" style="padding: 24px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                         <h3 style="font-size:15px; font-weight:700; color:var(--gray-100); display:flex; align-items:center; gap:8px;">
@@ -701,7 +735,7 @@
                                     <th style="text-align:left; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Nome</th>
                                     <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Turno</th>
                                     <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">CNH</th>
-                                    <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Venc. CNH</th>
+                                    <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Datas / RH</th>
                                     <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Telefone</th>
                                     <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Ações</th>
                                 </tr>
@@ -715,8 +749,6 @@
                 </div>
             </div>
         </div>
-        <!-- ================================================================= -->
-
         </div></main>
 
     <div id="modalGerenciar" class="modal-backdrop hidden" style="display:none;">
@@ -835,7 +867,6 @@
         </div>
     </div>
 
-    <!-- 🎯 Modal de Edição de Motorista -->
     <div id="modalEditarMotorista" class="modal hidden">
         <div class="modal-backdrop" onclick="window.fecharModalEditar()"></div>
         <div class="modal-container" style="width:90%; max-width:480px;">
@@ -879,6 +910,26 @@
                 <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Vencimento CNH</label>
                 <input id="editCnhVenc" type="date" class="input-base" style="width:100%;">
             </div>
+
+            <div style="display:flex; gap:10px; margin-bottom:14px;">
+                <div style="flex:1;">
+                    <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Nascimento</label>
+                    <input id="editNascimento" type="date" class="input-base" style="width:100%;">
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Admissão</label>
+                    <input id="editAdmissao" type="date" class="input-base" style="width:100%;">
+                </div>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-size:11px; font-weight:600; color:#ef4444; text-transform:uppercase; margin-bottom:6px;">Demissão (Desliga o motorista)</label>
+                <input id="editDemissao" type="date" class="input-base" style="width:100%; border-color:#fca5a5;">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Tamanhos de EPIs</label>
+                <input id="editEpi" type="text" class="input-base" style="width:100%;" placeholder="Ex: Bota 42, Camisa G">
+            </div>
+
             <div style="margin-bottom:20px;">
                 <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Observação</label>
                 <textarea id="editObs" rows="3" class="input-base" style="width:100%; resize:vertical; font-family:inherit;"></textarea>
@@ -891,12 +942,10 @@
         </div>
     </div>
 
-    <!-- 🎯 NOVO: Modal de Ativação de Motoristas -->
     <div id="modalAtivacaoMotorista" class="modal hidden">
         <div class="modal-backdrop" onclick="window.fecharModalAtivacao()"></div>
         <div class="modal-container" style="width: 90%; max-width: 700px;">
             
-            <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
                 <div>
                     <h3 style="font-size: 20px; font-weight: bold; margin: 0; color: #1f2937;">
@@ -911,22 +960,18 @@
                 </button>
             </div>
 
-            <!-- Info Box -->
             <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 12px; margin: 15px 0; border-radius: 4px; font-size: 13px; color: #0369a1;">
                 <strong>ℹ️ Info:</strong> Motoristas inativos aparecem em <span style="color: #dc2626; font-weight: bold;">VERMELHO</span> na lista, 
                 mas seus dados continuam contando para as metas da frota.
             </div>
 
-            <!-- Tabela de Motoristas -->
             <div style="max-height: 400px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <tbody id="tabelaMotoristasAtivacao">
-                        <!-- Preenchido dinamicamente por JavaScript -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
 
-            <!-- Footer -->
             <div style="padding-top: 15px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
                 <button onclick="window.fecharModalAtivacao()" 
                     style="padding: 10px 20px; background: #f3f4f6; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background 0.2s;">
