@@ -712,26 +712,6 @@ window.calcularPrevisao = function (totalSoma, anoMesStr, diasUteisAlvo) {
 };
 
 
-window._syncSelectToInput = function() {
-    const mes = document.getElementById('selectMesGlobal').value;
-    const ano = document.getElementById('selectAnoGlobal').value;
-    const input = document.getElementById('dataGlobal');
-    input.value = ano + '-' + mes;
-    input.dispatchEvent(new Event('change'));
-};
-
-// Inicializa os selects com o mês atual
-(function() {
-    const hoje = new Date();
-    const m = String(hoje.getMonth() + 1).padStart(2, '0');
-    const a = String(hoje.getFullYear());
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('selectMesGlobal').value = m;
-        document.getElementById('selectAnoGlobal').value = a;
-        window._syncSelectToInput();
-    });
-})();
-
 
 window.toggleSidebar = function () {
     const sidebar = document.getElementById('sidebar');

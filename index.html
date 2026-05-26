@@ -98,21 +98,11 @@
                         <p>Acompanhe e gerencie os turnos da operação.</p>
                     </div>
                     <div class="date-pill">
-    <i data-lucide="calendar"></i>
-    <select id="selectMesGlobal" onchange="window._syncSelectToInput()" style="border:none;outline:none;background:transparent;font-size:13px;font-weight:700;color:var(--gray-800);font-family:var(--font-ui);cursor:pointer;">
-        <option value="01">Janeiro</option><option value="02">Fevereiro</option>
-        <option value="03">Março</option><option value="04">Abril</option>
-        <option value="05">Maio</option><option value="06">Junho</option>
-        <option value="07">Julho</option><option value="08">Agosto</option>
-        <option value="09">Setembro</option><option value="10">Outubro</option>
-        <option value="11">Novembro</option><option value="12">Dezembro</option>
-    </select>
-    <select id="selectAnoGlobal" onchange="window._syncSelectToInput()" style="border:none;outline:none;background:transparent;font-size:13px;font-weight:700;color:var(--gray-800);font-family:var(--font-ui);cursor:pointer;">
-        <option>2024</option><option>2025</option><option>2026</option><option>2027</option>
-    </select>
-    <input type="month" id="dataGlobal" style="display:none;"
-        onchange="window.motoristasAtivosMes.limparCache(); window.sincronizarMesData(); window.atualizarResumosGlobais(); window.carregarHistoricoMotorista(); window.atualizarResumosDoMotorista(); window.renderizarSidebar();">
-</div>
+                        <i data-lucide="calendar"></i>
+                        <span>Mês de referência:</span>
+                        <input type="month" id="dataGlobal"
+                            onchange="window.motoristasAtivosMes.limparCache(); window.sincronizarMesData(); window.atualizarResumosGlobais(); window.carregarHistoricoMotorista(); window.atualizarResumosDoMotorista(); window.renderizarSidebar();">
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
