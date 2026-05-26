@@ -2160,11 +2160,10 @@ window.salvarEdicaoMotorista = async function() {
   const turno = document.getElementById('editTurno').value;
   const cpf = document.getElementById('editCpf').value;
   const telefone = document.getElementById('editTelefone').value;
-  const cnh = document.getElementById('editCnh').value;
-  const cnh_venc = document.getElementById('editCnhVenc').value;
-  const nascimento = document.getElementById('editNascimento').value;
-  const admissao = document.getElementById('editAdmissao').value;
-  const demissao = document.getElementById('editDemissao').value;
+  const cnh_venc = document.getElementById('editCnhVenc').value || null;
+const nascimento = document.getElementById('editNascimento').value || null;
+const admissao = document.getElementById('editAdmissao').value || null;
+const demissao = document.getElementById('editDemissao').value || null;
   const epi = document.getElementById('editEpi').value;
   const obs = document.getElementById('editObs').value;
 
