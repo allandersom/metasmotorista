@@ -2030,6 +2030,7 @@ window.salvarPlanilhaRota = async function() {
     }
 };
 
+
 // ========== CADASTRO DE MOTORISTAS ==========
 
 window.motoristasCache = [];
@@ -2052,70 +2053,29 @@ window.carregarMotoristas = async function() {
   }
 };
 
+// Renderizar tabela
 window.renderizarTabelaMotoristasModal = function(motoristas = []) {
-  const container = document.getElementById('tabelaCadastroMotoristas');
+  const tbody = document.getElementById('tabelaCadastroMotoristas');
   
   if (!motoristas || motoristas.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding:32px; color:#999;">Nenhum motorista cadastrado</div>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:32px; color:#999;">Nenhum motorista cadastrado</td></tr>';
     return;
   }
 
-  container.innerHTML = motoristas.map(m => {
-    const isDemitido = !!m.data_demissao;
-    const nomeVisual = isDemitido 
-        ? `<span style="text-decoration: line-through; color: #ef4444;">${m.nome}</span> <span style="font-size:10px; background:#fee2e2; color:#b91c1c; padding:2px 4px; border-radius:4px;">(Inativo)</span>` 
-        : m.nome;
-    
-    return `
-    <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:12px; display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.1); opacity:${isDemitido ? '0.6' : '1'};">
-      <div>
-        <div style="font-weight:700; font-size:15px; color:#1f2937;">${nomeVisual}</div>
-        <div style="display:grid; grid-template-columns:auto auto auto; gap:12px; margin-top:8px; font-size:12px; color:#6b7280;">
-          <span>📅 ${m.data_admissao ? new Date(m.data_admissao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>
-          <span>🚗 ${m.turno === 'dia' ? '☀️ Dia' : m.turno === 'noite' ? '🌙 Noite' : '🚛 Especial'}</span>
-          <span>🆔 ${m.cnh || '—'}</span>
-        </div>
-      </div>
-      <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:#0ea5e9; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600; white-space:nowrap;">✏️ Editar</button>
-    </div>`;
-  }).join('');
-  
-  document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s) (${motoristas.filter(m => !m.data_demissao).length} ativos)`;
-};
-    const isDemitido = !!m.data_demissao;
-    const nomeVisual = isDemitido 
-        ? `<span style="text-decoration: line-through; color: #ef4444;">${m.nome}</span> <span style="font-size:10px; background:#fee2e2; color:#b91c1c; padding:2px 4px; border-radius:4px; margin-left:4px;">INATIVO</span>` 
-        : m.nome;
-    
-    // Tratamento de datas seguras (para evitar erro de fuso horário)
-    const formataData = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-    
-    const dataNascimentoStr = formataData(m.data_nascimento);
-    const dataAdmissaoStr = formataData(m.data_admissao);
-    const dataDemissaoStr = formataData(m.data_demissao);
-
-    // Organiza as infos de RH para não alargar a tabela
-    let rhHtml = `<div style="font-size:11px; color:#10b981; font-weight:bold;">Admissão: ${dataAdmissaoStr}</div>`;
-    if (isDemitido) rhHtml += `<div style="font-size:11px; color:#ef4444; font-weight:bold;">Saída: ${dataDemissaoStr}</div>`;
-    rhHtml += `<div style="font-size:10px; color:#6b7280; margin-top:2px;">Nasc: ${dataNascimentoStr}</div>`;
-
-    return `
-    <tr style="border-bottom: 1px solid #e5e7eb; opacity: ${isDemitido ? '0.6' : '1'};">
-      <td style="padding:12px; color:#1f2937; font-weight:600;">
-        ${nomeVisual}
-        ${m.tamanho_epi ? `<div style="font-size:10px; color:#6b7280; margin-top:4px; font-weight:normal;">🦺 EPI: ${m.tamanho_epi}</div>` : ''}
-      </td>
+  tbody.innerHTML = motoristas.map(m => `
+    <tr style="border-bottom: 1px solid #e5e7eb;">
+      <td style="padding:12px; color:#1f2937;">${m.nome}</td>
       <td style="text-align:center; padding:12px; text-transform:capitalize;">${m.turno === 'dia' ? '☀️' : m.turno === 'noite' ? '🌙' : '🚛'} ${m.turno}</td>
       <td style="text-align:center; padding:12px;">${m.cnh || '—'}</td>
-      <td style="text-align:center; padding:12px;">${rhHtml}</td>
+      <td style="text-align:center; padding:12px;">${m.cnh_venc ? new Date(m.cnh_venc).toLocaleDateString('pt-BR') : '—'}</td>
       <td style="text-align:center; padding:12px;">${m.telefone || '—'}</td>
       <td style="text-align:center; padding:12px;">
-        <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:none; border:none; cursor:pointer; color:#0ea5e9;" title="Editar Motorista">✏️</button>
+        <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:none; border:none; cursor:pointer; color:#0ea5e9;">✏️</button>
       </td>
     </tr>
-  `}).join('');
+  `).join('');
   
-  document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s) (${motoristas.filter(m => !m.data_demissao).length} ativos)`;
+  document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s)`;
 };
 
 // Salvar novo motorista
@@ -2125,11 +2085,7 @@ window.salvarCadastroMotorista = async function() {
   const cpf = document.getElementById('cadCpf').value;
   const telefone = document.getElementById('cadTelefone').value;
   const cnh = document.getElementById('cadCnh').value;
-  const cnh_venc = document.getElementById('cadCnhVenc').value || null;
-  const data_nascimento = document.getElementById('cadNascimento').value || null;
-  const data_admissao = document.getElementById('cadAdmissao').value || null;
-  const data_demissao = document.getElementById('cadDemissao').value || null;
-  const tamanho_epi = document.getElementById('cadEpi').value.trim() || null;
+  const cnh_venc = document.getElementById('cadCnhVenc').value;
   const obs = document.getElementById('cadObs').value;
 
   if (!nome || !turno) {
@@ -2137,21 +2093,18 @@ window.salvarCadastroMotorista = async function() {
     return;
   }
 
-  // Automaticamente inativo se houver data de demissão
-  const statusDefinido = data_demissao ? 'inativo' : 'ativo';
-
-  const btnSalvar = document.querySelector('button[onclick="window.salvarCadastroMotorista()"]');
-  const txtOriginal = btnSalvar.innerHTML;
-  btnSalvar.innerHTML = 'Salvando...';
-  btnSalvar.disabled = true;
-
   try {
     const { error } = await window.supabaseClient
       .from('motoristas')
       .insert([{
-        nome, turno, cpf, telefone, cnh, cnh_venc,
-        data_nascimento, data_admissao, data_demissao,
-        tamanho_epi, observacao: obs, status: statusDefinido
+        nome,
+        turno,
+        cpf,
+        telefone,
+        cnh,
+        cnh_venc,
+        observacao: obs,
+        status: 'ativo'
       }]);
 
     if (error) throw error;
@@ -2159,17 +2112,18 @@ window.salvarCadastroMotorista = async function() {
     alert('✅ Motorista cadastrado!');
     
     // Limpar formulário
-    ['cadNome', 'cadCpf', 'cadTelefone', 'cadCnhVenc', 'cadNascimento', 'cadAdmissao', 'cadDemissao', 'cadEpi', 'cadObs']
-      .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('cadNome').value = '';
     document.getElementById('cadTurno').value = 'dia';
+    document.getElementById('cadCpf').value = '';
+    document.getElementById('cadTelefone').value = '';
     document.getElementById('cadCnh').value = '';
+    document.getElementById('cadCnhVenc').value = '';
+    document.getElementById('cadObs').value = '';
 
+    // Recarregar a lista na tela
     window.carregarMotoristas();
   } catch (err) {
     alert('❌ Erro ao salvar: ' + err.message);
-  } finally {
-    btnSalvar.innerHTML = txtOriginal;
-    btnSalvar.disabled = false;
   }
 };
 
@@ -2189,11 +2143,6 @@ window.abrirModalEditarMotorista = async function(nome) {
   document.getElementById('editTelefone').value = motorista.telefone || '';
   document.getElementById('editCnh').value = motorista.cnh || '';
   document.getElementById('editCnhVenc').value = motorista.cnh_venc || '';
-  
-  document.getElementById('editNascimento').value = motorista.data_nascimento || '';
-  document.getElementById('editAdmissao').value = motorista.data_admissao || '';
-  document.getElementById('editDemissao').value = motorista.data_demissao || '';
-  document.getElementById('editEpi').value = motorista.tamanho_epi || '';
   document.getElementById('editObs').value = motorista.observacao || '';
 
   document.getElementById('modalEditarMotorista').classList.remove('hidden');
@@ -2211,22 +2160,20 @@ window.salvarEdicaoMotorista = async function() {
   const cpf = document.getElementById('editCpf').value;
   const telefone = document.getElementById('editTelefone').value;
   const cnh = document.getElementById('editCnh').value;
-  const cnh_venc = document.getElementById('editCnhVenc').value || null;
-  const data_nascimento = document.getElementById('editNascimento').value || null;
-  const data_admissao = document.getElementById('editAdmissao').value || null;
-  const data_demissao = document.getElementById('editDemissao').value || null;
-  const tamanho_epi = document.getElementById('editEpi').value.trim() || null;
+  const cnh_venc = document.getElementById('editCnhVenc').value;
   const obs = document.getElementById('editObs').value;
-
-  const statusAtualizado = data_demissao ? 'inativo' : 'ativo';
 
   try {
     const { error } = await window.supabaseClient
       .from('motoristas')
       .update({
-        nome: novoNome, turno, cpf, telefone, cnh, cnh_venc,
-        data_nascimento, data_admissao, data_demissao,
-        tamanho_epi, status: statusAtualizado, observacao: obs
+        nome: novoNome,
+        turno,
+        cpf,
+        telefone,
+        cnh,
+        cnh_venc,
+        observacao: obs
       })
       .eq('nome', nomeOriginal);
 
