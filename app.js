@@ -2143,6 +2143,10 @@ window.abrirModalEditarMotorista = async function(nome) {
   document.getElementById('editTelefone').value = motorista.telefone || '';
   document.getElementById('editCnh').value = motorista.cnh || '';
   document.getElementById('editCnhVenc').value = motorista.cnh_venc || '';
+  document.getElementById('editNascimento').value = motorista.nascimento || '';
+  document.getElementById('editAdmissao').value = motorista.admissao || '';
+  document.getElementById('editDemissao').value = motorista.demissao || '';
+  document.getElementById('editEpi').value = motorista.epi || '';
   document.getElementById('editObs').value = motorista.observacao || '';
 
   document.getElementById('modalEditarMotorista').classList.remove('hidden');
@@ -2161,6 +2165,10 @@ window.salvarEdicaoMotorista = async function() {
   const telefone = document.getElementById('editTelefone').value;
   const cnh = document.getElementById('editCnh').value;
   const cnh_venc = document.getElementById('editCnhVenc').value;
+  const nascimento = document.getElementById('editNascimento').value;
+  const admissao = document.getElementById('editAdmissao').value;
+  const demissao = document.getElementById('editDemissao').value;
+  const epi = document.getElementById('editEpi').value;
   const obs = document.getElementById('editObs').value;
 
   try {
@@ -2173,6 +2181,10 @@ window.salvarEdicaoMotorista = async function() {
         telefone,
         cnh,
         cnh_venc,
+        nascimento,
+        admissao,
+        demissao,
+        epi,
         observacao: obs
       })
       .eq('nome', nomeOriginal);

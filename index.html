@@ -869,55 +869,98 @@
 
    <div id="modalEditarMotorista" class="modal hidden">
     <div class="modal-backdrop" onclick="window.fecharModalEditar()"></div>
-    <div class="modal-container" style="width:90%; max-width:600px; padding:24px; border-radius:1rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h3 style="font-size:18px; font-weight:700; color:#1f2937;">✏️ Editar Motorista</h3>
-            <button onclick="window.fecharModalEditar()" style="background:none; border:none; cursor:pointer; font-size:24px;">×</button>
-        </div>
-        <input type="hidden" id="editNomeOriginal">
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div style="grid-column: span 2;">
-                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Nome *</label>
-                <input id="editNome" type="text" class="input-base" style="width:100%; text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
-            </div>
-            <div>
-                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Turno *</label>
-                <select id="editTurno" class="input-base" style="width:100%;">
-                    <option value="dia">☀️ Dia (Rayanna)</option>
-                    <option value="noite">🌙 Noite (Júlia)</option>
-                    <option value="especial">🚛 Especial (Caçamba)</option>
-                </select>
-            </div>
-            <div>
-                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">CPF</label>
-                <input id="editCpf" type="text" class="input-base" style="width:100%;" maxlength="14" oninput="window.formatarCpf(this)">
-            </div>
-            <div>
-                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Nascimento</label>
-                <input id="editNascimento" type="date" class="input-base" style="width:100%;">
-            </div>
-            <div>
-                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Admissão</label>
-                <input id="editAdmissao" type="date" class="input-base" style="width:100%;">
-            </div>
-            <div>
-                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Demissão</label>
-                <input id="editDemissao" type="date" class="input-base" style="width:100%; border-color:#fca5a5;">
-            </div>
-            <div>
-                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Tamanho EPI</label>
-                <input id="editEpi" type="text" class="input-base" style="width:100%;" placeholder="Ex: Bota 42, G">
-            </div>
-            <div style="grid-column: span 2;">
-                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Observação</label>
-                <textarea id="editObs" rows="2" class="input-base" style="width:100%;"></textarea>
-            </div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>✏️ Editar Motorista</h3>
+            <button onclick="window.fecharModalEditar()" class="btn-close">
+                <i data-lucide="x"></i>
+            </button>
         </div>
 
-        <div style="margin-top:24px; display:flex; gap:10px; justify-content:flex-end;">
-            <button onclick="window.fecharModalEditar()" style="padding:10px 20px; background:#f3f4f6; border-radius:8px; font-weight:600;">Cancelar</button>
-            <button onclick="window.salvarEdicaoMotorista()" class="btn-primary" style="padding:10px 24px; border-radius:8px; font-weight:600;">Salvar</button>
+        <div class="modal-body">
+            <input type="hidden" id="editNomeOriginal">
+
+            <div class="form-grid">
+                <!-- Nome (full-width) -->
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Nome *</label>
+                    <input id="editNome" type="text" class="input-base" style="text-transform:uppercase;" 
+                           oninput="this.value=this.value.toUpperCase()">
+                </div>
+
+                <!-- Turno e CPF -->
+                <div class="form-group">
+                    <label class="form-label">Turno *</label>
+                    <select id="editTurno" class="input-base">
+                        <option value="dia">☀️ Dia (Rayanna)</option>
+                        <option value="noite">🌙 Noite (Júlia)</option>
+                        <option value="especial">🚛 Especial (Caçamba)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">CPF</label>
+                    <input id="editCpf" type="text" class="input-base" maxlength="14" 
+                           oninput="window.formatarCpf(this)">
+                </div>
+
+                <!-- Telefone (full-width) -->
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Telefone / WhatsApp</label>
+                    <input id="editTelefone" type="text" class="input-base" maxlength="15"
+                           oninput="window.formatarTelefone(this)">
+                </div>
+
+                <!-- CNH e Vencimento -->
+                <div class="form-group">
+                    <label class="form-label">Categoria CNH</label>
+                    <select id="editCnh" class="input-base">
+                        <option value="">Não informado</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Vencimento CNH</label>
+                    <input id="editCnhVenc" type="date" class="input-base">
+                </div>
+
+                <!-- Nascimento e Admissão -->
+                <div class="form-group">
+                    <label class="form-label">Nascimento</label>
+                    <input id="editNascimento" type="date" class="input-base">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Admissão</label>
+                    <input id="editAdmissao" type="date" class="input-base">
+                </div>
+
+                <!-- Demissão e EPI -->
+                <div class="form-group">
+                    <label class="form-label">Demissão</label>
+                    <input id="editDemissao" type="date" class="input-base" style="border-color:var(--red-200);">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tamanho EPI</label>
+                    <input id="editEpi" type="text" class="input-base" placeholder="Ex: Bota 42, G">
+                </div>
+
+                <!-- Observação (full-width) -->
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Observação</label>
+                    <textarea id="editObs" rows="3" class="input-base"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button onclick="window.fecharModalEditar()" class="btn-secondary">Cancelar</button>
+            <button onclick="window.salvarEdicaoMotorista()" class="btn-primary">Salvar</button>
         </div>
     </div>
 </div>
