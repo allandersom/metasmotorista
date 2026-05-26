@@ -2068,9 +2068,22 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
       <td style="text-align:center; padding:12px;">${m.telefone || '—'}</td>
       <td style="text-align:center; padding:12px;">
         <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:none; border:none; cursor:pointer; color:#0ea5e9;">✏️</button>
+        <button onclick="this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none'" style="background:none; border:none; cursor:pointer; font-size:16px; color:#6366f1;">+</button>
       </td>
     </tr>
-  `).join('');
+    <tr style="display:none; background:#f8fafc;">
+      <td colspan="6" style="padding:12px 20px;">
+        <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:8px; font-size:13px; color:#374151;">
+          <div><b>CPF:</b> ${m.cpf || '—'}</div>
+          <div><b>Nascimento:</b> ${m.nascimento ? new Date(m.nascimento).toLocaleDateString('pt-BR') : '—'}</div>
+          <div><b>Admissão:</b> ${m.admissao ? new Date(m.admissao).toLocaleDateString('pt-BR') : '—'}</div>
+          <div><b>Demissão:</b> ${m.demissao ? new Date(m.demissao).toLocaleDateString('pt-BR') : '—'}</div>
+          <div><b>EPI:</b> ${m.epi || '—'}</div>
+          <div><b>Observação:</b> ${m.observacao || '—'}</div>
+        </div>
+      </td>
+    </tr>
+`).join('');
   
   document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s)`;
 };
