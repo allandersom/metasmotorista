@@ -216,16 +216,16 @@ async function carregarDadosDoSupabase() {
         const loader = document.getElementById('loader');
         if (loader) {
             loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
+            setTimeout() => { loader.style.display = 'none'; }, 500);
         }
-    } catch (error) {
+   } catch (error) {
         console.error('ERRO AO CARREGAR:', error);
         alert('Erro ao carregar dados: ' + error.message);
         
-        const loader = document.getElementById ('loader');
+        const loader = document.getElementById('loader');
         if (loader) { 
             loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500;
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
         }
     }
 }
