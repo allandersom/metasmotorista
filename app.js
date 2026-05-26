@@ -221,6 +221,12 @@ async function carregarDadosDoSupabase() {
     } catch (error) {
         console.error('ERRO AO CARREGAR:', error);
         alert('Erro ao carregar dados: ' + error.message);
+        
+        const loader = document.getElementById ('loader');
+        if (loader) { 
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500;
+        }
     }
 }
 
@@ -740,7 +746,7 @@ window.mudarAba = function (aba) {
     const viewEl = document.getElementById(conf.view);
     if (viewEl) viewEl.style.display = 'block';
 
-    // Ações específicas por aba
+   // Ações específicas por aba
     if (aba === 'rankings') {
         window.gerarRankingPeriodo();
         window.gerarRankingMensal();
@@ -752,7 +758,10 @@ window.mudarAba = function (aba) {
         window.carregarAuditoriaLancamentos();
     } else if (aba === 'rotas') {
         window.carregarRotasDia();
+    } else if (aba === 'cadastro') {
+        window.carregarMotoristas();
     }
+};
 };
 
 window.mudarAba('lancamentos');
@@ -2014,4 +2023,173 @@ window.salvarPlanilhaRota = async function() {
         alert("Erro ao salvar: " + err.message);
         btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 mr-2"></i> Tentar Novamente';
     }
+};
+
+
+// ========== CADASTRO DE MOTORISTAS ==========
+
+window.motoristasCache = [];
+
+// Carregar motoristas
+window.carregarMotoristas = async function() {
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('motoristas')
+      .select('*')
+      .order('nome');
+
+    if (error) throw error;
+    
+    window.motoristasCache = data || [];
+    window.renderizarTabelaMotoristasModal(data);
+  } catch (err) {
+    console.error('Erro:', err);
+    alert('Erro ao carregar motoristas: ' + err.message);
+  }
+};
+
+// Renderizar tabela
+window.renderizarTabelaMotoristasModal = function(motoristas = []) {
+  const tbody = document.getElementById('tabelaCadastroMotoristas');
+  
+  if (!motoristas || motoristas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:32px; color:#999;">Nenhum motorista cadastrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = motoristas.map(m => `
+    <tr style="border-bottom: 1px solid #e5e7eb;">
+      <td style="padding:12px; color:#1f2937;">${m.nome}</td>
+      <td style="text-align:center; padding:12px; text-transform:capitalize;">${m.turno === 'dia' ? '☀️' : m.turno === 'noite' ? '🌙' : '🚛'} ${m.turno}</td>
+      <td style="text-align:center; padding:12px;">${m.cnh || '—'}</td>
+      <td style="text-align:center; padding:12px;">${m.cnh_venc ? new Date(m.cnh_venc).toLocaleDateString('pt-BR') : '—'}</td>
+      <td style="text-align:center; padding:12px;">${m.telefone || '—'}</td>
+      <td style="text-align:center; padding:12px;">
+        <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:none; border:none; cursor:pointer; color:#0ea5e9;">✏️</button>
+      </td>
+    </tr>
+  `).join('');
+  
+  document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s)`;
+};
+
+// Salvar novo motorista
+window.salvarCadastroMotorista = async function() {
+  const nome = document.getElementById('cadNome').value.trim().toUpperCase();
+  const turno = document.getElementById('cadTurno').value;
+  const cpf = document.getElementById('cadCpf').value;
+  const telefone = document.getElementById('cadTelefone').value;
+  const cnh = document.getElementById('cadCnh').value;
+  const cnh_venc = document.getElementById('cadCnhVenc').value;
+  const obs = document.getElementById('cadObs').value;
+
+  if (!nome || !turno) {
+    alert('❌ Nome e Turno são obrigatórios!');
+    return;
+  }
+
+  try {
+    const { error } = await window.supabaseClient
+      .from('motoristas')
+      .insert([{
+        nome,
+        turno,
+        cpf,
+        telefone,
+        cnh,
+        cnh_venc,
+        observacao: obs,
+        status: 'ativo'
+      }]);
+
+    if (error) throw error;
+
+    alert('✅ Motorista cadastrado!');
+    
+    // Limpar formulário
+    document.getElementById('cadNome').value = '';
+    document.getElementById('cadTurno').value = 'dia';
+    document.getElementById('cadCpf').value = '';
+    document.getElementById('cadTelefone').value = '';
+    document.getElementById('cadCnh').value = '';
+    document.getElementById('cadCnhVenc').value = '';
+    document.getElementById('cadObs').value = '';
+
+    // Recarregar a lista na tela
+    window.carregarMotoristas();
+  } catch (err) {
+    alert('❌ Erro ao salvar: ' + err.message);
+  }
+};
+
+// Abrir modal de edição
+window.abrirModalEditarMotorista = async function(nome) {
+  const motorista = window.motoristasCache.find(m => m.nome === nome);
+  
+  if (!motorista) {
+    alert('Motorista não encontrado');
+    return;
+  }
+
+  document.getElementById('editNomeOriginal').value = motorista.nome;
+  document.getElementById('editNome').value = motorista.nome;
+  document.getElementById('editTurno').value = motorista.turno;
+  document.getElementById('editCpf').value = motorista.cpf || '';
+  document.getElementById('editTelefone').value = motorista.telefone || '';
+  document.getElementById('editCnh').value = motorista.cnh || '';
+  document.getElementById('editCnhVenc').value = motorista.cnh_venc || '';
+  document.getElementById('editObs').value = motorista.observacao || '';
+
+  document.getElementById('modalEditarMotorista').classList.remove('hidden');
+};
+
+window.fecharModalEditar = function() {
+  document.getElementById('modalEditarMotorista').classList.add('hidden');
+};
+
+// Salvar edição
+window.salvarEdicaoMotorista = async function() {
+  const nomeOriginal = document.getElementById('editNomeOriginal').value;
+  const novoNome = document.getElementById('editNome').value.trim().toUpperCase();
+  const turno = document.getElementById('editTurno').value;
+  const cpf = document.getElementById('editCpf').value;
+  const telefone = document.getElementById('editTelefone').value;
+  const cnh = document.getElementById('editCnh').value;
+  const cnh_venc = document.getElementById('editCnhVenc').value;
+  const obs = document.getElementById('editObs').value;
+
+  try {
+    const { error } = await window.supabaseClient
+      .from('motoristas')
+      .update({
+        nome: novoNome,
+        turno,
+        cpf,
+        telefone,
+        cnh,
+        cnh_venc,
+        observacao: obs
+      })
+      .eq('nome', nomeOriginal);
+
+    if (error) throw error;
+
+    alert('✅ Motorista atualizado!');
+    window.fecharModalEditar();
+    window.carregarMotoristas();
+  } catch (err) {
+    alert('❌ Erro ao editar: ' + err.message);
+  }
+};
+
+window.filtrarTabelaCadastro = function() {
+  const busca = document.getElementById('buscaCadastro').value.toUpperCase();
+  const turno = document.getElementById('filtroCadTurno').value;
+
+  let motoristas = window.motoristasCache;
+
+  if (busca) motoristas = motoristas.filter(m => m.nome.includes(busca));
+  if (turno) motoristas = motoristas.filter(m => m.turno === turno);
+
+  window.renderizarTabelaMotoristasModal(motoristas);
 };
