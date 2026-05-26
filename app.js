@@ -2100,7 +2100,7 @@ window.salvarCadastroMotorista = async function() {
         telefone,
         cnh,
         cnh_venc,
-        epi
+        epi,
         observacao: obs,
         status: 'ativo'
       }]);
