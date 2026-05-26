@@ -210,15 +210,15 @@ async function carregarDadosDoSupabase() {
         window.gerarRankingMensal();
         window.gerarPainelFeriados();
 
-        // ✅ REGRAS DE PERMISSÃO — chamada uma única vez aqui
+       // ✅ REGRAS DE PERMISSÃO — chamada uma única vez aqui
         window.aplicarRestricoesInterface();
 
         const loader = document.getElementById('loader');
         if (loader) {
             loader.style.opacity = '0';
-            setTimeout() => { loader.style.display = 'none'; }, 500);
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
         }
-   } catch (error) {
+    } catch (error) {
         console.error('ERRO AO CARREGAR:', error);
         alert('Erro ao carregar dados: ' + error.message);
         
@@ -229,7 +229,7 @@ async function carregarDadosDoSupabase() {
         }
     }
 }
-
+A
 window.carregarDadosDoSupabase = carregarDadosDoSupabase;
 window.carregarDadosDoSupabase();
 
@@ -761,9 +761,7 @@ window.mudarAba = function (aba) {
     } else if (aba === 'cadastro') {
         window.carregarMotoristas();
     }
-};
-};
-
+}
 window.mudarAba('lancamentos');
 
 window.filtrarMotoristas = function () {
