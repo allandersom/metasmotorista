@@ -229,7 +229,7 @@ async function carregarDadosDoSupabase() {
         }
     }
 }
-A
+
 window.carregarDadosDoSupabase = carregarDadosDoSupabase;
 window.carregarDadosDoSupabase();
 
@@ -725,7 +725,7 @@ window.toggleSidebar = function () {
 window.mudarAba = function (aba) {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
 
-    ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas'].forEach(id => {
+    ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas', 'viewCadastro'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
@@ -736,17 +736,20 @@ window.mudarAba = function (aba) {
         domferiados: { btn: 'btnTabDomFeriados', view: 'viewDomFeriados' },
         projecao:    { btn: 'btnTabProjecao',    view: 'viewProjecao'    },
         auditoria:   { btn: 'btnTabAuditoria',   view: 'viewAuditoria'   },
-        rotas:       { btn: 'btnTabRotas',        view: 'viewRotas'       },
+        rotas:       { btn: 'btnTabRotas',       view: 'viewRotas'       },
+        cadastro:    { btn: 'btnTabCadastro',    view: 'viewCadastro'    },
     };
 
     const conf = mapaAbas[aba];
     if (!conf) return;
 
-    document.getElementById(conf.btn)?.classList.add('active');
+    const btnEl = document.getElementById(conf.btn);
+    if (btnEl) btnEl.classList.add('active');
+    
     const viewEl = document.getElementById(conf.view);
     if (viewEl) viewEl.style.display = 'block';
 
-   // Ações específicas por aba
+    // Ações específicas por aba
     if (aba === 'rankings') {
         window.gerarRankingPeriodo();
         window.gerarRankingMensal();
@@ -761,8 +764,12 @@ window.mudarAba = function (aba) {
     } else if (aba === 'cadastro') {
         window.carregarMotoristas();
     }
-}
-window.mudarAba('lancamentos');
+};
+
+// Garante que a primeira aba só carregue depois do HTML estar pronto
+document.addEventListener('DOMContentLoaded', () => {
+    window.mudarAba('lancamentos');
+});
 
 window.filtrarMotoristas = function () {
     const busca = document.getElementById('buscaMotorista');
