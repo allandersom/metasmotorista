@@ -713,19 +713,13 @@ window.calcularPrevisao = function (totalSoma, anoMesStr, diasUteisAlvo) {
 
 window.toggleSidebar = function () {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar.classList.contains('w-[280px]')) {
-        sidebar.classList.remove('w-[280px]');
-        sidebar.classList.add('w-0');
-    } else {
-        sidebar.classList.remove('w-0');
-        sidebar.classList.add('w-[280px]');
-    }
+    sidebar.classList.toggle('sidebar-fechada');
 };
 
 window.mudarAba = function (aba) {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
 
-    ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas', 'viewCadastro'].forEach(id => {
+   ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas', 'viewCadastro', 'viewOperador'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
@@ -738,6 +732,7 @@ window.mudarAba = function (aba) {
         auditoria:   { btn: 'btnTabAuditoria',   view: 'viewAuditoria'   },
         rotas:       { btn: 'btnTabRotas',       view: 'viewRotas'       },
         cadastro:    { btn: 'btnTabCadastro',    view: 'viewCadastro'    },
+        operador:    { btn: 'btnTabOperador',    view: 'viewOperador'    },
     };
 
     const conf = mapaAbas[aba];

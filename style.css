@@ -165,6 +165,10 @@ body {
   position: relative;
   z-index: 20;
 }
+#sidebar.sidebar-fechada {
+    width: 0;
+    min-width: 0;
+}
 
 /* Subtle radial glow top-left */
 #sidebar::before {

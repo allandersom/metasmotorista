@@ -8,7 +8,6 @@ async function waitForAppFunctions() {
     while (true) {
         if (typeof window.syncToSupabase === 'function'
             && typeof window.deletarLancamentoEspecifico === 'function'
-            && typeof window.apagarLancamentosMotorista === 'function') {
             return true;
         }
 
@@ -151,34 +150,6 @@ function patchDeleteEspecifico() {
     };
 }
 
-function patchDeleteMesMotorista() {
-    const originalDeleteMes = window.apagarLancamentosMotorista;
-    window.apagarLancamentosMotorista = async function() {
-        const motoristaNome = window.motoristaSelecionado;
-        const elMes = document.getElementById('dataGlobal');
-        const mesFiltroStr = elMes?.value ? elMes.value.substring(0, 7) : window.formatarDataParaBusca(new Date()).substring(0, 7);
-        const dataInicio = `${mesFiltroStr}-01`;
-        const ultimoDia = new Date(Number(mesFiltroStr.substring(0, 4)), Number(mesFiltroStr.substring(5, 7)), 0).getDate();
-        const dataFim = `${mesFiltroStr}-${String(ultimoDia).padStart(2, '0')}`;
-        const antes = motoristaNome ? await buscarLancamentosMotoristaMes(motoristaNome, dataInicio, dataFim) : [];
-
-        await originalDeleteMes.apply(this, arguments);
-
-        if (!motoristaNome || antes.length === 0) return;
-
-        const depois = await buscarLancamentosMotoristaMes(motoristaNome, dataInicio, dataFim);
-        if (depois.length === 0) {
-            await registrarAuditoria({
-                acao: 'excluir_mes_motorista',
-                motoristaNome,
-                antes,
-                depois: [],
-                observacao: `Exclusao em lote de ${antes.length} lancamento(s) entre ${dataInicio} e ${dataFim}.`,
-            });
-        }
-    };
-}
-
 function patchApagarTudo() {
     const originalApagarTudo = window.apagarTudo;
     if (typeof originalApagarTudo !== 'function') return;
@@ -219,7 +190,6 @@ async function initAuditLancamentos() {
     patchSyncToSupabase();
     patchImportacaoIA();
     patchDeleteEspecifico();
-    patchDeleteMesMotorista();
     patchApagarTudo();
 
     window.__auditLancamentosAtivo = true;

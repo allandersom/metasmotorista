@@ -64,6 +64,11 @@
         <i data-lucide="user-plus" class="w-4 h-4 shrink-0"></i>
         Cadastro de Motoristas
     </button>
+
+    <button id="btnTabOperador" onclick="window.mudarAba('operador')" class="nav-tab">
+    <i data-lucide="user-cog"></i>
+    <span>Operador</span>
+</button>
 </nav>
     </aside>
 
@@ -144,12 +149,6 @@
                                     <input type="text" id="buscaMotorista" placeholder="Buscar motorista..."
                                         onkeyup="window.filtrarMotoristas()" class="search-input">
                                 </div>
-                                <button onclick="window.abrirModalAtivacaoMotorista()" class="btn-cog" title="Ativar/Desativar Motoristas neste Mês" style="margin-right: 5px;">
-                                    <i data-lucide="power"></i>
-                                </button>
-                                <button onclick="window.gerenciarMotoristas()" class="btn-cog" title="Gerenciar Motoristas">
-                                    <i data-lucide="users"></i>
-                                </button>
                             </div>
                         </div>
                         <div class="driver-list-scroll" id="listaMotoristasContainer">
@@ -276,10 +275,7 @@
                             <div class="flex-1" style="min-height:220px;">
                                 <div class="table-header-row">
                                     <span class="table-section-label">Histórico de Lançamentos</span>
-                                    <button onclick="window.apagarLancamentosMotorista()" class="btn-danger-sm">
-                                        <i data-lucide="trash"></i>
-                                        Apagar mês do motorista
-                                    </button>
+
                                 </div>
                                 <div class="table-wrap">
                                     <table id="tabelaHistorico">
@@ -596,6 +592,15 @@
                 </div>
             </div>
 
+            <div id="viewOperador" style="display:none;">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;color:#888;">
+        <i data-lucide="hard-hat" style="width:48px;height:48px;"></i>
+        <h2 style="font-size:1.4rem;font-weight:600;">Em construção</h2>
+        <p>Esta seção está sendo desenvolvida.</p>
+    </div>
+</div>
+
+            
         <div id="viewCadastro" style="display:none;">
 
             <div class="page-header" style="margin-bottom: 24px;">
