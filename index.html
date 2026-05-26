@@ -867,80 +867,60 @@
         </div>
     </div>
 
-    <div id="modalEditarMotorista" class="modal hidden">
-        <div class="modal-backdrop" onclick="window.fecharModalEditar()"></div>
-        <div class="modal-container" style="width:90%; max-width:480px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:15px; border-bottom:1px solid #e5e7eb; margin-bottom:20px;">
-                <h3 style="font-size:18px; font-weight:700; margin:0; color:#1f2937;">✏️ Editar Motorista</h3>
-                <button onclick="window.fecharModalEditar()" style="background:none; border:none; cursor:pointer; font-size:24px; color:#9ca3af;">×</button>
-            </div>
-            <input type="hidden" id="editNomeOriginal">
+   <div id="modalEditarMotorista" class="modal hidden">
+    <div class="modal-backdrop" onclick="window.fecharModalEditar()"></div>
+    <div class="modal-container" style="width:90%; max-width:600px; padding:24px; border-radius:1rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="font-size:18px; font-weight:700; color:#1f2937;">✏️ Editar Motorista</h3>
+            <button onclick="window.fecharModalEditar()" style="background:none; border:none; cursor:pointer; font-size:24px;">×</button>
+        </div>
+        <input type="hidden" id="editNomeOriginal">
 
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Nome *</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="grid-column: span 2;">
+                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Nome *</label>
                 <input id="editNome" type="text" class="input-base" style="width:100%; text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
             </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Turno *</label>
+            <div>
+                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Turno *</label>
                 <select id="editTurno" class="input-base" style="width:100%;">
                     <option value="dia">☀️ Dia (Rayanna)</option>
                     <option value="noite">🌙 Noite (Júlia)</option>
                     <option value="especial">🚛 Especial (Caçamba)</option>
                 </select>
             </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">CPF</label>
+            <div>
+                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">CPF</label>
                 <input id="editCpf" type="text" class="input-base" style="width:100%;" maxlength="14" oninput="window.formatarCpf(this)">
             </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Telefone</label>
-                <input id="editTelefone" type="text" class="input-base" style="width:100%;" maxlength="15" oninput="window.formatarTelefone(this)">
+            <div>
+                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Nascimento</label>
+                <input id="editNascimento" type="date" class="input-base" style="width:100%;">
             </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Categoria CNH</label>
-                <select id="editCnh" class="input-base" style="width:100%;">
-                    <option value="">Não informado</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                    <option value="D">D</option>
-                    <option value="E">E</option>
-                </select>
+            <div>
+                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Admissão</label>
+                <input id="editAdmissao" type="date" class="input-base" style="width:100%;">
             </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Vencimento CNH</label>
-                <input id="editCnhVenc" type="date" class="input-base" style="width:100%;">
-            </div>
-
-            <div style="display:flex; gap:10px; margin-bottom:14px;">
-                <div style="flex:1;">
-                    <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Nascimento</label>
-                    <input id="editNascimento" type="date" class="input-base" style="width:100%;">
-                </div>
-                <div style="flex:1;">
-                    <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Admissão</label>
-                    <input id="editAdmissao" type="date" class="input-base" style="width:100%;">
-                </div>
-            </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; font-weight:600; color:#ef4444; text-transform:uppercase; margin-bottom:6px;">Demissão (Desliga o motorista)</label>
+            <div>
+                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Demissão</label>
                 <input id="editDemissao" type="date" class="input-base" style="width:100%; border-color:#fca5a5;">
             </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Tamanhos de EPIs</label>
-                <input id="editEpi" type="text" class="input-base" style="width:100%;" placeholder="Ex: Bota 42, Camisa G">
+            <div>
+                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Tamanho EPI</label>
+                <input id="editEpi" type="text" class="input-base" style="width:100%;" placeholder="Ex: Bota 42, G">
             </div>
-
-            <div style="margin-bottom:20px;">
-                <label style="display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">Observação</label>
-                <textarea id="editObs" rows="3" class="input-base" style="width:100%; resize:vertical; font-family:inherit;"></textarea>
-            </div>
-
-            <div style="display:flex; gap:10px; justify-content:flex-end; padding-top:15px; border-top:1px solid #e5e7eb;">
-                <button onclick="window.fecharModalEditar()" style="padding:10px 20px; background:#f3f4f6; color:#374151; border:none; border-radius:6px; cursor:pointer; font-weight:500;">Cancelar</button>
-                <button onclick="window.salvarEdicaoMotorista()" class="btn-add-plus" style="padding:10px 24px; border-radius:6px;">Salvar</button>
+            <div style="grid-column: span 2;">
+                <label style="display:block; font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:4px;">Observação</label>
+                <textarea id="editObs" rows="2" class="input-base" style="width:100%;"></textarea>
             </div>
         </div>
+
+        <div style="margin-top:24px; display:flex; gap:10px; justify-content:flex-end;">
+            <button onclick="window.fecharModalEditar()" style="padding:10px 20px; background:#f3f4f6; border-radius:8px; font-weight:600;">Cancelar</button>
+            <button onclick="window.salvarEdicaoMotorista()" class="btn-primary" style="padding:10px 24px; border-radius:8px; font-weight:600;">Salvar</button>
+        </div>
     </div>
+</div>
 
     <div id="modalAtivacaoMotorista" class="modal hidden">
         <div class="modal-backdrop" onclick="window.fecharModalAtivacao()"></div>
