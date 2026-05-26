@@ -1533,3 +1533,35 @@ input[type="month"] {
     text-transform:uppercase;
     letter-spacing:.08em;
 }
+
+.modal-label {
+    display: block; 
+    font-size: 10px; 
+    font-weight: 700; 
+    color: #6b7280; 
+    text-transform: uppercase; 
+    margin-bottom: 4px; 
+    letter-spacing: 0.05em;
+}
+
+.modal-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+}
+
+.btn-secondary {
+    padding: 10px 20px; 
+    background: #f3f4f6; 
+    color: #374151; 
+    border-radius: 8px; 
+    font-weight: 600;
+}
+
+.btn-primary {
+    padding: 10px 24px; 
+    background: #4f46e5; 
+    color: white; 
+    border-radius: 8px; 
+    font-weight: 600;
+}
