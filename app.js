@@ -129,6 +129,12 @@ window.aplicarRestricoesInterface = function () {
 // =============================================================
 async function carregarDadosDoSupabase() {
     try {
+        window.motoristas = [];
+        window.motRayanna = [];
+        window.motJulia   = [];
+        window.motOutros  = [];
+        window.motoristasInativos = [];
+
         // 1. Lançamentos
         const { data: lancs, error: erroLancs } = await supabase
             .from('lancamentos')
