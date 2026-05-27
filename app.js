@@ -2106,18 +2106,18 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
 window.salvarCadastroMotorista = async function() {
   const nome = document.getElementById('cadNome').value.trim().toUpperCase();
   const turno = document.getElementById('cadTurno').value;
-  const cpf = document.getElementById('cadCpf').value.trim() || null;
-  const telefone = document.getElementById('cadTelefone').value.trim() || null;
-  const cnh = document.getElementById('cadCnh').value || null;
-  const cnh_venc = document.getElementById('cadCnhVenc').value || null;
-  const nascimento = document.getElementById('cadNascimento').value || null;
-  const admissao = document.getElementById('cadAdmissao').value || null;
-  const demissao = document.getElementById('cadDemissao').value || null;
-  const obs = document.getElementById('cadObs').value.trim() || null;
-  const epi = [
-  [document.getElementById('cadEpiCamisa').value, document.getElementById('cadEpiCamisaNum').value].filter(Boolean).join(':'),
-  [document.getElementById('cadEpiBota').value, document.getElementById('cadEpiBotaNum').value].filter(Boolean).join(':'),
-  [document.getElementById('cadEpiCalca').value, document.getElementById('cadEpiCalcaNum').value].filter(Boolean).join(':')
+  const cpf = document.getElementById('cadCpf')?.value.trim() || null;
+const telefone = document.getElementById('cadTelefone')?.value.trim() || null;
+const cnh = document.getElementById('cadCnh')?.value || null;
+const cnh_venc = document.getElementById('cadCnhVenc')?.value || null;
+const nascimento = document.getElementById('cadNascimento')?.value || null;
+const admissao = document.getElementById('cadAdmissao')?.value || null;
+const demissao = document.getElementById('cadDemissao')?.value || null;
+const obs = document.getElementById('cadObs')?.value?.trim() || null;
+const epi = [
+  [document.getElementById('cadEpiCamisa')?.value, document.getElementById('cadEpiCamisaNum')?.value].filter(Boolean).join(':'),
+  [document.getElementById('cadEpiBota')?.value, document.getElementById('cadEpiBotaNum')?.value].filter(Boolean).join(':'),
+  [document.getElementById('cadEpiCalca')?.value, document.getElementById('cadEpiCalcaNum')?.value].filter(Boolean).join(':')
 ].filter(Boolean).join(' | ') || null;
 
   if (!nome || !turno) {
