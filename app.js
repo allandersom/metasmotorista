@@ -260,21 +260,25 @@ window.syncToSupabase = async function (dataStr, motoristaNome) {
     if (!lanc) return;
 
     const dadosParaSalvar = {
-        anexo_nome:           lanc.anexoNome    || null,
-        anexo_url:            lanc.anexoUrl     || null,
-        anexo_path:           lanc.anexoPath    || null,
-        anexo_tipo:           lanc.anexoTipo    || null,
-        data:                 dataStr,
-        motorista_nome:       motoristaNome,
-        status_servico:       lanc.status,
-        tipo_veiculo:         lanc.tipoVeiculo,
-        quantidade_servicos:  lanc.servicos,
-        valor_faturamento:    lanc.valor,
-        valor_extra:          lanc.valorExtra,
-        is_feriado:           lanc.isFeriado,
-        ganhou_bonus_semana:  lanc.ganhouBonusSemana,
-        observacao:           lanc.observacao,
-    };
+    anexo_nome:           lanc.anexoNome    || null,
+    anexo_url:            lanc.anexoUrl     || null,
+    anexo_path:           lanc.anexoPath    || null,
+    anexo_tipo:           lanc.anexoTipo    || null,
+    data:                 dataStr,
+    motorista_nome:       motoristaNome,
+    status_servico:       lanc.status,
+    tipo_veiculo:         lanc.tipoVeiculo,
+    quantidade_servicos:  lanc.servicos,
+    valor_faturamento:    lanc.valor,
+    valor_extra:          lanc.valorExtra,
+    is_feriado:           lanc.isFeriado,
+    ganhou_bonus_semana:  lanc.ganhouBonusSemana,
+    observacao:           lanc.observacao,
+    cancelado_em:         null,
+    cancelado_por:        null,
+    cancelado_por_email:  null,
+    motivo_cancelamento:  null,
+};
 
     const { error } = await supabase
         .from('lancamentos')
