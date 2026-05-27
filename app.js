@@ -2077,9 +2077,9 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
   <tr style="border-bottom: 1px solid #e5e7eb;">
     <td style="padding:12px; color:#1f2937;">${m.nome}</td>
     <td style="text-align:center; padding:12px; text-transform:capitalize;">${m.turno === 'dia' ? '☀️' : m.turno === 'noite' ? '🌙' : '🚛'} ${m.turno}</td>
-    <td style="text-align:center; padding:12px;">${m.nascimento ? new Date(m.nascimento).toLocaleDateString('pt-BR') : '—'}</td>
+    <td style="text-align:center; padding:12px;">${m.data_nascimento ? new Date(m.data_nascimento).toLocaleDateString('pt-BR') : '—'}</td>
     <td style="text-align:center; padding:12px;">${m.cnh_venc ? new Date(m.cnh_venc).toLocaleDateString('pt-BR') : '—'}</td>
-    <td style="text-align:center; padding:12px;">${m.epi || '—'}</td>
+    <td style="text-align:center; padding:12px;">${m.tamanho_epi || '—'}</td>
     <td style="text-align:center; padding:12px;">
       <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:none; border:none; cursor:pointer; color:#0ea5e9;">✏️</button>
       <button onclick="this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none'" style="background:none; border:none; cursor:pointer; font-size:16px; color:#6366f1;">+</button>
