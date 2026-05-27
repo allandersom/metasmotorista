@@ -2060,29 +2060,29 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
   }
 
   tbody.innerHTML = motoristas.map(m => `
-    <tr style="border-bottom: 1px solid #e5e7eb;">
-      <td style="padding:12px; color:#1f2937;">${m.nome}</td>
-      <td style="text-align:center; padding:12px; text-transform:capitalize;">${m.turno === 'dia' ? '☀️' : m.turno === 'noite' ? '🌙' : '🚛'} ${m.turno}</td>
-      <td style="text-align:center; padding:12px;">${m.cnh || '—'}</td>
-      <td style="text-align:center; padding:12px;">${m.cnh_venc ? new Date(m.cnh_venc).toLocaleDateString('pt-BR') : '—'}</td>
-      <td style="text-align:center; padding:12px;">${m.telefone || '—'}</td>
-      <td style="text-align:center; padding:12px;">
-        <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:none; border:none; cursor:pointer; color:#0ea5e9;">✏️</button>
-        <button onclick="this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none'" style="background:none; border:none; cursor:pointer; font-size:16px; color:#6366f1;">+</button>
-      </td>
-    </tr>
-    <tr style="display:none; background:#f8fafc;">
-      <td colspan="6" style="padding:12px 20px;">
-        <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:8px; font-size:13px; color:#374151;">
-          <div><b>CPF:</b> ${m.cpf || '—'}</div>
-          <div><b>Nascimento:</b> ${m.nascimento ? new Date(m.nascimento).toLocaleDateString('pt-BR') : '—'}</div>
-          <div><b>Admissão:</b> ${m.admissao ? new Date(m.admissao).toLocaleDateString('pt-BR') : '—'}</div>
-          <div><b>Demissão:</b> ${m.demissao ? new Date(m.demissao).toLocaleDateString('pt-BR') : '—'}</div>
-          <div><b>EPI:</b> ${m.epi || '—'}</div>
-          <div><b>Observação:</b> ${m.observacao || '—'}</div>
-        </div>
-      </td>
-    </tr>
+  <tr style="border-bottom: 1px solid #e5e7eb;">
+    <td style="padding:12px; color:#1f2937;">${m.nome}</td>
+    <td style="text-align:center; padding:12px; text-transform:capitalize;">${m.turno === 'dia' ? '☀️' : m.turno === 'noite' ? '🌙' : '🚛'} ${m.turno}</td>
+    <td style="text-align:center; padding:12px;">${m.nascimento ? new Date(m.nascimento).toLocaleDateString('pt-BR') : '—'}</td>
+    <td style="text-align:center; padding:12px;">${m.cnh_venc ? new Date(m.cnh_venc).toLocaleDateString('pt-BR') : '—'}</td>
+    <td style="text-align:center; padding:12px;">${m.epi || '—'}</td>
+    <td style="text-align:center; padding:12px;">
+      <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:none; border:none; cursor:pointer; color:#0ea5e9;">✏️</button>
+      <button onclick="this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none'" style="background:none; border:none; cursor:pointer; font-size:16px; color:#6366f1;">+</button>
+    </td>
+  </tr>
+  <tr style="display:none; background:#f8fafc;">
+    <td colspan="5" style="padding:12px 20px;">
+      <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:8px; font-size:13px; color:#374151;">
+        <div><b>CPF:</b> ${m.cpf || '—'}</div>
+        <div><b>Telefone:</b> ${m.telefone || '—'}</div>
+        <div><b>CNH:</b> ${m.cnh || '—'}</div>
+        <div><b>Admissão:</b> ${m.admissao ? new Date(m.admissao).toLocaleDateString('pt-BR') : '—'}</div>
+        <div><b>Demissão:</b> ${m.demissao ? new Date(m.demissao).toLocaleDateString('pt-BR') : '—'}</div>
+        <div><b>Observação:</b> ${m.observacao || '—'}</div>
+      </div>
+    </td>
+  </tr>
 `).join('');
   
   document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s)`;
@@ -2101,10 +2101,10 @@ window.salvarCadastroMotorista = async function() {
   const demissao = document.getElementById('cadDemissao').value || null;
   const obs = document.getElementById('cadObs').value.trim() || null;
   const epi = [
-    document.getElementById('cadEpiCamisa').value,
-    document.getElementById('cadEpiBota').value,
-    document.getElementById('cadEpiCalca').value
-  ].filter(Boolean).join(' | ') || null;
+  [document.getElementById('cadEpiCamisa').value, document.getElementById('cadEpiCamisaNum').value].filter(Boolean).join(':'),
+  [document.getElementById('cadEpiBota').value, document.getElementById('cadEpiBotaNum').value].filter(Boolean).join(':'),
+  [document.getElementById('cadEpiCalca').value, document.getElementById('cadEpiCalcaNum').value].filter(Boolean).join(':')
+].filter(Boolean).join(' | ') || null;
 
   if (!nome || !turno) {
     alert('❌ Nome e Turno são obrigatórios!');
@@ -2136,6 +2136,9 @@ window.salvarCadastroMotorista = async function() {
     document.getElementById('cadEpiCamisa').value = '';
     document.getElementById('cadEpiBota').value = '';
     document.getElementById('cadEpiCalca').value = '';
+    document.getElementById('cadEpiCamisaNum').value = '';
+    document.getElementById('cadEpiBotaNum').value = '';
+    document.getElementById('cadEpiCalcaNum').value = '';
 
     window.carregarMotoristas();
   } catch (err) {

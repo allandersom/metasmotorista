@@ -695,26 +695,27 @@
 
                         <div>
                             <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Tamanhos de EPIs (Camisa, Bota, etc)</label>
-                            <div style="display:flex;gap:8px;width:100%;">
+                            <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+  <div style="display:flex; gap:8px;">
+    <input id="cadEpiCamisaNum" type="text" placeholder="Nº Camisa" class="input-base" style="flex:1;">
+    <input id="cadEpiBotaNum" type="text" placeholder="Nº Bota" class="input-base" style="flex:1;">
+    <input id="cadEpiCalcaNum" type="text" placeholder="Nº Calça" class="input-base" style="flex:1;">
+  </div>
+  <div style="display:flex; gap:8px;">
     <select id="cadEpiCamisa" class="input-base" style="flex:1;">
-        <option value="">Camisa</option>
-        <option>P</option><option>M</option><option>G</option><option>GG</option><option>XGG</option>
+      <option value="">Camisa</option>
+      <option>P</option><option>M</option><option>G</option><option>GG</option><option>XGG</option>
     </select>
     <select id="cadEpiBota" class="input-base" style="flex:1;">
-        <option value="">Bota</option>
-        <option>38</option><option>39</option><option>40</option><option>41</option><option>42</option><option>43</option><option>44</option><option>45</option><option>46</option>
+      <option value="">Bota</option>
+      <option>38</option><option>39</option><option>40</option><option>41</option><option>42</option><option>43</option><option>44</option><option>45</option><option>46</option>
     </select>
     <select id="cadEpiCalca" class="input-base" style="flex:1;">
-        <option value="">Calça</option>
-        <option>36</option><option>38</option><option>40</option><option>42</option><option>44</option><option>46</option><option>48</option>
+      <option value="">Calça</option>
+      <option>36</option><option>38</option><option>40</option><option>42</option><option>44</option><option>46</option><option>48</option>
     </select>
+  </div>
 </div>
-                        </div>
-
-                        <div>
-                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Observação</label>
-                            <textarea id="cadObs" rows="3" placeholder="Informações adicionais..."
-                                class="input-base" style="width:100%; resize:vertical; font-family:inherit;"></textarea>
                         </div>
 
                         <button id="btnCadastrarMotorista" onclick="window.salvarCadastroMotorista()" class="btn-primary"
@@ -748,11 +749,11 @@
                                 <tr style="border-bottom: 1px solid var(--border-subtle);">
                                     <th style="text-align:left; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Nome</th>
                                     <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Turno</th>
-                                    <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">CNH</th>
-                                    <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Datas / RH</th>
-                                    <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Telefone</th>
+                                    <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Nascimento</th>
+<th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Venc. CNH</th>
+<th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">EPI</th>
                                     <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Ações</th>
-                                </tr>
+                                </tr>   
                             </thead>
                             <tbody id="tabelaCadastroMotoristas">
                                 <tr><td colspan="6" style="text-align:center; padding:32px; color:var(--gray-500);">Carregando...</td></tr>
