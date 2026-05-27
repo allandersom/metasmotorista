@@ -155,7 +155,7 @@ async function carregarDadosDoSupabase() {
                 if (!window.bancoDadosCloud[l.data]) {
                     window.bancoDadosCloud[l.data] = {};
                 }
-                window.bancoDadosCloud[l.data][l.motorista_nome] = {
+                window.bancoDadosCloud[l.data][l.motorista_nome.toUpperCase().trim()] = {
                     anexoNome: l.anexo_nome,
                     anexoUrl: l.anexo_url,
                     anexoPath: l.anexo_path,
@@ -177,14 +177,15 @@ async function carregarDadosDoSupabase() {
         window.motoristasInativos = []; // lista dos inativos
         if (mots) {
           mots.forEach(m => {
-        if (m.status === 'inativo') {
-            window.motoristasInativos.push(m.nome); // guarda separado
-            return; // não entra nas listas ativas
-        }
-        window.motoristas.push(m.nome);
-        if (m.turno === 'dia')        window.motRayanna.push(m.nome);
-        else if (m.turno === 'noite') window.motJulia.push(m.nome);
-        else                          window.motOutros.push(m.nome);
+        const nomeNorm = m.nome.toUpperCase().trim();
+if (m.status === 'inativo') {
+    window.motoristasInativos.push(nomeNorm);
+    return;
+}
+window.motoristas.push(nomeNorm);
+if (m.turno === 'dia')        window.motRayanna.push(nomeNorm);
+else if (m.turno === 'noite') window.motJulia.push(nomeNorm);
+else                          window.motOutros.push(nomeNorm);
     });
 }
         window.motoristas.sort();
@@ -1822,7 +1823,7 @@ window.salvarServicoRota = async function () {
 
     const { error } = await supabase.from('rotas_dia').insert({
         data:          dataRota,
-        motorista_nome: motorista,
+       motorista_nome: motoristaNome.toUpperCase().trim(),
         descricao,
         quantidade,
         status_celula: statusCelula,
