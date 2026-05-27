@@ -136,7 +136,6 @@ async function carregarDadosDoSupabase() {
             .is('cancelado_em', null);
 
         if (erroLancs) throw erroLancs;
-        // 2. Motoristas
         const { data: mots, error: erroMots } = await supabase
         .from('motoristas')
         .select('*');
@@ -1295,6 +1294,7 @@ window.gerarRankingMensal = function () {
     let totalCaixasFrota = 0, totalViagensFrota = 0, totalFatMesFrota = 0;
 
     window.motoristas.forEach(m => { acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0, pontos: 0 }; });
+    window.motoristasInativos.forEach(m => { acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0, pontos: 0 }; });
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataEstaNoMes(dataStr, mesFiltro)) {
@@ -1366,7 +1366,7 @@ window.gerarRankingMensal = function () {
         const info            = acumuladoMes[mot];
         const metaMensalPontos = getMetaCalculadaMotorista(mot);
         const percentualMeta  = metaMensalPontos > 0 ? (info.pontos / metaMensalPontos) * 100 : 0;
-        return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos };
+       return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos, inativo: window.motoristasInativos.includes(mot) };
     }).filter(item => item.pontos > 0 || item.valor > 0).sort((a, b) => b.percentual - a.percentual);
 
     const divLista = document.getElementById('listaLeaderboard');
@@ -1405,7 +1405,7 @@ window.gerarRankingMensal = function () {
         linha.className = 'elo-row';
         linha.innerHTML = `
             <div class="posicao">#${index + 1}</div>
-            <div class="nome-motorista-rank">${mot.nome}<span class="valor-sub">Fat: ${formatarMoeda(mot.valor)}</span></div>
+            <div class="nome-motorista-rank" ${mot.inativo ? 'style="color:#ef4444;"' : ''}>${mot.nome}<span class="valor-sub">Fat: ${formatarMoeda(mot.valor)}</span></div>
             <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
             <div class="valor-destaque text-blue-500 flex items-center">
                 ${textoQtd}
