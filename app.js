@@ -2171,10 +2171,9 @@ window.abrirModalEditarMotorista = async function(nome) {
   document.getElementById('editNascimento').value = motorista.nascimento || '';
   document.getElementById('editAdmissao').value = motorista.admissao || '';
   document.getElementById('editDemissao').value = motorista.demissao || '';
- const epiParts = (motorista.epi || '').split(' | ');
-document.getElementById('editEpiCamisa').value = epiParts[0] || '';
-document.getElementById('editEpiBota').value = epiParts[1] || '';
-document.getElementById('editEpiCalca').value = epiParts[2] || '';
+ document.getElementById('editEpiCamisa').value = motorista.epi || '';
+document.getElementById('editEpiBota').value = '';
+document.getElementById('editEpiCalca').value = '';
   document.getElementById('editObs').value = motorista.observacao || '';
 
   document.getElementById('modalEditarMotorista').classList.remove('hidden');
@@ -2200,7 +2199,7 @@ const demissao = document.getElementById('editDemissao').value || null;
     document.getElementById('editEpiCamisa').value,
     document.getElementById('editEpiBota').value,
     document.getElementById('editEpiCalca').value
-].filter(Boolean).join(' | ');
+].filter(Boolean).join(' | ') || null;
   const obs = document.getElementById('editObs').value;
 
   try {
