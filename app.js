@@ -178,12 +178,9 @@ async function carregarDadosDoSupabase() {
         if (mots) {
           mots.forEach(m => {
         if (m.status === 'inativo') {
-        window.motoristasInativos.push(m.nome);
+            window.motoristasInativos.push(m.nome); // guarda separado
+            return; // não entra nas listas ativas
         }
-        window.motoristas.push(m.nome);
-    if (m.turno === 'dia')        window.motRayanna.push(m.nome);
-    else if (m.turno === 'noite') window.motJulia.push(m.nome);
-    else                          window.motOutros.push(m.nome);
         window.motoristas.push(m.nome);
         if (m.turno === 'dia')        window.motRayanna.push(m.nome);
         else if (m.turno === 'noite') window.motJulia.push(m.nome);
@@ -557,13 +554,7 @@ window.renderizarSidebar = function () {
             if (isDesligadoNesteMes) {
                 li.innerHTML = `<span class="text-red-500 w-full block font-black leading-tight">${mot} <span class="text-[9px] opacity-90 ml-1 bg-red-100 text-red-700 px-1 rounded border border-red-200">(Deslig. no Mês)</span></span>`;
             } else {
-                if (window.motoristasInativos.includes(mot)) {
-                li.innerHTML = `<span style="color:#ef4444;">${mot}</span>`;
-             } else if (window.motoristasInativos.includes(mot)) {
-            li.innerHTML = `<span style="color:#ef4444;">${mot}</span>`;
-            } else {
-             li.textContent = mot;
-             }
+                li.textContent = mot;
             }
 
             li.onclick = () => window.selecionarMotorista(mot, li);
@@ -1420,7 +1411,8 @@ window.gerarRankingMensal = function () {
         linha.className = 'elo-row';
         linha.innerHTML = `
             <div class="posicao">#${index + 1}</div>
-<div class="nome-motorista-rank" ${window.motoristasInativos.includes(mot.nome) ? 'style="color:#ef4444;"' : ''}>${mot.nome}            <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
+            <div class="nome-motorista-rank" ${mot.inativo ? 'style="color:#ef4444;"' : ''}>${mot.nome}<span class="valor-sub">Fat: ${formatarMoeda(mot.valor)}</span></div>
+            <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
             <div class="valor-destaque text-blue-500 flex items-center">
                 ${textoQtd}
                 <span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};">${percentualStr}</span>
