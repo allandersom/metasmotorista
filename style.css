@@ -964,23 +964,22 @@ tbody tr:hover { background: var(--gray-25); }
 
 .modal-header {
   padding: var(--space-5) var(--space-6);
-  background: var(--gray-50); border-bottom: var(--border-subtle);
+  background: var(--brand-600);        /* fundo roxo/azul do sistema */
+  border-bottom: none;
   display: flex; justify-content: space-between; align-items: center;
 }
-.modal-header h3 { font-size: 15px; font-weight: 700; color: var(--gray-900); display: flex; align-items: center; gap: var(--space-2); }
-.modal-header h3 svg, .modal-header h3 .lucide { width: 16px; height: 16px; color: var(--brand-600); }
-.modal-header h3 span.highlight { color: var(--brand-600); }
+.modal-header h3 { font-size: 16px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: var(--space-2); }
+.modal-header h3 svg, .modal-header h3 .lucide { width: 18px; height: 18px; color: #ffffff; }
 
 .btn-close {
   width: 30px; height: 30px;
   background: transparent; border: none; cursor: pointer;
-  color: var(--gray-400); border-radius: var(--r-md);
+  color: rgba(255,255,255,0.8); border-radius: var(--r-md);
   display: flex; align-items: center; justify-content: center;
   transition: all var(--t-fast);
 }
-.btn-close:hover { background: var(--danger-50); color: var(--danger-500); }
+.btn-close:hover { background: rgba(255,255,255,0.15); color: #ffffff; }
 .btn-close svg, .btn-close .lucide { width: 16px; height: 16px; }
-
 .modal-body { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); overflow-y: auto; }
 
 .modal-section-label { font-size: 10px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
