@@ -2179,12 +2179,13 @@ window.abrirModalEditarMotorista = async function(nome) {
   document.getElementById('editTelefone').value = motorista.telefone || '';
   document.getElementById('editCnh').value = motorista.cnh || '';
   document.getElementById('editCnhVenc').value = motorista.cnh_venc || '';
-  document.getElementById('editNascimento').value = motorista.nascimento || '';
-  document.getElementById('editAdmissao').value = motorista.admissao || '';
-  document.getElementById('editDemissao').value = motorista.demissao || '';
- document.getElementById('editEpiCamisa').value = motorista.epi || '';
-document.getElementById('editEpiBota').value = '';
-document.getElementById('editEpiCalca').value = '';
+document.getElementById('editNascimento').value = motorista.data_nascimento || '';
+document.getElementById('editAdmissao').value = motorista.data_admissao || '';
+document.getElementById('editDemissao').value = motorista.data_demissao || '';
+const epiParts = (motorista.tamanho_epi || '').split(' | ');
+document.getElementById('editEpiCamisa').value = (epiParts[0] || '').replace('Camisa:', '');
+document.getElementById('editEpiBota').value   = (epiParts[1] || '').replace('Bota:', '');
+document.getElementById('editEpiCalca').value  = (epiParts[2] || '').replace('Calça:', '');
   document.getElementById('editObs').value = motorista.observacao || '';
 
   document.getElementById('modalEditarMotorista').classList.remove('hidden');
@@ -2206,10 +2207,10 @@ const cnh_venc = document.getElementById('editCnhVenc').value || null;
 const nascimento = document.getElementById('editNascimento').value || null;
 const admissao = document.getElementById('editAdmissao').value || null;
 const demissao = document.getElementById('editDemissao').value || null;
-  const epi = [
-    document.getElementById('editEpiCamisa').value,
-    document.getElementById('editEpiBota').value,
-    document.getElementById('editEpiCalca').value
+const epi = [
+    document.getElementById('editEpiCamisa').value ? `Camisa:${document.getElementById('editEpiCamisa').value}` : '',
+    document.getElementById('editEpiBota').value   ? `Bota:${document.getElementById('editEpiBota').value}`     : '',
+    document.getElementById('editEpiCalca').value  ? `Calça:${document.getElementById('editEpiCalca').value}`   : ''
 ].filter(Boolean).join(' | ') || null;
   const obs = document.getElementById('editObs').value;
 
