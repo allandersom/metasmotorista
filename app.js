@@ -136,6 +136,12 @@ async function carregarDadosDoSupabase() {
             .is('cancelado_em', null);
 
         if (erroLancs) throw erroLancs;
+        // 2. Motoristas
+        const { data: mots, error: erroMots } = await supabase
+        .from('motoristas')
+        .select('*');
+
+        if (erroMots) throw erroMots;
 
         window.bancoDadosCloud = {};
 
