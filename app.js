@@ -2077,15 +2077,25 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
     return;
   }
 
-  tbody.innerHTML = motoristas.map(m => `
-  <tr style="border-bottom: 1px solid #e5e7eb;">
-    <td style="padding:12px; color:#1f2937;">${m.nome}</td>
+  tbody.innerHTML = motoristas.map(m => {
+  const inativo = m.status === 'inativo';
+  return `
+  <tr style="border-bottom: 1px solid #e5e7eb; opacity:${inativo ? '0.5' : '1'};">
+    <td style="padding:12px; color:#1f2937;">
+      ${m.nome}
+      ${inativo ? '<span style="font-size:11px; background:#fee2e2; color:#dc2626; padding:2px 6px; border-radius:4px; margin-left:6px;">Inativo</span>' : ''}
+    </td>
     <td style="text-align:center; padding:12px; text-transform:capitalize;">${m.turno === 'dia' ? '☀️' : m.turno === 'noite' ? '🌙' : '🚛'} ${m.turno}</td>
     <td style="text-align:center; padding:12px;">${m.data_nascimento ? new Date(m.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
     <td style="text-align:center; padding:12px;">${m.cnh_venc ? new Date(m.cnh_venc + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
     <td style="text-align:center; padding:12px;">${m.tamanho_epi || '—'}</td>
     <td style="text-align:center; padding:12px;">
       <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:none; border:none; cursor:pointer; color:#0ea5e9;">✏️</button>
+      <button onclick="window.toggleStatusMotorista('${m.nome}', '${m.status}')" 
+        style="background:none; border:none; cursor:pointer; font-size:15px;" 
+        title="${inativo ? 'Reativar' : 'Desativar'}">
+        ${inativo ? '✅' : '🚫'}
+      </button>
       <button onclick="this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none'" style="background:none; border:none; cursor:pointer; font-size:16px; color:#6366f1;">+</button>
     </td>
   </tr>
@@ -2095,13 +2105,14 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
         <div><b>CPF:</b> ${m.cpf || '—'}</div>
         <div><b>Telefone:</b> ${m.telefone || '—'}</div>
         <div><b>CNH:</b> ${m.cnh || '—'}</div>
-        <div><b>Admissão:</b> ${m.admissao ? new Date(m.admissao).toLocaleDateString('pt-BR') : '—'}</div>
-        <div><b>Demissão:</b> ${m.demissao ? new Date(m.demissao).toLocaleDateString('pt-BR') : '—'}</div>
+        <div><b>Admissão:</b> ${m.data_admissao ? new Date(m.data_admissao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
+        <div><b>Demissão:</b> ${m.data_demissao ? new Date(m.data_demissao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
         <div><b>Observação:</b> ${m.observacao || '—'}</div>
       </div>
     </td>
   </tr>
-`).join('');
+  `;
+}).join('');
   
   document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s)`;
 };
@@ -2256,4 +2267,21 @@ window.filtrarTabelaCadastro = function() {
   if (turno) motoristas = motoristas.filter(m => m.turno === turno);
 
   window.renderizarTabelaMotoristasModal(motoristas);
+};
+
+window.toggleStatusMotorista = async function(nome, statusAtual) {
+  const novoStatus = statusAtual === 'inativo' ? 'ativo' : 'inativo';
+  const acao = novoStatus === 'inativo' ? 'desativar' : 'reativar';
+  if (!confirm(`Deseja ${acao} o motorista ${nome}?`)) return;
+
+  const { error } = await window.supabaseClient
+    .from('motoristas')
+    .update({ status: novoStatus })
+    .eq('nome', nome);
+
+  if (error) { alert('Erro: ' + error.message); return; }
+
+  window.carregarMotoristas();
+  // recarrega frota/meta também
+  if (window.carregarDados) window.carregarDados();
 };
