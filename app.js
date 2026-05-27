@@ -424,7 +424,7 @@ window.addMotoristaModal = async function () {
 
     const { error: erroMotorista } = await supabase
         .from('motoristas')
-        .upsert({ nome, turno, meta_diaria_padrao: 8, status: 'ativo' }, { onConflict: 'nome' });
+       .upsert({ nome, turno, status: 'ativo' }, { onConflict: 'nome' });
 
     if (erroMotorista) { alert('Erro ao cadastrar motorista: ' + erroMotorista.message); return; }
 
@@ -2212,10 +2212,10 @@ const demissao = document.getElementById('editDemissao').value || null;
         telefone,
         cnh,
         cnh_venc,
-        nascimento,
-        admissao,
-        demissao,
-        epi,
+        data_nascimento: nascimento,
+        data_admissao: admissao,
+        data_demissao: demissao,
+        tamanho_epi: epi,
         observacao: obs
       })
       .eq('nome', nomeOriginal);
