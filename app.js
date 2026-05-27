@@ -163,26 +163,19 @@ async function carregarDadosDoSupabase() {
         }
 
         // 2. Motoristas
-        const { data: mots, error: erroMots } = await supabase
-            .from('motoristas')
-            .select('*')
-            .neq('status', 'inativo');
-
-        if (erroMots) throw erroMots;
-
-        window.motRayanna = [];
-        window.motJulia = [];
-        window.motOutros = [];
-        window.motoristas = [];
-
+        window.motoristasInativos = []; // lista dos inativos
         if (mots) {
-            mots.forEach(m => {
-                window.motoristas.push(m.nome);
-                if (m.turno === 'dia')        window.motRayanna.push(m.nome);
-                else if (m.turno === 'noite') window.motJulia.push(m.nome);
-                else                          window.motOutros.push(m.nome);
-            });
+          mots.forEach(m => {
+        if (m.status === 'inativo') {
+            window.motoristasInativos.push(m.nome); // guarda separado
+            return; // não entra nas listas ativas
         }
+        window.motoristas.push(m.nome);
+        if (m.turno === 'dia')        window.motRayanna.push(m.nome);
+        else if (m.turno === 'noite') window.motJulia.push(m.nome);
+        else                          window.motOutros.push(m.nome);
+    });
+}
         window.motoristas.sort();
 
         // 3. Dias Úteis
