@@ -2115,9 +2115,9 @@ const admissao = document.getElementById('cadAdmissao')?.value || null;
 const demissao = document.getElementById('cadDemissao')?.value || null;
 const obs = document.getElementById('cadObs')?.value?.trim() || null;
 const epi = [
-  [document.getElementById('cadEpiCamisa')?.value, document.getElementById('cadEpiCamisaNum')?.value].filter(Boolean).join(':'),
-  [document.getElementById('cadEpiBota')?.value, document.getElementById('cadEpiBotaNum')?.value].filter(Boolean).join(':'),
-  [document.getElementById('cadEpiCalca')?.value, document.getElementById('cadEpiCalcaNum')?.value].filter(Boolean).join(':')
+  document.getElementById('cadEpiCamisaNum')?.value ? `Camisa:${document.getElementById('cadEpiCamisaNum').value}` : '',
+  document.getElementById('cadEpiBotaNum')?.value   ? `Bota:${document.getElementById('cadEpiBotaNum').value}`   : '',
+  document.getElementById('cadEpiCalcaNum')?.value  ? `Calça:${document.getElementById('cadEpiCalcaNum').value}`  : ''
 ].filter(Boolean).join(' | ') || null;
 
   if (!nome || !turno) {
@@ -2147,9 +2147,6 @@ const epi = [
     });
     document.getElementById('cadTurno').value = 'dia';
     document.getElementById('cadCnh').value = '';
-    document.getElementById('cadEpiCamisa').value = '';
-    document.getElementById('cadEpiBota').value = '';
-    document.getElementById('cadEpiCalca').value = '';
     document.getElementById('cadEpiCamisaNum').value = '';
     document.getElementById('cadEpiBotaNum').value = '';
     document.getElementById('cadEpiCalcaNum').value = '';
