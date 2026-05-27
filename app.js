@@ -34,6 +34,20 @@ import {
 window.formatarDataParaBusca = formatarDataParaBusca;
 window.formatarDataParaExibicao = formatarDataParaExibicao;
 
+window.formatarCpf = function(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 11);
+  v = v.replace(/(\d{3})(\d)/, '$1.$2');
+  v = v.replace(/(\d{3})(\d)/, '$1.$2');
+  v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  input.value = v;
+};
+
+window.formatarTelefone = function(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 11);
+  v = v.replace(/^(\d{2})(\d)/, '($1) $2');
+  v = v.replace(/(\d{5})(\d)/, '$1-$2');
+  input.value = v;
+};
 // =============================================================
 // CONEXÃO COM SUPABASE
 // =============================================================
@@ -2119,8 +2133,8 @@ window.salvarCadastroMotorista = async function() {
       .from('motoristas')
       .insert([{
         nome, turno, cpf, telefone, cnh,
-        cnh_venc, nascimento, admissao, demissao,
-        epi, observacao: obs, status: 'ativo'
+        cnh_venc, data_nascimento: nascimento, data_admissao: admissao, data_demissao: demissao,
+        tamanho_epi: epi, observacao: obs, status: 'ativo'
       }]);
 
     if (error) throw error;
