@@ -2092,57 +2092,60 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
 window.salvarCadastroMotorista = async function() {
   const nome = document.getElementById('cadNome').value.trim().toUpperCase();
   const turno = document.getElementById('cadTurno').value;
-  const cpf = document.getElementById('cadCpf').value;
-  const telefone = document.getElementById('cadTelefone').value;
-  const cnh = document.getElementById('cadCnh').value;
-  const cnh_venc = document.getElementById('cadCnhVenc').value;
-  const obs = document.getElementById('cadObs').value;
+  const cpf = document.getElementById('cadCpf').value.trim() || null;
+  const telefone = document.getElementById('cadTelefone').value.trim() || null;
+  const cnh = document.getElementById('cadCnh').value || null;
+  const cnh_venc = document.getElementById('cadCnhVenc').value || null;
+  const nascimento = document.getElementById('cadNascimento').value || null;
+  const admissao = document.getElementById('cadAdmissao').value || null;
+  const demissao = document.getElementById('cadDemissao').value || null;
+  const obs = document.getElementById('cadObs').value.trim() || null;
   const epi = [
     document.getElementById('cadEpiCamisa').value,
     document.getElementById('cadEpiBota').value,
     document.getElementById('cadEpiCalca').value
-].filter(Boolean).join(' | ');
+  ].filter(Boolean).join(' | ') || null;
 
   if (!nome || !turno) {
     alert('❌ Nome e Turno são obrigatórios!');
     return;
   }
 
+  const btn = document.getElementById('btnCadastrarMotorista');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
   try {
     const { error } = await window.supabaseClient
       .from('motoristas')
       .insert([{
-        nome,
-        turno,
-        cpf,
-        telefone,
-        cnh,
-        cnh_venc,
-        epi,
-        observacao: obs,
-        status: 'ativo'
+        nome, turno, cpf, telefone, cnh,
+        cnh_venc, nascimento, admissao, demissao,
+        epi, observacao: obs, status: 'ativo'
       }]);
 
     if (error) throw error;
 
-    alert('✅ Motorista cadastrado!');
-    
-    // Limpar formulário
-    document.getElementById('cadNome').value = '';
-    document.getElementById('cadTurno').value = 'dia';
-    document.getElementById('cadCpf').value = '';
-    document.getElementById('cadTelefone').value = '';
-    document.getElementById('cadCnh').value = '';
-    document.getElementById('cadCnhVenc').value = '';
-    document.getElementById('cadObs').value = '';
-    document.getElementById('cadEpiCamisa').value = '';
-document.getElementById('cadEpiBota').value = '';
-document.getElementById('cadEpiCalca').value = '';
+    alert('✅ Motorista cadastrado com sucesso!');
 
-    // Recarregar a lista na tela
+    ['cadNome','cadCpf','cadTelefone','cadCnhVenc','cadNascimento','cadAdmissao','cadDemissao','cadObs'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('cadTurno').value = 'dia';
+    document.getElementById('cadCnh').value = '';
+    document.getElementById('cadEpiCamisa').value = '';
+    document.getElementById('cadEpiBota').value = '';
+    document.getElementById('cadEpiCalca').value = '';
+
     window.carregarMotoristas();
   } catch (err) {
     alert('❌ Erro ao salvar: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="user-plus" style="width:16px;height:16px;display:inline;margin-right:6px;"></i>Cadastrar Motorista';
+      lucide.createIcons();
+    }
   }
 };
 
