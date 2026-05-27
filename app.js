@@ -205,9 +205,9 @@ else                          window.motOutros.push(nomeNorm);
         window.visibilidadeCloud = {};
         if (visib) {
             visib.forEach(v => {
-                const parts = v.chave.split('_');
-                const mesKey = parts[0];
-                const nomKey = parts.slice(1).join('_');
+                const firstUnder = v.chave.indexOf('_');
+                const mesKey = v.chave.substring(0, firstUnder);
+                const nomKey = v.chave.substring(firstUnder + 1);
                 if (!window.visibilidadeCloud[mesKey]) window.visibilidadeCloud[mesKey] = {};
                 window.visibilidadeCloud[mesKey][nomKey] = v.status;
             });
