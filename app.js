@@ -2057,6 +2057,17 @@ window.carregarMotoristas = async function() {
     if (error) throw error;
     
     window.motoristasCache = data || [];
+    window.motoristas = [];
+    window.motRayanna = [];
+    window.motJulia = [];
+    window.motOutros = [];
+    window.motoristasCache.forEach(m => {
+  window.motoristas.push(m.nome);
+  if (m.turno === 'dia')        window.motRayanna.push(m.nome);
+  else if (m.turno === 'noite') window.motJulia.push(m.nome);
+  else                          window.motOutros.push(m.nome);
+});
+window.motoristas.sort();
     window.renderizarTabelaMotoristasModal(data);
   } catch (err) {
     console.error('Erro:', err);
