@@ -2108,6 +2108,7 @@ window.carregarMotoristas = async function() {
 });
 window.motoristas.sort();
     window.renderizarTabelaMotoristasModal(data);
+    window.atualizarCardsCadastro();
   } catch (err) {
     console.error('Erro:', err);
     alert('Erro ao carregar motoristas: ' + err.message);
@@ -2223,6 +2224,38 @@ const epi = [
     }
   }
 };
+
+// Função para calcular e atualizar os cards superiores do Cadastro
+window.atualizarCardsCadastro = function() {
+  const total = window.motoristasCache.length;
+  const inativos = window.motoristasCache.filter(m => m.status === 'inativo').length;
+  const ativos = total - inativos;
+
+  const percAtivos = total > 0 ? Math.round((ativos / total) * 100) : 0;
+  const percInativos = total > 0 ? Math.round((inativos / total) * 100) : 0;
+
+  // Atualiza o Total
+  const elTotal = document.getElementById('totalMotoristas');
+  if (elTotal) elTotal.innerText = total;
+  
+  const elTotalMes = document.getElementById('motoristasMes');
+  if (elTotalMes) elTotalMes.innerText = 'Cadastrados no sistema';
+
+  // Atualiza os Ativos
+  const elAtivosValor = document.getElementById('motoristasAtivos');
+  if (elAtivosValor) elAtivosValor.innerText = ativos;
+  
+  const elAtivosPerc = document.getElementById('percentualAtivos');
+  if (elAtivosPerc) elAtivosPerc.innerText = `${percAtivos}% da frota`;
+
+  // Atualiza os Inativos
+  const elInativosValor = document.getElementById('motoristasInativos');
+  if (elInativosValor) elInativosValor.innerText = inativos;
+  
+  const elInativosPerc = document.getElementById('percentualInativos');
+  if (elInativosPerc) elInativosPerc.innerText = `${percInativos}% da frota`;
+};
+
 
 // Abrir modal de edição
 window.abrirModalEditarMotorista = async function(nome) {
