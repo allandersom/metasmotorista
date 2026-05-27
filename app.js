@@ -518,6 +518,40 @@ window.motoristaTemLancamentoNoMes = function (nome, mes) {
     return false;
 };
 
+
+
+window._turnoIndex = 0;
+window._turnosCiclo = [
+    { value: 'todos',    label: 'Todos',    icone: '👥', bg: '#f1f5f9', border: '#e2e8f0', color: '#475569' },
+    { value: 'dia',      label: 'Dia',      icone: '☀️', bg: '#fef9c3', border: '#fde047', color: '#854d0e' },
+    { value: 'noite',    label: 'Noite',    icone: '🌙', bg: '#ede9fe', border: '#a78bfa', color: '#5b21b6' },
+    { value: 'especial', label: 'Especial', icone: '🚛', bg: '#dcfce7', border: '#86efac', color: '#166534' },
+];
+
+window.ciclartarTurno = function () {
+    window._turnoIndex = (window._turnoIndex + 1) % window._turnosCiclo.length;
+    const t = window._turnosCiclo[window._turnoIndex];
+
+    const input   = document.getElementById('filtroTurno');
+    const toggle  = document.getElementById('filtroTurnoToggle');
+    const icone   = document.getElementById('filtroTurnoIcone');
+    const label   = document.getElementById('filtroTurnoLabel');
+
+    if (input)  input.value = t.value;
+    if (label)  label.textContent = t.label;
+    if (toggle) {
+        toggle.style.background  = t.bg;
+        toggle.style.borderColor = t.border;
+        toggle.style.color       = t.color;
+    }
+    if (icone) {
+        icone.style.transform = 'rotate(360deg) scale(1.3)';
+        setTimeout(() => { icone.textContent = t.icone; icone.style.transform = 'rotate(0deg) scale(1)'; }, 200);
+    }
+
+    window.renderizarSidebar();
+};
+
 window.renderizarSidebar = function () {
     const ul = document.getElementById('listaMotoristas');
     const selectFiltro = document.getElementById('filtroTurno');

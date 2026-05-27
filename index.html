@@ -132,12 +132,25 @@
                     <div class="driver-panel" style="width:280px; flex-shrink:0;">
                         <div class="driver-panel-header">
                             <h3>Selecionar Motorista</h3>
-                            <select id="filtroTurno" class="select-turno" onchange="window.renderizarSidebar()">
-                                <option value="todos">Todos os Turnos</option>
-                                <option value="dia">Dia (Rayanna)</option>
-                                <option value="noite">Noite (Júlia)</option>
-                                <option value="especial">Especial (Caçamba)</option>
-                            </select>
+                            <div id="filtroTurnoToggle" onclick="window.ciclartarTurno()" style="
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:600;
+    user-select:none;
+    transition:all 0.3s ease;
+    background:#f1f5f9;
+    border:1.5px solid #e2e8f0;
+    color:#475569;
+" title="Clique para mudar o turno">
+    <span id="filtroTurnoIcone" style="font-size:15px; transition:transform 0.4s ease;">👥</span>
+    <span id="filtroTurnoLabel">Todos</span>
+</div>
+<input type="hidden" id="filtroTurno" value="todos">
                             <div class="search-row">
                                 <div class="search-wrap">
                                     <i data-lucide="search"></i>
