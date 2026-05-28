@@ -104,10 +104,12 @@ servicosFeitosSemana += srv * fatorDia;
     };
 }
 
+// DEPOIS:
 export function calcularValorDia({
     motoristaNome,
     dataStr,
     servicos,
+    servicosBrutos,   // ← ADICIONAR
     tipoVeiculo,
     isFeriado,
     status,
@@ -133,6 +135,7 @@ export function calcularValorDia({
             motoristaNome,
             dataObj,
             servicos,
+            servicosBrutos,   // ← ADICIONAR
             tipoVeiculo,
             bancoDados,
             formatarData,
