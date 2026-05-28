@@ -1694,7 +1694,7 @@ input[type="month"] {
 .btn-primary {
     padding: 10px 24px;
     background: var(--brand-600);
-    color: white;
+    color: rgb(150, 124, 124);
     border: none;
     border-radius: var(--radius-md);
     font-weight: 600;
