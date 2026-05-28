@@ -1,302 +1,1110 @@
-# Ativar login com Supabase Auth
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGC Logística — Gestão da Frota</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-Este repo ja tem o arquivo `auth.js`. Para ativar a tela de login, faca estes passos.
+    <div id="loader" class="loading-screen">
+        <div class="spinner"></div>
+        <p id="loader-text">Conectando ao banco de dados...</p>
+    </div>
 
-## 1. Fazer backup antes
-
-No sistema atual, clique em:
-
-`Sistema / Backup` -> `Baixar Backup Seguro (.json)`
-
-Guarde esse arquivo antes de mexer em permissoes.
-
-## 2. Alterar o `index.html`
-
-### 2.1. Cole a tela de login logo depois de `<body>`
-
-```html
-<div id="loginScreen" class="login-screen" style="display:none;">
-    <div class="login-box">
-        <div class="login-brand">
+    <aside id="sidebar">
+        <div class="sidebar-logo">
             <div class="logo-icon">
-                <i data-lucide="waves" class="w-5 h-5 text-white"></i>
+                <i data-lucide="waves" class="w-5 h-5 text-white" ></i>
             </div>
-            <div>
+            <div class="logo-text">
                 <h1>SGC</h1>
-                <p>Sao Gabriel Transportes</p>
+                <p>São Gabriel Transportes</p>
             </div>
         </div>
 
-        <div class="login-title">
-            <h2>Acesso ao painel</h2>
-            <p>Entre com seu e-mail e senha autorizados.</p>
-        </div>
+        <nav>
+    <button id="btnTabRankings" onclick="window.mudarAba('rankings')" class="nav-tab active">
+        <i data-lucide="trophy" class="w-4 h-4 shrink-0"></i>
+        Central de Rankings
+    </button>
 
-        <label class="login-label" for="loginEmail">E-mail</label>
-        <input id="loginEmail" type="email" class="login-input" autocomplete="email" placeholder="voce@empresa.com">
+    <button id="btnTabLancamentos" onclick="window.mudarAba('lancamentos')" class="nav-tab">
+        <i data-lucide="truck" class="w-4 h-4 shrink-0"></i>
+        Gestão da Frota
+    </button>
 
-        <label class="login-label" for="loginSenha">Senha</label>
-        <input id="loginSenha" type="password" class="login-input" autocomplete="current-password" placeholder="Sua senha">
+    <button id="btnTabDomFeriados" onclick="window.mudarAba('domferiados')" class="nav-tab">
+        <i data-lucide="calendar-off" class="w-4 h-4 shrink-0"></i>
+        Domingos &amp; Feriados
+    </button>
 
-        <p id="loginMensagem" class="login-message"></p>
+    <button id="btnTabProjecao" onclick="window.mudarAba('projecao')" class="nav-tab">
+        <i data-lucide="line-chart" class="w-4 h-4 shrink-0"></i>
+        Projeção e BI
+    </button>
 
-        <button id="btnLogin" type="button" class="login-primary" onclick="window.loginSupabase()">
-            <i data-lucide="log-in"></i>
-            Entrar
-        </button>
+    <button id="btnTabAuditoria" onclick="window.mudarAba('auditoria')" class="nav-tab">
+        <i data-lucide="history" class="w-4 h-4 shrink-0"></i>
+       Histórico
+    </button>
 
-        <button id="btnCriarAcesso" type="button" class="login-secondary" onclick="window.criarAcessoSupabase()">
-            Criar primeiro acesso
-        </button>
+    <button id="btnTabRotas" onclick="window.mudarAba('rotas')" class="nav-tab">
+        <i data-lucide="map" class="w-4 h-4 shrink-0"></i>
+        Rota do Dia (Planilha) - manutenção
+    </button>
+
+    <button id="btnTabCadastro" onclick="window.mudarAba('cadastro')" class="nav-tab">
+        <i data-lucide="user-plus" class="w-4 h-4 shrink-0"></i>
+        Cadastro de Motoristas
+    </button>
+
+    <button id="btnTabRelCaixas" onclick="window.mudarAba('relcaixas')" class="nav-tab">
+        <i data-lucide="package" class="w-4 h-4 shrink-0"></i>
+        Relatório de Caixas
+    </button>
+
+    <button id="btnTabOperador" onclick="window.mudarAba('operador')" class="nav-tab">
+    <i data-lucide="user-cog"></i>
+    <span>Operador</span>
+</button>
+</nav>
+    </aside>
+
+    <main>
+        <header>
+            <button onclick="window.toggleSidebar()" class="btn-icon">
+                <i data-lucide="menu"></i>
+            </button>
+            <div class="header-actions">
+                <button onclick="window.abrirModalSistema()" class="btn-sistema">
+                    <i data-lucide="settings"></i>
+                    Sistema / Backup
+                </button>
+                <button class="btn-icon notif-dot">
+                    <i data-lucide="bell"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="content-area">
+
+            <div id="viewLancamentos" style="display:none;">
+
+                <div class="page-header">
+                    <div>
+                        <h2>Gestão Diária da Frota</h2>
+                        <p>Acompanhe e gerencie os turnos da operação.</p>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <input type="month" id="dataGlobal" class="inline-date"
+                            onchange="window.sincronizarMesData(); window.atualizarResumosGlobais(); window.renderizarSidebar();">
+                        <button onclick="window.exportarRelatorioFaltas()" class="btn-sistema" style="height:36px; padding:0 14px; background:var(--brand-50); color:var(--brand-600); border:1px solid var(--brand-200); font-size:13px; display:flex; align-items:center; gap:6px;">
+                            <i data-lucide="file-down" style="width:15px;height:15px;"></i>
+                            Exportar Faltas do Mês
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+
+                    <div class="stat-card stat-card-plain">
+                        <div>
+                            <div class="stat-label">Dias Úteis Globais (Mês)</div>
+                            <input type="number" id="inputDiasUteisLanc" min="1" max="31"
+                                onchange="window.salvarDiasUteis('lanc')"
+                                class="stat-value-input" readonly>
+                        </div>
+                        <button id="btnTravaLanc" onclick="window.toggleTravaGlobais()" class="lock-btn">
+                            <i data-lucide="lock"></i>
+                        </button>
+                    </div>
+
+                    <div class="stat-card stat-card-emerald">
+                        <div class="stat-label">Total Frota (Dia Selecionado)</div>
+                        <div class="stat-value" id="totalDiaGlobal">R$ 0,00</div>
+                        <div class="stat-sub" id="caixasDiaGlobal">0 cx</div>
+                    </div>
+
+                    <div class="stat-card stat-card-brand">
+                        <div class="stat-label">Total Frota (Mês)</div>
+                        <div class="stat-value" id="totalSemanaGlobal">R$ 0,00</div>
+                        <div class="stat-sub" id="caixasSemanaGlobal">0 cx</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-5" style="height: calc(100vh - 310px);">
+
+                    <div class="driver-panel" style="width:280px; flex-shrink:0;">
+                        <div class="driver-panel-header">
+                            <h3>Selecionar Motorista</h3>
+                            <div id="filtroTurnoToggle" onclick="window.ciclartarTurno()" style="
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:600;
+    user-select:none;
+    transition:all 0.3s ease;
+    background:#f1f5f9;
+    border:1.5px solid #e2e8f0;
+    color:#475569;
+" title="Clique para mudar o turno">
+    <span id="filtroTurnoIcone" style="font-size:15px; transition:transform 0.4s ease;">👥</span>
+    <span id="filtroTurnoLabel">Todos</span>
+</div>
+<input type="hidden" id="filtroTurno" value="todos">
+                            <div class="search-row">
+                                <div class="search-wrap">
+                                    <i data-lucide="search"></i>
+                                    <input type="text" id="buscaMotorista" placeholder="Buscar motorista..."
+                                        onkeyup="window.filtrarMotoristas()" class="search-input">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="driver-list-scroll" id="listaMotoristasContainer">
+                            <ul id="listaMotoristas" class="space-y-px"></ul>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 bg-white rounded-[1.5rem] border relative overflow-hidden flex flex-col" style="border-color: var(--gray-150); min-width:0;">
+
+                        <div id="estadoVazio" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 p-8 text-center rounded-[1.5rem]">
+                            <div class="empty-icon-wrap">
+                                <i data-lucide="truck"></i>
+                            </div>
+                            <h3 style="font-size:14px;font-weight:600;color:var(--gray-600);max-width:240px;line-height:1.5;">
+                                Selecione um turno e clique em um motorista para iniciar.
+                            </h3>
+                            <div class="empty-divider"></div>
+                        </div>
+
+                        <div id="conteudoMotorista" style="display:none; overflow-y:auto; padding:var(--space-6); flex:1; flex-direction:column;" class="animate-fade-in">
+
+                            <div class="motorista-header">
+                                <h3 id="nomeMotoristaDisplay">Nome</h3>
+                                <div class="sla-chip">
+                                    <div class="sla-chip-inner">
+                                        <span class="sla-chip-label">SLA (Dias Úteis)</span>
+                                        <input type="number" id="inputSlaMotorista" min="1" max="31" readonly>
+                                    </div>
+                                    <button id="btnTravaSla" onclick="window.toggleTravaSla()">
+                                        <i data-lucide="lock"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="motorista-stats">
+                                <div class="mstat">
+                                    <span class="mstat-label">Dia Selecionado</span>
+                                    <strong id="motoristaTotalDia" class="mstat-value">R$ 0,00</strong>
+                                </div>
+                                <div class="mstat">
+                                    <span class="mstat-label">Semana Atual</span>
+                                    <strong id="motoristaTotalSemana" class="mstat-value">R$ 0,00</strong>
+                                </div>
+                                <div class="mstat span2">
+                                    <div>
+                                        <span class="mstat-label">Resultados (Mês)</span>
+                                        <strong id="motoristaCaixasMes" class="mstat-value">0 cx | 0 vg</strong>
+                                        <span id="motoristaMetaMes" class="mstat-sub">Meta Mensal: 0 cx | Fat: R$ 0,00</span>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <span class="mstat-label">Previsão Final</span>
+                                        <strong id="motoristaPrevisaoMes" class="mstat-value">0 cx</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-card">
+                                <div class="form-card-title">
+                                    <i data-lucide="plus-circle"></i>
+                                    Novo Lançamento
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
+                                    <div class="flex flex-col gap-1">
+                                        <label>Data do Serviço</label>
+                                        <input type="date" id="dataLancamento" class="input-base"
+                                            onchange="window.atualizarResumosDoMotorista(); window.atualizarSlaInput();">
+                                        <div class="feriado-row">
+                                            <input type="checkbox" id="feriado">
+                                            <label for="feriado">É Feriado?</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-1 mb-[22px]">
+                                        <label>Status</label>
+                                        <select id="statusServico" class="input-base">
+                                            <option value="normal">Trabalhou Normal</option>
+                                            <option value="falta">Falta</option>
+                                            <option value="folga">Folga</option>
+                                            <option value="atestado">Atestado</option>
+                                            <option value="polioff">Poli OFF / Oficina</option>
+                                            <option value="licenca">Férias</option>
+                                            <option value="desligado">Desligado 🛑</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="flex flex-col gap-1 mb-[22px]">
+                                        <label>Veículo</label>
+                                        <select id="tipoVeiculo" class="input-base"></select>
+                                    </div>
+
+                                    <div class="flex flex-col gap-1 mb-[22px]">
+                                        <label>Qtd (Cx/Vg)</label>
+                                        <input type="number" id="servicos" min="0" placeholder="0" class="input-base text-center">
+                                    </div>
+
+                                    <div class="flex flex-col gap-1 mb-[22px]">
+                                        <label>Extra (R$)</label>
+                                        <input type="number" id="valorExtra" step="0.01" min="0" placeholder="0,00" class="input-base text-center" style="color:var(--brand-600);font-weight:600;">
+                                    </div>
+
+                                    <div class="flex flex-col gap-1 md:col-span-4">
+                                        <label class="flex justify-between items-center" style="pointer-events:none;">
+                                            <span>Observações</span>
+                                            <button type="button" onclick="document.getElementById('anexoObs').click()" class="attach-label" style="pointer-events:auto;background:none;border:none;cursor:pointer;font-family:var(--font-ui);">
+                                                <i data-lucide="paperclip"></i>
+                                                Anexar arquivo
+                                            </button>
+                                        </label>
+                                        <input type="file" id="anexoObs" style="display:none;">
+                                        <textarea id="observacao" rows="2" class="input-base" placeholder="Opcional..."></textarea>
+                                        <p id="nomeAnexo" class="hidden"></p>
+                                    </div>
+
+                                    <div class="md:col-span-1 flex items-end h-full" style="padding-bottom:2px;">
+                                        <button id="btnSalvarL" onclick="window.salvarLancamento()" class="btn-primary w-full" style="height:40px;">
+                                            <i data-lucide="save"></i>
+                                            Gravar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex-1" style="min-height:220px;">
+                                <div class="table-header-row">
+                                    <span class="table-section-label">Histórico de Lançamentos</span>
+
+                                </div>
+                                <div class="table-wrap">
+                                    <table id="tabelaHistorico">
+                                        <thead>
+                                            <tr>
+                                                <th>Data</th>
+                                                <th>Status / Veículo</th>
+                                                <th style="text-align:center;">Qtd</th>
+                                                <th style="text-align:center;">Extra</th>
+                                                <th style="text-align:right;">Valor</th>
+                                                <th>Observação</th>
+                                                <th style="text-align:center;">Ação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="viewRankings" style="display:none;">
+                <div class="page-header">
+                    <div>
+                        <h2>Central de Rankings</h2>
+                        <p>Classificação e metas das operadoras.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-7">
+                    <div class="stat-card stat-card-plain" style="border-radius:var(--r-xl);">
+                        <div>
+                            <div class="stat-label">SLA Global (Mês)</div>
+                            <input type="number" id="inputDiasUteisRank" min="1" max="31"
+                                onchange="window.salvarDiasUteis('rank')"
+                                class="stat-value-input" readonly>
+                        </div>
+                        <button id="btnTravaRank" onclick="window.toggleTravaGlobais()" class="lock-btn">
+                            <i data-lucide="lock"></i>
+                        </button>
+                    </div>
+
+                    <div class="meta-card-green">
+                        <div class="meta-card-label">Meta Geral (Mês)</div>
+                        <div class="meta-card-value" id="metaGeralGlobal">0 / 0 cx</div>
+                        <div class="meta-card-sub" id="faltaGeralGlobal">0% | Faltam 0</div>
+                    </div>
+
+                    <div class="meta-card-pink">
+                        <div class="meta-card-label">Meta Rayanna (Mês)</div>
+                        <div class="meta-card-value" id="metaRayannaGlobal">0 / 0 cx</div>
+                        <div class="meta-card-sub" id="faltaRayannaGlobal">0% | Faltam 0</div>
+                    </div>
+
+                    <div class="meta-card-indigo">
+                        <div class="meta-card-label">Meta Júlia (Mês)</div>
+                        <div class="meta-card-value" id="metaJuliaGlobal">0 / 0 cx</div>
+                        <div class="meta-card-sub" id="faltaJuliaGlobal">0% | Faltam 0</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="rank-card">
+                        <div class="rank-card-header">
+                            <h3>Leaderboard Mensal (Elo)</h3>
+                            <input type="month" id="mesFiltro" class="inline-date"
+                                onchange="window.sincronizarMesFiltro(); window.gerarRankingMensal(); window.atualizarGraficosProjecao();">
+                        </div>
+
+                        <div class="fat-total-badge mb-5">
+                            <span>Faturamento Total (Mês)</span>
+                            <span id="totalFatMensalLeaderboard">R$ 0,00</span>
+                        </div>
+
+                        <div id="listaLeaderboard" class="space-y-2"></div>
+                    </div>
+
+                    <div class="rank-card" id="cardRankingPeriodoPDF">
+                        <div class="rank-card-header" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                               <!-- PARA: -->
+<div style="display:flex; align-items:center; gap:10px;">
+    <div style="background:#dcfce7; border-radius:10px; width:40px; height:40px; display:flex; align-items:center; justify-content:center;">
+        <i data-lucide="bar-chart-2" style="width:20px; height:20px; color:#16a34a;"></i>
+    </div>
+    <div>
+        <h3 style="margin:0;">Ranking por Período</h3>
+        <span style="font-size:12px; color:var(--gray-400); font-weight:400;">Total de serviços e faturamento</span>
     </div>
 </div>
-```
+                                <button id="btnExportarPDF" onclick="window.exportarRankingPeriodoPDF()" class="btn-sistema" style="height: 30px; padding: 0 12px; background: var(--brand-50); color: var(--brand-600); border: 1px solid var(--brand-200); font-size: 12px;">
+                                    <i data-lucide="file-down" style="width: 14px; height: 14px; margin-right: 4px;"></i> Exportar PDF
+                                </button>
+                            </div>
+                            <div id="controlesDataPeriodo" class="flex items-center gap-2">
+                                <input type="date" id="dataRankingInicio" class="inline-date" onchange="window.gerarRankingPeriodo()">
+                                <span style="color:var(--gray-400);font-size:12px;font-weight:600;">até</span>
+                                <input type="date" id="dataRankingFim" class="inline-date" onchange="window.gerarRankingPeriodo()">
+                            </div>
+                        </div>
 
-### 2.2. Esconda o app ate o login carregar
+                        <!-- NOVA BADGE DE TOTAIS -->
+                        <div class="fat-total-badge mb-5" style="display: flex; justify-content: space-between; background: var(--gray-50);">
+                            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                <span>Total de Serviços no Período</span>
+                                <span id="totalQtdPeriodo" style="color: var(--brand-600); font-size: 15px;">0 cx | 0 vg</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                                <span>Faturamento no Período</span>
+                                <span id="totalFatPeriodo" style="color: #10b981; font-size: 15px;">R$ 0,00</span>
+                            </div>
+                        </div>
 
-Troque:
+                        <div id="listaRankingDiario" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
 
-```html
-<aside id="sidebar">
-```
+            <div id="viewDomFeriados" style="display:none;">
+                <div class="flex justify-between items-center mb-7 pb-5" style="border-bottom: var(--border-subtle);">
+                    <div>
+                        <h2 style="font-size:22px;font-weight:700;color:var(--gray-900);letter-spacing:-0.025em;">Domingos &amp; Feriados</h2>
+                        <p style="font-size:13px;color:var(--gray-400);margin-top:3px;">Serviços realizados em dias especiais.</p>
+                    </div>
+                    <div class="total-global-badge">
+                        <span class="tg-label">Total Global</span>
+                        <span class="tg-value" id="totalGeralDomFer">R$ 0,00</span>
+                    </div>
+                </div>
 
-por:
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="rank-card flex flex-col">
+                        <div class="rank-card-header">
+                            <h3>☀️ Domingos</h3>
+                            <div class="datas-range">
+                                <input type="date" id="dataDomInicio" onchange="window.gerarPainelFeriados()">
+                                <span style="color:var(--gray-300);font-weight:700;">–</span>
+                                <input type="date" id="dataDomFim" onchange="window.gerarPainelFeriados()">
+                            </div>
+                        </div>
+                        <div id="listaDomingos" class="space-y-2 flex-1"></div>
+                        <div style="margin-top:var(--space-4);padding-top:var(--space-4);border-top:var(--border-subtle);text-align:right;">
+                            <span style="font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;">Total Domingos: </span>
+                            <span style="font-family:var(--font-mono);font-size:17px;font-weight:600;color:var(--danger-500);" id="totalFatDom">R$ 0,00</span>
+                        </div>
+                    </div>
 
-```html
-<aside id="sidebar" style="display:none;">
-```
+                    <div class="rank-card flex flex-col">
+                        <div class="rank-card-header">
+                            <h3>🎉 Feriados</h3>
+                            <div class="datas-range">
+                                <input type="date" id="dataFerInicio" onchange="window.gerarPainelFeriados()">
+                                <span style="color:var(--gray-300);font-weight:700;">–</span>
+                                <input type="date" id="dataFerFim" onchange="window.gerarPainelFeriados()">
+                            </div>
+                        </div>
+                        <div id="listaFeriados" class="space-y-2 flex-1"></div>
+                        <div style="margin-top:var(--space-4);padding-top:var(--space-4);border-top:var(--border-subtle);text-align:right;">
+                            <span style="font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;">Total Feriados: </span>
+                            <span style="font-family:var(--font-mono);font-size:17px;font-weight:600;color:var(--danger-500);" id="totalFatFer">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-Troque:
+            <div id="viewProjecao" style="display:none;">
+                <div class="proj-header">
+                    <div>
+                        <h2>Projeção e Evolução</h2>
+                        <div class="proj-sub" style="margin-top:6px;font-size:13px;color:var(--gray-400);">
+                            Análise de
+                            <strong id="projecaoNomeMotorista" style="font-weight:700;color:var(--brand-600);text-transform:uppercase;">Ninguém</strong>
+                            no período:
+                            <input type="date" id="dataProjInicio" class="inline-date" style="margin-left:6px;" onchange="window.atualizarGraficosProjecao()">
+                            <span style="margin:0 4px;color:var(--gray-400);font-weight:700;font-size:11px;">ATÉ</span>
+                            <input type="date" id="dataProjFim" class="inline-date" onchange="window.atualizarGraficosProjecao()">
+                        </div>
+                    </div>
+                    <div class="proj-filters">
+                        <div class="proj-filter-group">
+                            <span class="proj-filter-label">Motorista (Azul)</span>
+                            <select id="filtroProjMot" onchange="window.selecionarMotoristaProjecao(this.value)" class="proj-filter-select">
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="proj-divider"></div>
+                        <div class="proj-filter-group">
+                            <span class="proj-filter-label">Turno (Verde)</span>
+                            <select id="filtroProjTurno" onchange="window.atualizarGraficosProjecao()" class="proj-filter-select green-select">
+                                <option value="todos">Frota Completa</option>
+                                <option value="dia">Dia (Rayanna)</option>
+                                <option value="noite">Noite (Júlia)</option>
+                                <option value="especial">Especial (Caçamba)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
-```html
-<main>
-```
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+                    <div class="stat-card">
+                        <div class="stat-label">Produção (Período Atual)</div>
+                        <div class="stat-value" id="statMesAtual">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Produção (Período Anterior)</div>
+                        <div class="stat-value" id="statMesPassado">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Desempenho vs Anterior</div>
+                        <div id="statCrescimento" style="font-size:16px;font-weight:600;color:var(--gray-800);margin-top:4px;display:flex;align-items:center;gap:8px;">—</div>
+                    </div>
+                </div>
 
-por:
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-7">
+                    <div class="stat-card">
+                        <div class="stat-label">Consistência (Metas)</div>
+                        <div class="stat-value text-brand" id="statWinRate" style="font-size:26px;">0%</div>
+                        <div class="stat-sub" id="statWinRateSub">0 de 0 dias úteis</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Média Diária (Real)</div>
+                        <div class="stat-value" id="statMediaReal">0.0</div>
+                        <div class="stat-sub" id="statMediaNec">SLA pede: 0.0 /dia</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Recorde Pessoal</div>
+                        <div class="stat-value text-warning" id="statRecorde">0</div>
+                        <div class="stat-sub" id="statRecordeData">Sem registro</div>
+                    </div>
+                    <div class="stat-card stat-card-dark">
+                        <div class="stat-label" id="tituloDiaForte">Melhor Dia (Frota)</div>
+                        <div class="stat-value" id="statMelhorDia">N/A</div>
+                        <div class="stat-sub" id="statMelhorDiaPts">Sem dados</div>
+                    </div>
+                </div>
 
-```html
-<main style="display:none;">
-```
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="chart-card">
+                        <h3>Evolução Diária (Período Atual)</h3>
+                        <div style="height:240px;position:relative;">
+                            <canvas id="chartEvolucaoIndividual"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Volume Geral da Frota (Período Atual)</h3>
+                        <div style="height:240px;position:relative;">
+                            <canvas id="chartEvolucaoGeral"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-### 2.3. Adicione usuario e sair no header
+            <div id="viewAuditoria" style="display:none;">
+                <div class="page-header">
+                    <div>
+                        <h2>Auditoria</h2>
+                        <p>Veja quem criou, editou ou excluiu lançamentos.</p>
+                    </div>
+                    <button onclick="window.carregarAuditoriaLancamentos()" class="btn-sistema">
+                        <i data-lucide="refresh-cw"></i>
+                        Atualizar
+                    </button>
+                </div>
 
-Dentro de:
+                <div class="rank-card">
+                    <div class="table-wrap">
+                        <table id="tabelaAuditoria">
+                            <thead>
+                                <tr>
+                                    <th>Quando</th>
+                                    <th>Ação</th>
+                                    <th>Usuário</th>
+                                    <th>Motorista</th>
+                                    <th>Data Serviço</th>
+                                    <th>Resumo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-slate-400 font-medium py-8">
+                                        Clique em Atualizar para carregar a auditoria.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
-```html
-<div class="header-actions">
-```
+           <div id="viewRotas" style="display:none; height: calc(100vh - 80px); flex-direction: column; background-color: #f8fafc; padding: 24px; border-radius: 20px;">
+                
+                <div class="flex justify-between items-center mb-6" style="flex-shrink: 0;">
+                    <div>
+                        <h2 style="font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px;">Programação de Serviços</h2>
+                        <p style="color: #64748b; font-size: 13px; margin-top: 2px;">Planeje e organize os serviços da frota por dia e motorista.</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center bg-white border border-slate-200 rounded-lg px-4 py-2 shadow-sm">
+                            <i data-lucide="calendar" class="w-4 h-4 text-slate-400 mr-2"></i>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">Data de Referência:</span>
+                            <input type="date" id="dataPlanilhaRota" onchange="window.carregarPlanilhaRota()" class="bg-transparent text-sm font-semibold text-slate-700 outline-none cursor-pointer">
+                        </div>
+                        
+                        <button onclick="window.salvarPlanilhaRota()" id="btnSalvarPlanilha" class="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-all shadow-sm shadow-indigo-200">
+                            <i data-lucide="save" class="w-4 h-4 mr-2"></i>
+                            Salvar Planilha
+                        </button>
+                    </div>
+                </div>
 
-cole antes do botao `Sistema / Backup`:
+                <div class="flex gap-2 mb-4 border-b border-slate-200 pb-4" style="flex-shrink: 0;" id="tabsTurno">
+                    <button onclick="window.mudarTurnoPlanilha('todos', this)" class="tab-turno bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-md text-sm font-semibold transition-all">Todos os Turnos</button>
+                    <button onclick="window.mudarTurnoPlanilha('dia', this)" class="tab-turno bg-white text-slate-500 border border-transparent hover:bg-slate-50 px-4 py-2 rounded-md text-sm font-semibold transition-all">Turno Dia</button>
+                    <button onclick="window.mudarTurnoPlanilha('noite', this)" class="tab-turno bg-white text-slate-500 border border-transparent hover:bg-slate-50 px-4 py-2 rounded-md text-sm font-semibold transition-all">Turno Noite</button>
+                    <button onclick="window.mudarTurnoPlanilha('especial', this)" class="tab-turno bg-white text-slate-500 border border-transparent hover:bg-slate-50 px-4 py-2 rounded-md text-sm font-semibold transition-all">Especial</button>
+                </div>
 
-```html
-<span id="usuarioLogadoEmail" class="user-email"></span>
-<button type="button" onclick="window.logoutSupabase()" class="btn-sistema">
-    <i data-lucide="log-out"></i>
-    Sair
+                <div class="flex-1 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col relative">
+                    <div style="overflow: auto; height: 100%;" class="custom-scrollbar">
+                        <table class="w-full text-sm text-left tabela-moderna">
+                            <thead class="bg-slate-50 border-b border-slate-200" id="planilhaHead">
+                                </thead>
+                            <tbody id="planilhaBody" contenteditable="true" spellcheck="false" oninput="window.marcarPlanilhaNaoSalva()">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6 mt-4 pt-3 border-t border-slate-200" style="flex-shrink: 0;">
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background-color: #22c55e;"></div><span class="text-xs font-semibold text-slate-600">Programado</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background-color: #06b6d4;"></div><span class="text-xs font-semibold text-slate-600">Em Andamento</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background-color: #ef4444;"></div><span class="text-xs font-semibold text-slate-600">Manutenção</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background-color: #f59e0b;"></div><span class="text-xs font-semibold text-slate-600">Prioridade Alta</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background-color: #eab308;"></div><span class="text-xs font-semibold text-slate-600">Atenção</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background-color: #a855f7;"></div><span class="text-xs font-semibold text-slate-600">Informativo</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background-color: #cbd5e1;"></div><span class="text-xs font-semibold text-slate-600">Folga</span></div>
+                </div>
+            </div>
+
+            <div id="viewRelCaixas" style="display:none;">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;color:#888;">
+        <i data-lucide="hard-hat" style="width:48px;height:48px;"></i>
+        <h2 style="font-size:1.4rem;font-weight:600;">Em construção</h2>
+        <p>Esta seção está sendo desenvolvida.</p>
+    </div>
+</div>
+
+            <div id="viewOperador" style="display:none;">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;color:#888;">
+        <i data-lucide="hard-hat" style="width:48px;height:48px;"></i>
+        <h2 style="font-size:1.4rem;font-weight:600;">Em construção</h2>
+        <p>Esta seção está sendo desenvolvida.</p>
+    </div>
+</div>
+
+            
+        <div id="viewCadastro" style="display:none;">
+
+            <div class="page-header" style="margin-bottom: 24px;">
+                <div>
+                    <h2>Cadastro de Motoristas</h2>
+                    <p>Gerencie todos os motoristas da frota — adicione, edite e remova.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+                <div class="stat-card stat-card-brand">
+                    <div class="stat-label">Total Motoristas</div>
+                    <div class="stat-value" id="totalMotoristas">0</div>
+                    <div class="stat-sub" id="motoristasMes">0 este mês</div>
+                </div>
+
+                <div class="stat-card stat-card-emerald">
+                    <div class="stat-label">Motoristas Ativos</div>
+                    <div class="stat-value" id="motoristasAtivos">0</div>
+                    <div class="stat-sub" id="percentualAtivos">0%</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Inativos / Demitidos</div>
+                    <div class="stat-value" id="motoristasInativos">0</div>
+                    <div class="stat-sub" id="percentualInativos">0%</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
+
+                <div class="driver-panel" style="width: 100%;">
+                    <div class="driver-panel-header">
+                        <h3 style="display:flex; align-items:center; gap:8px; margin:0;">
+                            <i data-lucide="user-plus" style="width:16px;height:16px;color:var(--brand-400);"></i>
+                            Novo Motorista
+                        </h3>
+                    </div>
+                    <div style="padding: var(--space-6); display:flex; flex-direction:column; gap:var(--space-4);">
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Nome Completo *</label>
+                            <input id="cadNome" type="text" placeholder="Ex: JOÃO DA SILVA"
+                                style="width:100%; text-transform:uppercase;"
+                                class="input-base" oninput="this.value=this.value.toUpperCase()">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Turno *</label>
+                            <select id="cadTurno" class="input-base" style="width:100%;">
+                                <option value="dia">☀️ Dia (Rayanna)</option>
+                                <option value="noite">🌙 Noite (Júlia)</option>
+                                <option value="especial">🚛 Especial (Caçamba)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">CPF</label>
+                            <input id="cadCpf" type="text" placeholder="000.000.000-00" class="input-base" style="width:100%;" maxlength="14" oninput="window.formatarCpf(this)">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Telefone / WhatsApp</label>
+                            <input id="cadTelefone" type="text" placeholder="(00) 00000-0000" class="input-base" style="width:100%;" maxlength="15" oninput="window.formatarTelefone(this)">
+                        
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Chave PIX</label>
+                            <input id="cadChavePix" type="text" placeholder="CPF, Celular, E-mail ou Aleatória" class="input-base" style="width:100%;">
+                        </div>
+
+                        <!-- CÓDIGO NOVO -->
+                    <div>
+                 <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Número da CNH</label>
+                 <input id="cadCnh" type="text" placeholder="Digite apenas os números..." class="input-base" style="width:100%;" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')">
+                </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Vencimento CNH</label>
+                            <input id="cadCnhVenc" type="date" class="input-base" style="width:100%;">
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
+                            <div style="flex:1;">
+                                <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Nascimento</label>
+                                <input id="cadNascimento" type="date" class="input-base" style="width:100%;">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Admissão</label>
+                                <input id="cadAdmissao" type="date" class="input-base" style="width:100%;">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Data de Demissão </label>
+                            <input id="cadDemissao" type="date" class="input-base" style="width:100%;">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Tamanhos de EPIs (Camisa, Bota, etc)</label>
+                            <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+  <div style="display:flex; gap:8px;">
+    <input id="cadEpiCamisaNum" type="text" placeholder="Nº Camisa" class="input-base" style="flex:1;">
+    <input id="cadEpiBotaNum" type="text" placeholder="Nº Bota" class="input-base" style="flex:1;">
+    <input id="cadEpiCalcaNum" type="text" placeholder="Nº Calça" class="input-base" style="flex:1;">
+  </div>
+</div>
+                        </div>
+
+                        <button id="btnCadastrarMotorista" onclick="window.salvarCadastroMotorista()" class="btn-primary"
+  style="height:44px; font-size:14px; width:100%; border-radius:10px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
+  <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
+  Cadastrar Motorista
 </button>
-```
+                    </div>
+                </div>
 
-### 2.4. Troque o script principal
+                <div class="rank-card" style="padding: 24px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h3 style="font-size:15px; font-weight:700; color:var(--gray-100); display:flex; align-items:center; gap:8px;">
+                            <i data-lucide="users" style="width:16px;height:16px;color:var(--brand-400);"></i>
+                            Motoristas Cadastrados
+                        </h3>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="text" id="buscaCadastro" placeholder="Buscar..." class="input-base" style="width:160px; height:34px; font-size:12px;" oninput="window.filtrarTabelaCadastro()">
+                            <select id="filtroCadTurno" class="input-base" style="width:130px; height:34px; font-size:12px;" onchange="window.filtrarTabelaCadastro()">
+                                <option value="">Todos os turnos</option>
+                                <option value="dia">☀️ Dia</option>
+                                <option value="noite">🌙 Noite</option>
+                                <option value="especial">🚛 Especial</option>
+                            </select>
+                        </div>
+                    </div>
 
-Troque:
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                    <th style="text-align:left; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Nome</th>
+                                    <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Turno</th>
+                                    <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Nascimento</th>
+<th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Venc. CNH</th>
+<th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">EPI</th>
+                                    <th style="text-align:center; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em;">Ações</th>
+                                </tr>   
+                            </thead>
+                            <tbody id="tabelaCadastroMotoristas">
+                                <tr><td colspan="6" style="text-align:center; padding:32px; color:var(--gray-500);">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:12px; font-size:12px; color:var(--gray-500);" id="totalCadastrados"></div>
+                </div>
+            </div>
+        </div>
+        </div></main>
 
-```html
-<script type="module" src="app.js"></script>
-```
+    <div id="modalGerenciar" class="modal-backdrop hidden" style="display:none;">
+        <div class="modal-box" style="width:460px;">
+            <div class="modal-header">
+                <h3>
+                    <i data-lucide="users"></i>
+                    Gerenciar: <span class="highlight" id="lblMesGerenciar">Mês</span>
+                </h3>
+                <button onclick="window.fecharModalGerenciar()" class="btn-close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <div class="modal-section-label">Adicionar Novo Motorista</div>
+                    <div class="modal-row">
+                        <input type="text" id="novoMotNome" placeholder="Nome completo..." class="input-base" style="text-transform:uppercase;">
+                        <select id="novoMotTurno" class="input-base" style="width:110px;flex-shrink:0;">
+                            <option value="dia">Dia</option>
+                            <option value="noite">Noite</option>
+                            <option value="especial">Caçamba</option>
+                        </select>
+                        <button onclick="window.addMotoristaModal()" class="btn-add-plus">+</button>
+                    </div>
+                </div>
 
-por:
+                <div class="border-section">
+                    <div class="modal-section-label">Retirar Motorista deste Mês</div>
+                    <div class="modal-row">
+                        <select id="ocultarMotNome" class="input-base"></select>
+                        <button onclick="window.ocultarMotoristaMes()" class="btn-remove">Retirar</button>
+                    </div>
+                </div>
 
-```html
-<script type="module" src="auth.js"></script>
-```
+                <div class="border-section">
+                    <div class="modal-section-label">Adicionar Motorista a este Mês</div>
+                    <div class="modal-row">
+                        <select id="mostrarMotNome" class="input-base"></select>
+                        <button onclick="window.mostrarMotoristaMes()" class="btn-add-sm">Adicionar</button>
+                    </div>
+                </div>
+            <div class="border-section" id="secaoReativarAdmin" style="display:none;">
+             <div class="modal-section-label">Reativar Motorista Inativo (Apenas Admin)</div>
+             <div class="modal-row">
+             <select id="reativarMotNome" class="input-base">
+            <option value="">Selecione para reativar...</option>
+            </select>
+        <button onclick="window.reativarMotorista()" class="btn-add-sm">Reativar</button>
+    </div>
+</div>         
+                <div class="border-section">
+                    <button type="button" onclick="window.apagarMotoristaDefinitivo()" class="btn-danger-sm w-full justify-center" style="padding:10px;">
+                        <i data-lucide="trash-2"></i>
+                        Excluir Motorista Definitivamente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-## 3. Adicionar CSS no final do `style.css`
+    <div id="modalSistema" class="modal-backdrop hidden" style="display:none;">
+        <div class="modal-box" style="width:520px;">
+            <div class="modal-header">
+                <h3>
+                    <i data-lucide="settings"></i>
+                    Sistema &amp; Integrações
+                </h3>
+                <button onclick="window.fecharModalSistema()" class="btn-close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
 
-```css
-.login-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: var(--surface-page);
-}
+                <div class="action-card action-card-blue" onclick="window.gerarBackup()">
+                    <div class="ac-icon">
+                        <i data-lucide="download-cloud"></i>
+                    </div>
+                    <div class="ac-text">
+                        <h4>Baixar Backup Seguro (.json)</h4>
+                        <p>Salva uma cópia exata de todos os dados no seu PC.</p>
+                    </div>
+                </div>
 
-.login-box {
-  width: 100%;
-  max-width: 380px;
-  background: white;
-  border: var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-lg);
-  padding: 28px;
-}
+                <div class="action-card action-card-orange" onclick="document.getElementById('inputRestaurarBackup').click()">
+                    <div class="ac-icon">
+                        <i data-lucide="upload-cloud"></i>
+                    </div>
+                    <div class="ac-text">
+                        <h4>Restaurar Backup (.json)</h4>
+                        <p>Envia um arquivo de backup do seu PC de volta ao sistema.</p>
+                    </div>
+                </div>
+                <input type="file" id="inputRestaurarBackup" accept=".json" style="display:none;" onchange="window.processarRestauracaoBackup(event)">
 
-.login-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-}
+                <div class="ia-card">
+                    <div class="ia-card-header">
+                        <div class="ia-card-icon">
+                            <i data-lucide="bot"></i>
+                        </div>
+                        <div>
+                            <h4>Importar Leitura da IA</h4>
+                            <p>Cole o JSON gerado pela IA e injete os lançamentos.</p>
+                        </div>
+                    </div>
+                    <textarea id="codigoIA" rows="4" class="ia-textarea"
+                        placeholder='[{"data":"2026-04-01","motorista":"NOME","status":"falta","qtd":0}]'></textarea>
+                    <button onclick="window.importarDadosIA()" class="btn-inject">
+                        <i data-lucide="zap"></i>
+                        Injetar Lançamentos
+                    </button>
+                </div>
 
-.login-brand h1 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--gray-900);
-  line-height: 1;
-}
+                <div class="modal-credit">SGC Logística © 2026</div>
+            </div>
+        </div>
+    </div>
 
-.login-brand p {
-  margin-top: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--gray-400);
-}
+   <div id="modalEditarMotorista" class="modal hidden">
+    <div class="modal-backdrop" onclick="window.fecharModalEditar()"></div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Edição de dados do Motorista</h3>
+            <button onclick="window.fecharModalEditar()" class="btn-close">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
 
-.login-title h2 {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--gray-900);
-}
+        <div class="modal-body">
+            <input type="hidden" id="editNomeOriginal">
 
-.login-title p {
-  margin-top: 4px;
-  margin-bottom: 20px;
-  color: var(--gray-500);
-  font-size: 13px;
-}
+            <div class="form-grid">
+                <!-- Nome (full-width) -->
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Nome *</label>
+                    <input id="editNome" type="text" class="input-base" style="text-transform:uppercase;" 
+                           oninput="this.value=this.value.toUpperCase()">
+                </div>
 
-.login-label {
-  display: block;
-  margin: 14px 0 6px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--gray-500);
-}
+                <!-- Turno e CPF -->
+                <div class="form-group">
+                    <label class="form-label">Turno *</label>
+                    <select id="editTurno" class="input-base">
+                        <option value="dia">☀️ Dia (Rayanna)</option>
+                        <option value="noite">🌙 Noite (Júlia)</option>
+                        <option value="especial">🚛 Especial (Caçamba)</option>
+                    </select>
+                </div>
 
-.login-input {
-  width: 100%;
-  height: 42px;
-  border: var(--border);
-  border-radius: var(--r-md);
-  padding: 0 12px;
-  font: inherit;
-  color: var(--gray-900);
-  outline: none;
-}
+                <div class="form-group">
+                    <label class="form-label">CPF</label>
+                    <input id="editCpf" type="text" class="input-base" maxlength="14" 
+                           oninput="window.formatarCpf(this)">
+                </div>
 
-.login-input:focus {
-  border-color: var(--brand-500);
-  box-shadow: 0 0 0 3px var(--brand-100);
-}
+                <!-- Telefone (full-width) -->
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Telefone / WhatsApp</label>
+                    <input id="editTelefone" type="text" class="input-base" maxlength="15"
+                           oninput="window.formatarTelefone(this)">
+                </div>
+                <!-- Chave PIX (full-width) -->
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Chave PIX</label>
+                    <input id="editChavePix" type="text" placeholder="CPF, Celular, E-mail ou Aleatória" class="input-base">
+                </div>
 
-.login-message {
-  min-height: 18px;
-  margin: 12px 0;
-  font-size: 12px;
-  color: var(--gray-500);
-}
+                <!-- CNH e Vencimento -->
+                <div class="form-group">
+                    <label class="form-label">Número da CNH</label>
+                    <input id="editCnh" type="text" placeholder="Apenas números..." class="input-base" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')">
+                </div>
 
-.login-error {
-  color: var(--danger-600);
-}
+                <div class="form-group">
+                    <label class="form-label">Vencimento CNH</label>
+                    <input id="editCnhVenc" type="date" class="input-base">
+                </div>
 
-.login-primary,
-.login-secondary {
-  width: 100%;
-  height: 42px;
-  border-radius: var(--r-md);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: opacity var(--t-fast) var(--ease-out);
-}
+                <!-- Nascimento e Admissão -->
+                <div class="form-group">
+                    <label class="form-label">Nascimento</label>
+                    <input id="editNascimento" type="date" class="input-base">
+                </div>
 
-.login-primary {
-  color: white;
-  background: var(--brand-600);
-  border: 1px solid var(--brand-600);
-}
+                <div class="form-group">
+                    <label class="form-label">Admissão</label>
+                    <input id="editAdmissao" type="date" class="input-base">
+                </div>
 
-.login-secondary {
-  margin-top: 10px;
-  color: var(--gray-700);
-  background: white;
-  border: var(--border);
-}
+                <!-- Demissão e EPI -->
+                <div class="form-group">
+                    <label class="form-label">Demissão</label>
+                    <input id="editDemissao" type="date" class="input-base" style="border-color:var(--red-200);">
+                </div>
 
-.login-primary:disabled,
-.login-secondary:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
+                <div class="form-group">
+                    <label class="form-label">Tamanho EPI</label>
+                    <div style="display:flex; gap:8px;">
+                     <input id="editEpiCamisa" type="text" placeholder="Camisa" class="input-base" style="flex:1;">
+                    <input id="editEpiBota" type="text" placeholder="Bota" class="input-base" style="flex:1;">
+                    <input id="editEpiCalca" type="text" placeholder="Calça" class="input-base" style="flex:1;">
+            </div>
+                </div>
 
-.user-email {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--gray-500);
-}
-```
+                <!-- Observação (full-width) -->
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Observação</label>
+                    <textarea id="editObs" rows="3" class="input-base"></textarea>
+                </div>
+            </div>
+        </div>
 
-## 4. Configurar no Supabase
+        <div class="modal-footer">
+            <button onclick="window.fecharModalEditar()" class="btn-secondary">Cancelar</button>
+            <button onclick="window.salvarEdicaoMotorista()" class="btn-primary">Salvar</button>
+        </div>
+    </div>
+</div>
 
-No Supabase:
+    <div id="modalAtivacaoMotorista" class="modal hidden">
+        <div class="modal-backdrop" onclick="window.fecharModalAtivacao()"></div>
+        <div class="modal-container" style="width: 90%; max-width: 700px;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
+                <div>
+                    <h3 style="font-size: 20px; font-weight: bold; margin: 0; color: #1f2937;">
+                        🔄 Ativação de Motoristas
+                    </h3>
+                    <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">
+                        Mês: <strong id="lblMesAtivacao">2025-01</strong>
+                    </p>
+                </div>
+                <button onclick="window.fecharModalAtivacao()" style="background: none; border: none; cursor: pointer; font-size: 24px; color: #9ca3af;">
+                    ×
+                </button>
+            </div>
 
-1. Abra o projeto.
-2. Va em `Authentication` -> `Providers`.
-3. Ative `Email`.
-4. Para facilitar no comeco, voce pode desativar confirmacao por e-mail. Depois, se quiser mais seguranca, ative confirmacao.
-5. Va em `Authentication` -> `Users` e crie os usuarios autorizados, ou use o botao `Criar primeiro acesso` na tela.
+            <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 12px; margin: 15px 0; border-radius: 4px; font-size: 13px; color: #0369a1;">
+                <strong>ℹ️ Info:</strong> Motoristas inativos aparecem em <span style="color: #dc2626; font-weight: bold;">VERMELHO</span> na lista, 
+                mas seus dados continuam contando para as metas da frota.
+            </div>
 
-## 5. Proteger as tabelas com RLS
+            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tbody id="tabelaMotoristasAtivacao">
+                        </tbody>
+                </table>
+            </div>
 
-Depois que o login estiver funcionando, ative RLS nas tabelas principais e crie policies para usuario autenticado.
+            <div style="padding-top: 15px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="window.fecharModalAtivacao()" 
+                    style="padding: 10px 20px; background: #f3f4f6; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background 0.2s;">
+                    Fechar
+                </button>
+            </div>
 
-Exemplo basico para cada tabela:
+        </div>
+    </div>
 
-```sql
-alter table public.lancamentos enable row level security;
+    <script>
+        const SUPABASE_URL = "https://ldlqemidjjutrbkjiyir.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_dMnIUJ3FNWhFKm7PmEjxsQ_z5ZhexV9";
+        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
 
-create policy "usuarios logados podem ler lancamentos"
-on public.lancamentos
-for select
-to authenticated
-using (true);
+    <script type="module" src="app.js"></script>
 
-create policy "usuarios logados podem inserir lancamentos"
-on public.lancamentos
-for insert
-to authenticated
-with check (true);
+    <script>
+        lucide.createIcons();
+        // Show modals with flex when .hidden is removed
+        const modals = ['modalGerenciar', 'modalSistema', 'modalAtivacaoMotorista'];
+        modals.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const observer = new MutationObserver(() => {
+                if (!el.classList.contains('hidden')) {
+                    el.style.display = 'flex';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+            observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+        });
 
-create policy "usuarios logados podem atualizar lancamentos"
-on public.lancamentos
-for update
-to authenticated
-using (true)
-with check (true);
-```
-
-Evite criar policy de `delete` geral no comeco. Isso reduz risco de apagar tudo por engano.
-
-Repita a ideia para:
-
-- `motoristas`
-- `config_meses`
-- `config_slas`
-- `visibilidade_mes`
-
-## 6. Teste seguro
-
-1. Abra o site em janela anonima.
-2. Confirme que aparece a tela de login.
-3. Entre com um usuario criado.
-4. Confira se os dados aparecem.
-5. So depois ative policies mais restritas.
+        // Attachment filename display
+        document.getElementById('anexoObs').addEventListener('change', function(e) {
+            const nomeEl = document.getElementById('nomeAnexo');
+            if (e.target.files.length > 0) {
+                nomeEl.textContent = '📎 ' + e.target.files[0].name;
+                nomeEl.classList.remove('hidden');
+            } else {
+                nomeEl.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
