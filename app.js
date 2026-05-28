@@ -1358,27 +1358,102 @@ if (window.lucide) window.lucide.createIcons({ nodes: [linha] });
 // FUNÇÃO PARA EXPORTAR O RANKING EM PDF
 // =============================================================
 window.exportarRankingPeriodoPDF = function() {
-    const cardElement = document.getElementById('cardRankingPeriodoPDF');
-    const btnExportar = document.getElementById('btnExportarPDF');
-    const controlesData = document.getElementById('controlesDataPeriodo');
+    const inicio = document.getElementById('dataRankingInicio')?.value;
+    const fim    = document.getElementById('dataRankingFim')?.value;
+    if (!inicio || !fim) return alert('Selecione o período antes de exportar.');
 
-    // 1. Esconde o botão e as caixas de data temporariamente para o PDF ficar limpo
-    btnExportar.style.display = 'none';
-    controlesData.style.display = 'none';
+    // Formata datas para exibição: 2026-05-01 → 01/05/2026
+    const fmt = d => d.split('-').reverse().join('/');
+    const periodoLabel = `${fmt(inicio)} até ${fmt(fim)}`;
 
-    // 2. Opções de configuração do PDF
+    // Pega as linhas já renderizadas e reconstrói com PIX
+    const linhasOriginais = document.querySelectorAll('#listaRankingDiario .diario-row');
+    let linhasHtml = '';
+    linhasOriginais.forEach((linha, index) => {
+        const nomeEl  = linha.querySelector('.diario-nome');
+        const fatEl   = linha.querySelector('.diario-faturamento');
+        const barraEl = linha.querySelector('.progress-bar-fill');
+        const percEl  = linha.querySelector('.progress-text');
+
+        const nomeTexto = nomeEl ? nomeEl.innerHTML : '';
+        const fatTexto  = fatEl  ? fatEl.innerText   : '';
+        const largura   = barraEl ? barraEl.style.width : '0%';
+        const classeBar = barraEl ? barraEl.className.replace('progress-bar-fill','').trim() : '';
+        const percTexto = percEl  ? percEl.innerText  : '';
+
+        // Busca o nome puro para encontrar o PIX no cache
+        const nomeMotorista = Object.keys(window.bancoDadosCloud || {}).length > 0
+            ? (nomeEl?.innerText || '').replace(/#\d+\s*-\s*/, '').replace(/\(.*\)/, '').trim()
+            : '';
+        const cadastro = (window.motoristasCache || []).find(m =>
+            nomeMotorista && m.nome.toLowerCase() === nomeMotorista.toLowerCase()
+        );
+        const pixHtml = cadastro?.chave_pix
+            ? `<div style="font-size:10px;color:#6b7280;margin-top:3px;">🔑 ${cadastro.chave_pix}</div>`
+            : '';
+
+        linhasHtml += `
+            <div style="padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:#111827;">${nomeTexto}</div>
+                        ${pixHtml}
+                    </div>
+                    <div style="font-family:monospace;font-weight:600;color:#059669;font-size:15px;">${fatTexto}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="flex:1;background:#f3f4f6;height:5px;border-radius:999px;overflow:hidden;">
+                        <div style="height:100%;border-radius:999px;width:${largura};background:${classeBar === 'meta-batida' ? '#22c55e' : classeBar === 'meta-excedida' ? '#f59e0b' : '#ef4444'};"></div>
+                    </div>
+                    <span style="font-size:11px;font-weight:600;color:#6b7280;width:52px;text-align:right;">${percTexto}</span>
+                </div>
+            </div>`;
+    });
+
+    const totalQtd = document.getElementById('totalQtdPeriodo')?.innerText || '—';
+    const totalFat = document.getElementById('totalFatPeriodo')?.innerText  || '—';
+
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:700px;background:#fff;font-family:sans-serif;padding:28px;box-sizing:border-box;';
+    container.innerHTML = `
+        <!-- Cabeçalho -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+            <div style="background:#dcfce7;border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;">📊</div>
+            <div>
+                <div style="font-size:17px;font-weight:700;color:#111827;">Ranking por Período</div>
+                <div style="font-size:12px;color:#9ca3af;">Total de serviços e faturamento</div>
+            </div>
+        </div>
+        <!-- Período -->
+        <div style="font-size:11px;color:#6b7280;margin-bottom:16px;padding-left:52px;">📅 ${periodoLabel}</div>
+
+        <!-- Badge de totais -->
+        <div style="display:flex;justify-content:space-between;background:#f9fafb;border:1px solid #d1fae5;border-radius:10px;padding:12px 16px;margin-bottom:20px;">
+            <div>
+                <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Total de Serviços no Período</div>
+                <div style="font-size:15px;font-weight:700;color:#16a34a;">${totalQtd}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Faturamento no Período</div>
+                <div style="font-size:15px;font-weight:700;color:#059669;">${totalFat}</div>
+            </div>
+        </div>
+
+        <!-- Lista de motoristas -->
+        ${linhasHtml}
+    `;
+    document.body.appendChild(container);
+
     const opt = {
-        margin:       [10, 10, 10, 10], // Margens
-        filename:     `SGC_Ranking_Periodo.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        margin:      [8, 8, 8, 8],
+        filename:    `SGC_Ranking_${inicio}_${fim}.pdf`,
+        image:       { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 3. Gera o PDF e depois devolve o botão e as datas para a tela
-    html2pdf().set(opt).from(cardElement).save().then(() => {
-        btnExportar.style.display = 'flex';
-        controlesData.style.display = 'flex';
+    html2pdf().set(opt).from(container).save().then(() => {
+        document.body.removeChild(container);
     });
 };
 
