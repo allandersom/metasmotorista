@@ -2202,6 +2202,7 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
       <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:8px; font-size:13px; color:#374151;">
         <div><b>CPF:</b> ${m.cpf || '—'}</div>
         <div><b>Telefone:</b> ${m.telefone || '—'}</div>
+        <div><b style="color:var(--brand-600);">PIX:</b> ${m.chave_pix || '—'}</div>
         <div><b>CNH:</b> ${m.cnh || '—'}</div>
         <div><b>Admissão:</b> ${m.data_admissao ? new Date(m.data_admissao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
         <div><b>Demissão:</b> ${m.data_demissao ? new Date(m.data_demissao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
@@ -2221,6 +2222,7 @@ window.salvarCadastroMotorista = async function() {
   const turno = document.getElementById('cadTurno').value;
   const cpf = document.getElementById('cadCpf')?.value?.trim() || null;
 const telefone = document.getElementById('cadTelefone')?.value?.trim() || null;
+const chavePix = document.getElementById('cadChavePix')?.value?.trim() || null;
 const cnh = document.getElementById('cadCnh')?.value || null;
 const cnh_venc = document.getElementById('cadCnhVenc')?.value || null;
 const nascimento = document.getElementById('cadNascimento')?.value || null;
@@ -2245,7 +2247,7 @@ const epi = [
     const { error } = await window.supabaseClient
       .from('motoristas')
       .insert([{
-        nome, turno, cpf, telefone, cnh,
+        nome, turno, cpf, telefone, chave_pix: chavePix, cnh,
         cnh_venc, data_nascimento: nascimento, data_admissao: admissao, data_demissao: demissao,
         tamanho_epi: epi, observacao: obs, status: 'ativo'
       }]);
@@ -2254,7 +2256,7 @@ const epi = [
 
     alert('✅ Motorista cadastrado com sucesso!');
 
-    ['cadNome','cadCpf','cadTelefone','cadCnhVenc','cadNascimento','cadAdmissao','cadDemissao','cadObs'].forEach(id => {
+    ['cadNome','cadCpf','cadTelefone','cadChavePix','cadCnhVenc','cadNascimento','cadAdmissao','cadDemissao','cadObs'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -2322,6 +2324,8 @@ window.abrirModalEditarMotorista = async function(nome) {
   document.getElementById('editTurno').value = motorista.turno;
   document.getElementById('editCpf').value = motorista.cpf || '';
   document.getElementById('editTelefone').value = motorista.telefone || '';
+  const elPix = document.getElementById('editChavePix');
+  if(elPix) elPix.value = motorista.chave_pix || '';
   document.getElementById('editCnh').value = motorista.cnh || '';
   document.getElementById('editCnhVenc').value = motorista.cnh_venc || '';
 document.getElementById('editNascimento').value = motorista.data_nascimento || '';
@@ -2347,6 +2351,8 @@ window.salvarEdicaoMotorista = async function() {
   const turno = document.getElementById('editTurno').value;
   const cpf = document.getElementById('editCpf').value;
   const telefone = document.getElementById('editTelefone').value;
+  const elPix = document.getElementById('editChavePix');
+  const chavePix = elPix ? elPix.value.trim() : null;
   const cnh = document.getElementById('editCnh').value;
 const cnh_venc = document.getElementById('editCnhVenc').value || null;
 const nascimento = document.getElementById('editNascimento').value || null;
@@ -2367,6 +2373,7 @@ const epi = [
         turno,
         cpf,
         telefone,
+        chave_pix: chavePix,
         cnh,
         cnh_venc,
         data_nascimento: nascimento,

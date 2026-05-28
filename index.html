@@ -691,6 +691,11 @@
                         <div>
                             <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Telefone / WhatsApp</label>
                             <input id="cadTelefone" type="text" placeholder="(00) 00000-0000" class="input-base" style="width:100%;" maxlength="15" oninput="window.formatarTelefone(this)">
+                        
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Chave PIX</label>
+                            <input id="cadChavePix" type="text" placeholder="CPF, Celular, E-mail ou Aleatória" class="input-base" style="width:100%;">
                         </div>
 
                         <!-- CÓDIGO NOVO -->
@@ -937,6 +942,11 @@
                     <label class="form-label">Telefone / WhatsApp</label>
                     <input id="editTelefone" type="text" class="input-base" maxlength="15"
                            oninput="window.formatarTelefone(this)">
+                </div>
+                <!-- Chave PIX (full-width) -->
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Chave PIX</label>
+                    <input id="editChavePix" type="text" placeholder="CPF, Celular, E-mail ou Aleatória" class="input-base">
                 </div>
 
                 <!-- CNH e Vencimento -->
