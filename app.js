@@ -1324,17 +1324,24 @@ window.gerarRankingPeriodo = function () {
         const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
 
         const linha = document.createElement('div');
+        // PARA:
         linha.className = 'diario-row';
         linha.innerHTML = `
-            <div class="diario-top">
-                <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
-                <span class="diario-faturamento">${formatarMoeda(mot.valor)}</span>
+          <div class="diario-top">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="diario-posicao ${index < 3 ? 'diario-posicao--top' : ''}">${index + 1}</div>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+                <span class="diario-nome">${mot.nome} <span class="diario-qtd">(${textoQtd})</span>${extraBadge}</span>
+                <span class="diario-pix-placeholder"></span>
             </div>
-            <div class="progress-wrapper">
-                <div class="progress-bar-bg"><div class="progress-bar-fill ${classeBarra}" style="width: ${larguraBarra}%;"></div></div>
-                <span class="progress-text" title="Baseado nos dias trabalhados">${porcentagemStr}</span>
-            </div>
-        `;
+        </div>
+        <span class="diario-faturamento">${formatarMoeda(mot.valor)}</span>
+    </div>
+    <div class="progress-wrapper">
+        <div class="progress-bar-bg"><div class="progress-bar-fill ${classeBarra}" style="width: ${larguraBarra}%;"></div></div>
+        <span class="progress-text">${porcentagemStr}</span>
+    </div>
+`;
         divLista.appendChild(linha);
     });
 };

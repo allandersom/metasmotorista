@@ -832,7 +832,26 @@ tbody tr:hover { background: var(--gray-25); }
 .progress-bar-fill.meta-excedida { background: var(--warning-500); }
 .progress-bar-fill.meta-ruim    { background: var(--danger-500); }
 .progress-text { font-size: 11px; font-weight: 600; font-family: var(--font-mono); color: var(--gray-500); width: 42px; text-align: right; }
+/* Círculo de posição no ranking por período */
+.diario-posicao {
+  width: 36px; height: 36px; min-width: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--gray-200);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  color: var(--gray-400);
+  font-family: var(--font-mono);
+  background: var(--surface-base);
+}
+.diario-posicao--top {
+  border-color: var(--success-400);
+  color: var(--success-600);
+  background: var(--success-50);
+}
 
+/* Nome e qtd no novo layout */
+.diario-nome { font-size: 13px; font-weight: 700; color: var(--gray-800); text-transform: uppercase; letter-spacing: 0.02em; }
+.diario-qtd  { font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: none; }
 /* ── META CARDS (Rankings page top) ────────────────────── */
 .meta-card-green {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);

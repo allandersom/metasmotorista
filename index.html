@@ -368,7 +368,16 @@
                     <div class="rank-card" id="cardRankingPeriodoPDF">
                         <div class="rank-card-header" style="flex-direction: column; align-items: stretch; gap: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <h3>Ranking por Período</h3>
+                               <!-- PARA: -->
+<div style="display:flex; align-items:center; gap:10px;">
+    <div style="background:#dcfce7; border-radius:10px; width:40px; height:40px; display:flex; align-items:center; justify-content:center;">
+        <i data-lucide="bar-chart-2" style="width:20px; height:20px; color:#16a34a;"></i>
+    </div>
+    <div>
+        <h3 style="margin:0;">Ranking por Período</h3>
+        <span style="font-size:12px; color:var(--gray-400); font-weight:400;">Total de serviços e faturamento</span>
+    </div>
+</div>
                                 <button id="btnExportarPDF" onclick="window.exportarRankingPeriodoPDF()" class="btn-sistema" style="height: 30px; padding: 0 12px; background: var(--brand-50); color: var(--brand-600); border: 1px solid var(--brand-200); font-size: 12px;">
                                     <i data-lucide="file-down" style="width: 14px; height: 14px; margin-right: 4px;"></i> Exportar PDF
                                 </button>
