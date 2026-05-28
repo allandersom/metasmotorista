@@ -674,16 +674,11 @@
                             <input id="cadTelefone" type="text" placeholder="(00) 00000-0000" class="input-base" style="width:100%;" maxlength="15" oninput="window.formatarTelefone(this)">
                         </div>
 
-                        <div>
-                            <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Categoria CNH</label>
-                            <select id="cadCnh" class="input-base" style="width:100%;">
-                                <option value="">Não informado</option>
-                                <option value="B">B</option>
-                                <option value="C">C</option>
-                                <option value="D">D</option>
-                                <option value="E">E</option>
-                            </select>
-                        </div>
+                        <!-- CÓDIGO NOVO -->
+                    <div>
+                 <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Número da CNH</label>
+                 <input id="cadCnh" type="text" placeholder="Digite apenas os números..." class="input-base" style="width:100%;" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')">
+                </div>
 
                         <div>
                             <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Vencimento CNH</label>
