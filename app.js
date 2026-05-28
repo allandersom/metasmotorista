@@ -877,7 +877,9 @@ window.selecionarMotoristaProjecao = function (nome) {
 // SALVAR LANÇAMENTO
 // =============================================================
 window.salvarLancamento = async function () {
-    if (!window.motoristaSelecionado) { alert('Selecione um motorista primeiro!'); return; }
+    if (window._salvandoLancamento) return;
+    window._salvandoLancamento = true;
+    if (!window.motoristaSelecionado) { window._salvandoLancamento = false; alert('Selecione um motorista primeiro!'); return; }
 
     const elData  = document.getElementById('dataLancamento');
     const dataStr = elData ? elData.value : null;
@@ -1005,9 +1007,10 @@ window.salvarLancamento = async function () {
     const elStatus = document.getElementById('statusServico');
     if (elStatus) elStatus.value = 'normal';
     const elAnexo = document.getElementById('anexoObs');
-    if (elAnexo) elAnexo.value = '';
+       if (elAnexo) elAnexo.value = '';
     const elNomeAnexo = document.getElementById('nomeAnexo');
     if (elNomeAnexo) elNomeAnexo.classList.add('hidden');
+    window._salvandoLancamento = false;
 };
 
 // =============================================================
@@ -1417,6 +1420,38 @@ window.exportarRankingPeriodoPDF = function() {
 
     const totalQtd = document.getElementById('totalQtdPeriodo')?.innerText || '—';
     const totalFat = document.getElementById('totalFatPeriodo')?.innerText  || '—';
+    // Monta seção de status (motoristas sem serviço no período)
+const statusLabels = {
+    licenca: 'Férias', folga: 'Folga', falta: 'Falta',
+    polioff: 'Poli OFF', desligado: 'Desligado', atestado: 'Atestado',
+};
+let statusHtml = '';
+const bancoDados = window.bancoDadosCloud;
+const statusPorMot = {};
+
+for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+    if (dataStr < inicio || dataStr > fim) continue;
+    for (const [mot, dados] of Object.entries(dadosDia)) {
+        if (dados.status && dados.status !== 'normal' && (!dados.servicos || dados.servicos === 0)) {
+            if (!statusPorMot[mot]) statusPorMot[mot] = [];
+            const d = dataStr.split('-').reverse().join('/');
+            const label = statusLabels[dados.status] || dados.status;
+            statusPorMot[mot].push(`${d}: ${label}`);
+        }
+    }
+}
+
+if (Object.keys(statusPorMot).length > 0) {
+    statusHtml = `
+        <div style="margin-top:20px;border-top:1px solid #e5e7eb;padding-top:16px;">
+            <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">📋 Status por Motorista</div>
+            ${Object.entries(statusPorMot).map(([mot, dias]) => `
+                <div style="margin-bottom:8px;padding:10px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+                    <div style="font-size:12px;font-weight:600;color:#111827;">${mot}</div>
+                    <div style="font-size:11px;color:#6b7280;margin-top:3px;">${dias.join(' · ')}</div>
+                </div>`).join('')}
+        </div>`;
+}
 
     // Abre janela de impressão com o conteúdo — solução 100% confiável, sem html2canvas
     const janelaImpressao = window.open('', '_blank', 'width=800,height=900');
@@ -1458,6 +1493,7 @@ window.exportarRankingPeriodoPDF = function() {
     </div>
     <!-- Lista de motoristas -->
     ${linhasHtml}
+    ${statusHtml} 
     <script>
         window.onload = function() {
             window.print();
@@ -1470,8 +1506,8 @@ window.exportarRankingPeriodoPDF = function() {
 };
 
 window.obterRankElo = function (percentual) {
-    if (percentual >= 100) return { nome: 'Radiante', classe: 'elo-radiante' };
-    if (percentual >= 80)  return { nome: 'Diamante', classe: 'elo-diamante' };
+    if (percentual >= 100) return { nome: 'Ouro',  classe: 'elo-ouro'   };
+    if (percentual >= 80)  return { nome: 'Prata', classe: 'elo-prata'  };
     return { nome: 'Bronze', classe: 'elo-bronze' };
 };
 
