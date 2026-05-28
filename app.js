@@ -855,7 +855,8 @@ window.selecionarMotorista = function (nome, elementoLista) {
             <option value="poliguindaste">Poliguindaste Simples (Meta 4 Cx p/ Faturamento)</option>
             <option value="cacamba">Caminhão Caçamba (Meta 4 Vg p/ Faturamento)</option>
         `;
-        selectVeiculo.value = window.motOutros.includes(nome) ? 'cacamba' : 'poliguindaste';
+        selectVeiculo.value = window.motOutros.includes(nome) ? 'cacamba' : 'poli_duplo';
+
     }
 
     const filtroProjMot = document.getElementById('filtroProjMot');
