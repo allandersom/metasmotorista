@@ -159,6 +159,7 @@ function aplicarCorrecaoRankings() {
 
         const bancoDados = window.bancoDadosCloud;
         let rankPeriodo = {};
+        let totalCaixasPeriodo = 0, totalViagensPeriodo = 0, totalFatPeriodo = 0;
 
         for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
             if (dataEstaNoIntervalo(dataStr, inicio, fim)) {
@@ -167,18 +168,29 @@ function aplicarCorrecaoRankings() {
                     if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
                     rankPeriodo[mot].valor += dados.valor;
                     rankPeriodo[mot].extra += dados.valorExtra || 0;
+                    totalFatPeriodo += dados.valor || 0;
 
                     const statusNormal = !dados.status || dados.status === 'normal';
                     const diaEspecial = ehDiaEspecialRanking(dataStr, dados);
                     if (statusNormal && !diaEspecial) {
-                        if (dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += (dados.servicos || 0);
-                        else rankPeriodo[mot].caixas += (dados.servicos || 0);
+                        if (dados.tipoVeiculo === 'cacamba') {
+                            rankPeriodo[mot].viagens += (dados.servicos || 0);
+                            totalViagensPeriodo += (dados.servicos || 0);
+                        } else {
+                            rankPeriodo[mot].caixas += (dados.servicos || 0);
+                            totalCaixasPeriodo += (dados.servicos || 0);
+                        }
                         rankPeriodo[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
                         if (diaDaSemana !== 6) rankPeriodo[mot].diasTrab += 1;
                     }
                 }
             }
         }
+
+        const elTotalQtd = document.getElementById('totalQtdPeriodo');
+        const elTotalFat = document.getElementById('totalFatPeriodo');
+        if (elTotalQtd) elTotalQtd.innerText = `${totalCaixasPeriodo} cx | ${totalViagensPeriodo} vg`;
+        if (elTotalFat) elTotalFat.innerText = formatarMoeda(totalFatPeriodo);
 
         const rankArray = Object.keys(rankPeriodo).map(mot => {
             const metaTotalPeriodo = window.getMetaDiaria(mot) * rankPeriodo[mot].diasTrab;
