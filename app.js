@@ -1256,7 +1256,7 @@ window.gerarRankingPeriodo = function () {
     const bancoDados = window.bancoDadosCloud;
     let rankPeriodo  = {};
     
-    // Novas variáveis para os totais gerais do topo do card
+    // Variáveis que vão contar TUDO para o topo
     let totalFatGeral = 0;
     let totalCaixasGeral = 0;
     let totalViagensGeral = 0;
@@ -1270,16 +1270,16 @@ window.gerarRankingPeriodo = function () {
                 rankPeriodo[mot].valor += dados.valor;
                 rankPeriodo[mot].extra += dados.valorExtra || 0;
                 
-                // Soma no Faturamento Geral
+                // Soma no Faturamento Geral do topo
                 totalFatGeral += dados.valor;
 
                 if (!dados.status || dados.status === 'normal') {
                     if (dados.tipoVeiculo === 'cacamba') {
                         rankPeriodo[mot].viagens += dados.servicos || 0;
-                        totalViagensGeral += dados.servicos || 0; // Soma na Viagem Geral
+                        totalViagensGeral += dados.servicos || 0; // Soma Viagens pro topo
                     } else {
                         rankPeriodo[mot].caixas  += dados.servicos || 0;
-                        totalCaixasGeral += dados.servicos || 0; // Soma na Caixa Geral
+                        totalCaixasGeral += dados.servicos || 0; // Soma Caixas pro topo
                     }
                     rankPeriodo[mot].pontos += dados.pontos !== undefined
                         ? dados.pontos
@@ -1290,7 +1290,7 @@ window.gerarRankingPeriodo = function () {
         }
     }
 
-    // Atualiza o HTML com os totais gerais calculados
+    // AQUI É A MÁGICA QUE INJETA NO HTML
     const elQtd = document.getElementById('totalQtdPeriodo');
     if (elQtd) elQtd.innerText = `${totalCaixasGeral} cx | ${totalViagensGeral} vg`;
     
