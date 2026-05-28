@@ -934,6 +934,7 @@ window.salvarLancamento = async function () {
         motoristaNome: window.motoristaSelecionado,
         dataStr,
         servicos: tipoVeiculoFinal === 'misto' ? (window._pontosFinaisMisto || servicosFinais) : servicosFinais,
+        servicosBrutos: servicosFinais,
         tipoVeiculo: tipoVeiculoFinal,
         isFeriado: isFeriadoFinal,
         status: statusFinal,

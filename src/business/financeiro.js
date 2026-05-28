@@ -64,7 +64,7 @@ if (tipoVeiculo === 'poli_duplo') return getMetaDiaria(nome);
 return getMetaDiaria(nome) * 2;
 }
 
-function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, bancoDados, formatarData }) {
+function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, bancoDados, formatarData, servicosBrutos }) {
     const config = getConfigVeiculo(tipoVeiculo);
 
     let servicosFeitosSemana = 0;
@@ -94,7 +94,9 @@ servicosFeitosSemana += srv * fatorDia;
     const servicosBonus = Math.max(0, servicos - servicosFaltantesFisicos);
 
     const valorParaMeta = calcularValorDiaNormal(servicosParaMeta, config);
-    const valorBonus = servicosBonus * (config.valorExtraPorUnidade * 2);
+    const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
+    const caixasBrutasBonus = Math.round(proporcaoBonus * (servicosBrutos || servicos));
+    const valorBonus = caixasBrutasBonus * (config.valorExtraPorUnidade * 2);
 
     return {
         valorBase: valorParaMeta + valorBonus,
