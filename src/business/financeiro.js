@@ -60,8 +60,9 @@ function calcularValorDomingoFeriado(servicos) {
 
 function getMetaFisicaDiariaSabado(nome, tipoVeiculo) {
     if (tipoVeiculo === 'cacamba') return 4;
-    if (tipoVeiculo === 'misto') return 6;
-    return getMetaDiaria(nome);
+if (tipoVeiculo === 'misto') return 6;
+if (tipoVeiculo === 'poli_duplo') return getMetaDiaria(nome);
+return getMetaDiaria(nome) * 2;
 }
 
 function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, bancoDados, formatarData }) {
@@ -81,7 +82,9 @@ function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, ba
                 qtdFeriadosSemana++;
             } else {
                 const srv = isNaN(lancDia.servicos) ? 0 : lancDia.servicos;
-                servicosFeitosSemana += srv;
+               const tipoVeiculoDia = lancDia.tipoVeiculo || 'poliguindaste';
+const fatorDia = tipoVeiculoDia === 'poliguindaste' ? 2 : 1;
+servicosFeitosSemana += srv * fatorDia;
             }
         }
     }
