@@ -1245,9 +1245,6 @@ window.atualizarResumosGlobais = function () {
     _set('caixasSemanaGlobal', `${caixasMesGlobal} cx`);
 };
 
-// =============================================================
-// RANKINGS
-// =============================================================
 window.gerarRankingPeriodo = function () {
     const elInicio = document.getElementById('dataRankingInicio');
     const elFim    = document.getElementById('dataRankingFim');
@@ -1258,18 +1255,32 @@ window.gerarRankingPeriodo = function () {
 
     const bancoDados = window.bancoDadosCloud;
     let rankPeriodo  = {};
+    
+    // Novas variáveis para os totais gerais do topo do card
+    let totalFatGeral = 0;
+    let totalCaixasGeral = 0;
+    let totalViagensGeral = 0;
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataEstaNoIntervalo(dataStr, inicio, fim)) {
             const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
             for (const [mot, dados] of Object.entries(dadosDia)) {
                 if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
+                
                 rankPeriodo[mot].valor += dados.valor;
                 rankPeriodo[mot].extra += dados.valorExtra || 0;
+                
+                // Soma no Faturamento Geral
+                totalFatGeral += dados.valor;
 
                 if (!dados.status || dados.status === 'normal') {
-                    if (dados.tipoVeiculo === 'cacamba') rankPeriodo[mot].viagens += dados.servicos || 0;
-                    else                                  rankPeriodo[mot].caixas  += dados.servicos || 0;
+                    if (dados.tipoVeiculo === 'cacamba') {
+                        rankPeriodo[mot].viagens += dados.servicos || 0;
+                        totalViagensGeral += dados.servicos || 0; // Soma na Viagem Geral
+                    } else {
+                        rankPeriodo[mot].caixas  += dados.servicos || 0;
+                        totalCaixasGeral += dados.servicos || 0; // Soma na Caixa Geral
+                    }
                     rankPeriodo[mot].pontos += dados.pontos !== undefined
                         ? dados.pontos
                         : window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
@@ -1278,6 +1289,13 @@ window.gerarRankingPeriodo = function () {
             }
         }
     }
+
+    // Atualiza o HTML com os totais gerais calculados
+    const elQtd = document.getElementById('totalQtdPeriodo');
+    if (elQtd) elQtd.innerText = `${totalCaixasGeral} cx | ${totalViagensGeral} vg`;
+    
+    const elFat = document.getElementById('totalFatPeriodo');
+    if (elFat) elFat.innerText = formatarMoeda(totalFatGeral);
 
     const rankArray = Object.keys(rankPeriodo).map(mot => {
         const metaTotalPeriodo = window.getMetaDiaria(mot) * rankPeriodo[mot].diasTrab;
@@ -1318,6 +1336,34 @@ window.gerarRankingPeriodo = function () {
             </div>
         `;
         divLista.appendChild(linha);
+    });
+};
+
+// =============================================================
+// FUNÇÃO PARA EXPORTAR O RANKING EM PDF
+// =============================================================
+window.exportarRankingPeriodoPDF = function() {
+    const cardElement = document.getElementById('cardRankingPeriodoPDF');
+    const btnExportar = document.getElementById('btnExportarPDF');
+    const controlesData = document.getElementById('controlesDataPeriodo');
+
+    // 1. Esconde o botão e as caixas de data temporariamente para o PDF ficar limpo
+    btnExportar.style.display = 'none';
+    controlesData.style.display = 'none';
+
+    // 2. Opções de configuração do PDF
+    const opt = {
+        margin:       [10, 10, 10, 10], // Margens
+        filename:     `SGC_Ranking_Periodo.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // 3. Gera o PDF e depois devolve o botão e as datas para a tela
+    html2pdf().set(opt).from(cardElement).save().then(() => {
+        btnExportar.style.display = 'flex';
+        controlesData.style.display = 'flex';
     });
 };
 

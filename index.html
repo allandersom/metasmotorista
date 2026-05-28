@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -364,15 +365,33 @@
                         <div id="listaLeaderboard" class="space-y-2"></div>
                     </div>
 
-                    <div class="rank-card">
-                        <div class="rank-card-header">
-                            <h3>Ranking por Período</h3>
-                            <div class="flex items-center gap-2">
+                    <div class="rank-card" id="cardRankingPeriodoPDF">
+                        <div class="rank-card-header" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h3>Ranking por Período</h3>
+                                <button id="btnExportarPDF" onclick="window.exportarRankingPeriodoPDF()" class="btn-sistema" style="height: 30px; padding: 0 12px; background: var(--brand-50); color: var(--brand-600); border: 1px solid var(--brand-200); font-size: 12px;">
+                                    <i data-lucide="file-down" style="width: 14px; height: 14px; margin-right: 4px;"></i> Exportar PDF
+                                </button>
+                            </div>
+                            <div id="controlesDataPeriodo" class="flex items-center gap-2">
                                 <input type="date" id="dataRankingInicio" class="inline-date" onchange="window.gerarRankingPeriodo()">
                                 <span style="color:var(--gray-400);font-size:12px;font-weight:600;">até</span>
                                 <input type="date" id="dataRankingFim" class="inline-date" onchange="window.gerarRankingPeriodo()">
                             </div>
                         </div>
+
+                        <!-- NOVA BADGE DE TOTAIS -->
+                        <div class="fat-total-badge mb-5" style="display: flex; justify-content: space-between; background: var(--gray-50);">
+                            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                <span>Total de Serviços no Período</span>
+                                <span id="totalQtdPeriodo" style="color: var(--brand-600); font-size: 15px;">0 cx | 0 vg</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                                <span>Faturamento no Período</span>
+                                <span id="totalFatPeriodo" style="color: #10b981; font-size: 15px;">R$ 0,00</span>
+                            </div>
+                        </div>
+
                         <div id="listaRankingDiario" class="space-y-2"></div>
                     </div>
                 </div>
