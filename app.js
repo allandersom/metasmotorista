@@ -1323,25 +1323,14 @@ window.gerarRankingPeriodo = function () {
             : '';
         const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
 
-        const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
-
-        // 🔍 NOVO: Busca o motorista no banco de memória para pegar o PIX
-        const motCadastrado = window.motoristasCache ? window.motoristasCache.find(m => m.nome === mot.nome) : null;
-        const textoPix = (motCadastrado && motCadastrado.chave_pix) 
-            ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 4px; font-weight: 500;">Chave PIX: <span style="color: var(--brand-600); font-weight: 700;">${motCadastrado.chave_pix}</span></div>` 
-            : `<div style="font-size: 11px; color: var(--gray-400); margin-top: 4px; font-style: italic;">PIX não cadastrado</div>`;
-
         const linha = document.createElement('div');
         linha.className = 'diario-row';
         linha.innerHTML = `
-            <div class="diario-top" style="align-items: flex-start;">
-                <div style="display: flex; flex-direction: column;">
-                    <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
-                    ${textoPix}
-                </div>
+            <div class="diario-top">
+                <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
                 <span class="diario-faturamento">${formatarMoeda(mot.valor)}</span>
             </div>
-            <div class="progress-wrapper" style="margin-top: 8px;">
+            <div class="progress-wrapper">
                 <div class="progress-bar-bg"><div class="progress-bar-fill ${classeBarra}" style="width: ${larguraBarra}%;"></div></div>
                 <span class="progress-text" title="Baseado nos dias trabalhados">${porcentagemStr}</span>
             </div>
