@@ -288,6 +288,18 @@ Evite criar policy de `delete` geral no comeco. Isso reduz risco de apagar tudo 
 
 Repita a ideia para:
 
+.btn-primary {
+    padding: 10px 24px;
+    background: var(--brand-600);
+    color: rgb(150, 124, 124);
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 14px;
+}
+=======
 - `motoristas`
 - `config_meses`
 - `config_slas`
