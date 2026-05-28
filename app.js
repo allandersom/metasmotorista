@@ -1369,31 +1369,32 @@ window.exportarRankingPeriodoPDF = function() {
     // Pega as linhas já renderizadas e reconstrói com PIX
     const linhasOriginais = document.querySelectorAll('#listaRankingDiario .diario-row');
     let linhasHtml = '';
-    linhasOriginais.forEach((linha, index) => {
+    linhasOriginais.forEach((linha) => {
         const nomeEl  = linha.querySelector('.diario-nome');
         const fatEl   = linha.querySelector('.diario-faturamento');
         const barraEl = linha.querySelector('.progress-bar-fill');
         const percEl  = linha.querySelector('.progress-text');
 
-        const nomeTexto = nomeEl ? nomeEl.innerHTML : '';
-        const fatTexto  = fatEl  ? fatEl.innerText   : '';
+        // Usa innerText para evitar SVGs/ícones Lucide no HTML
+        const nomeTexto = nomeEl ? nomeEl.innerText : '';
+        const fatTexto  = fatEl  ? fatEl.innerText  : '';
         const largura   = barraEl ? barraEl.style.width : '0%';
         const classeBar = barraEl ? barraEl.className.replace('progress-bar-fill','').trim() : '';
-        const percTexto = percEl  ? percEl.innerText  : '';
+        const percTexto = percEl  ? percEl.innerText : '';
+
+        const corBarra = classeBar === 'meta-batida' ? '#22c55e' : classeBar === 'meta-excedida' ? '#f59e0b' : '#ef4444';
 
         // Busca o nome puro para encontrar o PIX no cache
-        const nomeMotorista = Object.keys(window.bancoDadosCloud || {}).length > 0
-            ? (nomeEl?.innerText || '').replace(/#\d+\s*-\s*/, '').replace(/\(.*\)/, '').trim()
-            : '';
+        const nomeMotorista = nomeTexto.replace(/#\d+\s*-\s*/, '').replace(/\(.*\)/, '').trim();
         const cadastro = (window.motoristasCache || []).find(m =>
             nomeMotorista && m.nome.toLowerCase() === nomeMotorista.toLowerCase()
         );
         const pixHtml = cadastro?.chave_pix
-            ? `<div style="font-size:10px;color:#6b7280;margin-top:3px;">🔑 ${cadastro.chave_pix}</div>`
+            ? `<div style="font-size:10px;color:#6b7280;margin-top:3px;">PIX: ${cadastro.chave_pix}</div>`
             : '';
 
         linhasHtml += `
-            <div style="padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;">
+            <div style="padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;page-break-inside:avoid;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
                     <div>
                         <div style="font-size:13px;font-weight:600;color:#111827;">${nomeTexto}</div>
@@ -1402,8 +1403,8 @@ window.exportarRankingPeriodoPDF = function() {
                     <div style="font-family:monospace;font-weight:600;color:#059669;font-size:15px;">${fatTexto}</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="flex:1;background:#f3f4f6;height:5px;border-radius:999px;overflow:hidden;">
-                        <div style="height:100%;border-radius:999px;width:${largura};background:${classeBar === 'meta-batida' ? '#22c55e' : classeBar === 'meta-excedida' ? '#f59e0b' : '#ef4444'};"></div>
+                    <div style="flex:1;background:#f3f4f6;height:6px;border-radius:999px;overflow:hidden;">
+                        <div style="height:100%;border-radius:999px;width:${largura};background:${corBarra};"></div>
                     </div>
                     <span style="font-size:11px;font-weight:600;color:#6b7280;width:52px;text-align:right;">${percTexto}</span>
                 </div>
@@ -1413,48 +1414,55 @@ window.exportarRankingPeriodoPDF = function() {
     const totalQtd = document.getElementById('totalQtdPeriodo')?.innerText || '—';
     const totalFat = document.getElementById('totalFatPeriodo')?.innerText  || '—';
 
-    const container = document.createElement('div');
-    container.style.cssText = 'position:absolute;left:0;top:0;width:700px;background:#fff;font-family:sans-serif;padding:28px;box-sizing:border-box;visibility:hidden;z-index:-9999;';
-    container.innerHTML = `
-        <!-- Cabeçalho -->
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-            <div style="background:#dcfce7;border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;">📊</div>
-            <div>
-                <div style="font-size:17px;font-weight:700;color:#111827;">Ranking por Período</div>
-                <div style="font-size:12px;color:#9ca3af;">Total de serviços e faturamento</div>
-            </div>
+    // Abre janela de impressão com o conteúdo — solução 100% confiável, sem html2canvas
+    const janelaImpressao = window.open('', '_blank', 'width=800,height=900');
+    janelaImpressao.document.write(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Ranking por Período - ${periodoLabel}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; padding: 28px; background: #fff; color: #111827; }
+        @media print {
+            body { padding: 16px; }
+            @page { margin: 10mm; size: A4 portrait; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <div style="background:#dcfce7;border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;">📊</div>
+        <div>
+            <div style="font-size:17px;font-weight:700;color:#111827;">Ranking por Período</div>
+            <div style="font-size:12px;color:#9ca3af;">Total de serviços e faturamento</div>
         </div>
-        <!-- Período -->
-        <div style="font-size:11px;color:#6b7280;margin-bottom:16px;padding-left:52px;">📅 ${periodoLabel}</div>
-
-        <!-- Badge de totais -->
-        <div style="display:flex;justify-content:space-between;background:#f9fafb;border:1px solid #d1fae5;border-radius:10px;padding:12px 16px;margin-bottom:20px;">
-            <div>
-                <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Total de Serviços no Período</div>
-                <div style="font-size:15px;font-weight:700;color:#16a34a;">${totalQtd}</div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Faturamento no Período</div>
-                <div style="font-size:15px;font-weight:700;color:#059669;">${totalFat}</div>
-            </div>
+    </div>
+    <!-- Período -->
+    <div style="font-size:11px;color:#6b7280;margin-bottom:16px;padding-left:52px;">📅 ${periodoLabel}</div>
+    <!-- Badge de totais -->
+    <div style="display:flex;justify-content:space-between;background:#f9fafb;border:1px solid #d1fae5;border-radius:10px;padding:12px 16px;margin-bottom:20px;">
+        <div>
+            <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Total de Serviços no Período</div>
+            <div style="font-size:15px;font-weight:700;color:#16a34a;">${totalQtd}</div>
         </div>
-
-        <!-- Lista de motoristas -->
-        ${linhasHtml}
-    `;
-    document.body.appendChild(container);
-
-    const opt = {
-        margin:      [8, 8, 8, 8],
-        filename:    `SGC_Ranking_${inicio}_${fim}.pdf`,
-        image:       { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(container).save().then(() => {
-        document.body.removeChild(container);
-    });
+        <div style="text-align:right;">
+            <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Faturamento no Período</div>
+            <div style="font-size:15px;font-weight:700;color:#059669;">${totalFat}</div>
+        </div>
+    </div>
+    <!-- Lista de motoristas -->
+    ${linhasHtml}
+    <script>
+        window.onload = function() {
+            window.print();
+            window.onafterprint = function() { window.close(); };
+        };
+    <\/script>
+</body>
+</html>`);
+    janelaImpressao.document.close();
 };
 
 window.obterRankElo = function (percentual) {
