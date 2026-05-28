@@ -1414,7 +1414,7 @@ window.exportarRankingPeriodoPDF = function() {
     const totalFat = document.getElementById('totalFatPeriodo')?.innerText  || '—';
 
     const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:700px;background:#fff;font-family:sans-serif;padding:28px;box-sizing:border-box;';
+    container.style.cssText = 'position:absolute;left:0;top:0;width:700px;background:#fff;font-family:sans-serif;padding:28px;box-sizing:border-box;visibility:hidden;z-index:-9999;';
     container.innerHTML = `
         <!-- Cabeçalho -->
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
@@ -1448,7 +1448,7 @@ window.exportarRankingPeriodoPDF = function() {
         margin:      [8, 8, 8, 8],
         filename:    `SGC_Ranking_${inicio}_${fim}.pdf`,
         image:       { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
         jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
