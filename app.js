@@ -908,12 +908,12 @@ window.salvarLancamento = async function () {
             servicosFinais  = servicosInput;
             valorExtraFinal = valorExtraInput;
         } else {
-          const fatorExistente = lancamentoExistente.tipoVeiculo === 'poli_duplo' ? 0.5 : 1;
-        const fatorNovo = tipoVeiculoInput === 'poli_duplo' ? 0.5 : 1;
-        servicosFinais = (servicosInput * fatorNovo) + ((lancamentoExistente.servicos || 0) * fatorExistente);
-        tipoVeiculoFinal = 'misto';
-            valorExtraFinal += (lancamentoExistente.valorExtra || 0);
-        }
+    servicosFinais  += (lancamentoExistente.servicos || 0);
+    valorExtraFinal += (lancamentoExistente.valorExtra || 0);
+    const pontosNovo = tipoVeiculoInput === 'poli_duplo' ? servicosInput * 0.5 : servicosInput;
+    const pontosExistente = lancamentoExistente.tipoVeiculo === 'poli_duplo' ? (lancamentoExistente.servicos || 0) * 0.5 : (lancamentoExistente.servicos || 0);
+    window._pontosFinaisMisto = pontosNovo + pontosExistente;
+}
 
         isFeriadoFinal = isFeriadoInput || lancamentoExistente.isFeriado;
 
@@ -933,7 +933,7 @@ window.salvarLancamento = async function () {
     const { valorBase, bateuMetaSemana } = calcularValorDia({
         motoristaNome: window.motoristaSelecionado,
         dataStr,
-        servicos: servicosFinais,
+        servicos: tipoVeiculoFinal === 'misto' ? (window._pontosFinaisMisto || servicosFinais) : servicosFinais,
         tipoVeiculo: tipoVeiculoFinal,
         isFeriado: isFeriadoFinal,
         status: statusFinal,
