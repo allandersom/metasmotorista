@@ -908,7 +908,10 @@ window.salvarLancamento = async function () {
             servicosFinais  = servicosInput;
             valorExtraFinal = valorExtraInput;
         } else {
-            servicosFinais  += (lancamentoExistente.servicos || 0);
+          const fatorExistente = lancamentoExistente.tipoVeiculo === 'poli_duplo' ? 0.5 : 1;
+        const fatorNovo = tipoVeiculoInput === 'poli_duplo' ? 0.5 : 1;
+        servicosFinais = (servicosInput * fatorNovo) + ((lancamentoExistente.servicos || 0) * fatorExistente);
+        tipoVeiculoFinal = 'misto';
             valorExtraFinal += (lancamentoExistente.valorExtra || 0);
         }
 
@@ -924,7 +927,6 @@ window.salvarLancamento = async function () {
             tipoVeiculoFinal = 'misto';
             if (!observacaoFinal.includes('[MISTO]')) observacaoFinal = '[MISTO] ' + observacaoFinal;
         } else {
-            tipoVeiculoFinal = lancamentoExistente.tipoVeiculo;
         }
     }
 

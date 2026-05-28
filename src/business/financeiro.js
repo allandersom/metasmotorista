@@ -26,11 +26,10 @@ const VEICULOS_CONFIG = {
         valorExtraPorUnidade: 20,
         tipoUnidade: 'vg',
     },
-    misto: {
-        metaFinanceira: 6,
-        valorExtraPorUnidade: 10,
-        tipoUnidade: 'cx',
-    },
+   misto: {
+    metaFinanceira: 4,  // meta em pontos, igual poliguindaste
+    valorExtraPorUnidade: 10,
+},
 };
 
 export function getConfigVeiculo(tipoVeiculo) {
