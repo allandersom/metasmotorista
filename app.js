@@ -819,8 +819,9 @@ window.mudarAba = function (aba) {
     } else if (aba === 'cadastro') {
         window.carregarMotoristas();
     } else if (aba === 'faltas') {
-    window.popularSelectFaltas();
-    window.renderizarRelatorioFaltas();
+        window.popularSelectFaltas();
+        window.renderizarRelatorioFaltas();
+    }
 };
 
 // Garante que a primeira aba só carregue depois do HTML estar pronto
@@ -2853,4 +2854,4 @@ th:first-child{text-align:left;}
     win.document.write(conteudo);
     win.document.close();
     win.print();
-};}
+};
