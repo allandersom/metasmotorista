@@ -1,8 +1,8 @@
 // =============================================================
 // MAIN APP MODULE
 // =============================================================
-// Este arquivo orquestra o carregamento do sistema.
-// A versão runtime atual ainda preserva as funções globais usadas
-// pelo HTML legado, para a refatoração não mudar comportamento.
+// Orquestra o carregamento do sistema. Enquanto o HTML ainda usa
+// handlers globais window.*, o runtime legado fica isolado em
+// src/app/legacy/runtime.js.
 
-import '../../app.runtime.js';
+import './legacy/runtime.js';
