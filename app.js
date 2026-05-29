@@ -623,6 +623,15 @@ window.renderizarSidebar = function () {
                 ? window.bancoDadosCloud[ultimoDia][mot].status === 'desligado'
                 : false;
 
+            // Acha o mês mais recente em que esse motorista teve status desligado
+            const mesDesligamento = Object.keys(window.bancoDadosCloud)
+                .filter(d => window.bancoDadosCloud[d][mot]?.status === 'desligado')
+                .map(d => d.substring(0, 7))
+                .sort()
+                .pop();
+            // Se foi desligado em mês anterior ao exibido, não renderiza
+            if (mesDesligamento && mesDesligamento < mesAtualFiltro) return;
+
             if (isDesligadoNesteMes) {
                 li.innerHTML = `<span class="text-red-500 w-full block font-black leading-tight">${mot} <span class="text-[9px] opacity-90 ml-1 bg-red-100 text-red-700 px-1 rounded border border-red-200">(Deslig. no Mês)</span></span>`;
             } else {
@@ -2361,6 +2370,29 @@ window.motoristas.sort();
   }
 };
 
+// Helper: verifica se aniversário está entre 5 dias antes e o dia seguinte
+window.isAniversarioProximo = function(dataNasc) {
+    if (!dataNasc) return false;
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const [, mes, dia] = dataNasc.split('-').map(Number);
+    // Aniversário deste ano
+    const aniv = new Date(anoAtual, mes - 1, dia);
+    const diffMs = aniv - hoje;
+    const diffDias = diffMs / (1000 * 60 * 60 * 24);
+    // Janela: -1 dia (já passou hoje) até 5 dias antes
+    return diffDias >= -1 && diffDias <= 5;
+};
+
+// Helper: verifica se CNH está vencida ou vence hoje
+window.isCnhVencida = function(cnhVenc) {
+    if (!cnhVenc) return false;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const venc = new Date(cnhVenc + 'T00:00:00');
+    return venc <= hoje;
+};
+
 // Renderizar tabela
 window.renderizarTabelaMotoristasModal = function(motoristas = []) {
   const tbody = document.getElementById('tabelaCadastroMotoristas');
@@ -2370,17 +2402,29 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
     return;
   }
 
-  tbody.innerHTML = motoristas.map(m => {
+  // Ativos primeiro, depois inativos/desligados — dentro de cada grupo ordena por nome
+  const motoristasOrdenados = [...motoristas].sort((a, b) => {
+    const fa = a.status === 'inativo' ? 1 : 0;
+    const fb = b.status === 'inativo' ? 1 : 0;
+    return fa - fb || a.nome.localeCompare(b.nome);
+  });
+
+  tbody.innerHTML = motoristasOrdenados.map(m => {
   const inativo = m.status === 'inativo';
+  const nomeUpper = m.nome.toUpperCase().trim();
+  const isDesligado = Object.values(window.bancoDadosCloud || {}).some(dia => dia[nomeUpper]?.status === 'desligado');
+  const anivProximo = window.isAniversarioProximo(m.data_nascimento);
+  const cnhVencida  = window.isCnhVencida(m.cnh_venc);
   return `
   <tr style="border-bottom: 1px solid #e5e7eb; opacity:${inativo ? '0.5' : '1'};">
     <td style="padding:12px; color:#1f2937;">
       ${m.nome}
       ${inativo ? '<span style="font-size:11px; background:#fee2e2; color:#dc2626; padding:2px 6px; border-radius:4px; margin-left:6px;">Inativo</span>' : ''}
+      ${isDesligado && !inativo ? '<span style="font-size:11px; background:#fecaca; color:#991b1b; padding:2px 6px; border-radius:4px; margin-left:6px;">Desligado</span>' : ''}
     </td>
     <td style="text-align:center; padding:12px; text-transform:capitalize;">${m.turno === 'dia' ? '☀️' : m.turno === 'noite' ? '🌙' : '🚛'} ${m.turno}</td>
-    <td style="text-align:center; padding:12px;">${m.data_nascimento ? new Date(m.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
-    <td style="text-align:center; padding:12px;">${m.cnh_venc ? new Date(m.cnh_venc + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+    <td style="text-align:center; padding:12px; ${anivProximo ? 'color:#16a34a; font-weight:500;' : ''}">${m.data_nascimento ? new Date(m.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+    <td style="text-align:center; padding:12px; ${cnhVencida ? 'color:#dc2626; font-weight:500;' : ''}">${m.cnh_venc ? new Date(m.cnh_venc + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
     <td style="text-align:center; padding:12px;">${m.tamanho_epi || '—'}</td>
     <td style="text-align:center; padding:12px;">
       <button onclick="window.abrirModalEditarMotorista('${m.nome}')" style="background:none; border:none; cursor:pointer; color:#0ea5e9;">✏️</button>
