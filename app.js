@@ -2571,29 +2571,38 @@ window.exportarPdfDomFeriados = function () {
     let fatTotalDom = 0, fatTotalFer = 0;
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-        const dataObj   = new Date(dataStr + 'T00:00:00');
-        const isDomingo = dataObj.getDay() === 0;
-        for (const [mot, dados] of Object.entries(dadosDia)) {
-            if (!(dados.servicos > 0) && (!dados.status || dados.status === 'normal')) continue;
-            const obj = {
-                dataStr,
-                nome:    mot,
-                caixas:  dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0,
-                viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0,
-                valor:   dados.valor,
-            };
-            if (isDomingo && !dados.isFeriado) {
-                if (!domInicio || !domFim || dataEstaNoIntervalo(dataStr, domInicio, domFim)) {
-                    registrosDom.push(obj); fatTotalDom += dados.valor;
-                }
+    const dataObj   = new Date(dataStr + 'T00:00:00');
+    const isDomingo = dataObj.getDay() === 0;
+    for (const [mot, dados] of Object.entries(dadosDia)) {
+        const trabalhou = dados.servicos > 0;
+        const temStatus = dados.status && dados.status !== 'normal';
+        // Ignora dias sem nenhum dado relevante
+        if (!trabalhou && !temStatus && !isDomingo && !dados.isFeriado) continue;
+
+        const obj = {
+            dataStr,
+            nome:    mot,
+            caixas:  dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0,
+            viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0,
+            valor:   dados.valor || 0,
+            valorExtra: dados.valorExtra || 0,
+            trabalhou,
+            status:  dados.status || 'normal',
+        };
+        if (isDomingo && !dados.isFeriado) {
+            if (!domInicio || !domFim || dataEstaNoIntervalo(dataStr, domInicio, domFim)) {
+                registrosDom.push(obj);
+                fatTotalDom += obj.valor;
             }
-            if (dados.isFeriado) {
-                if (!ferInicio || !ferFim || dataEstaNoIntervalo(dataStr, ferInicio, ferFim)) {
-                    registrosFer.push(obj); fatTotalFer += dados.valor;
-                }
+        }
+        if (dados.isFeriado) {
+            if (!ferInicio || !ferFim || dataEstaNoIntervalo(dataStr, ferInicio, ferFim)) {
+                registrosFer.push(obj);
+                fatTotalFer += obj.valor;
             }
         }
     }
+}
 
     const ordenar = (lista) => lista.sort((a, b) => a.nome.localeCompare(b.nome) || new Date(a.dataStr) - new Date(b.dataStr));
     ordenar(registrosDom);
@@ -2613,16 +2622,30 @@ window.exportarPdfDomFeriados = function () {
               + '<th style="padding:7px 10px;border:1px solid #ddd;">Valor</th>'
               + '</tr></thead><tbody>';
         lista.forEach(function(r) {
-            const isNovoNome = r.nome !== nomeAtual;
-            if (isNovoNome) nomeAtual = r.nome;
-            const qtd = r.caixas > 0 ? (r.caixas + ' cx') : (r.viagens + ' vg');
-            html += '<tr style="background:' + (isNovoNome ? '#f8fafc' : '#fff') + ';">'
-                  + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isNovoNome ? '700' : '400') + ';color:' + (isNovoNome ? '#1e293b' : '#475569') + ';">' + (isNovoNome ? r.nome : '') + '</td>'
-                  + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtData(r.dataStr) + '</td>'
-                  + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + qtd + '</td>'
-                  + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:right;color:#dc2626;font-weight:600;">' + fmt(r.valor) + '</td>'
-                  + '</tr>';
-        });
+    const isNovoNome = r.nome !== nomeAtual;
+    if (isNovoNome) nomeAtual = r.nome;
+
+    let qtdCell, valorCell;
+    if (!r.trabalhou) {
+        // Folga — não trabalhou
+        qtdCell  = '<td colspan="2" style="padding:6px 10px;border:1px solid #ddd;text-align:center;color:#94a3b8;font-style:italic;">NÃO TRABALHOU</td>';
+        valorCell = '';
+    } else {
+        const qtd = r.caixas > 0 ? (r.caixas + ' cx') : (r.viagens + ' vg');
+        const obs = r.valorExtra > 0
+            ? '<br><span style="font-size:11px;color:#7c3aed;font-weight:600;">Extra: ' + fmt(r.valorExtra) + '</span>'
+            : '';
+        qtdCell  = '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + qtd + '</td>';
+        valorCell = '<td style="padding:6px 10px;border:1px solid #ddd;text-align:right;color:#dc2626;font-weight:600;">' + fmt(r.valor) + obs + '</td>';
+    }
+
+    html += '<tr style="background:' + (isNovoNome ? '#f8fafc' : '#fff') + ';">'
+          + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isNovoNome ? '700' : '400') + ';color:' + (isNovoNome ? '#1e293b' : '#475569') + ';">' + (isNovoNome ? r.nome : '') + '</td>'
+          + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtData(r.dataStr) + '</td>'
+          + qtdCell
+          + valorCell
+          + '</tr>';
+});
         html += '</tbody><tfoot><tr>'
               + '<td colspan="3" style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;">Total:</td>'
               + '<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#dc2626;">' + fmt(total) + '</td>'
