@@ -93,8 +93,9 @@ servicosFeitosSemana += srv * fatorDia;
     const servicosParaMeta = Math.min(servicos, servicosFaltantesFisicos);
     const servicosBonus = Math.max(0, servicos - servicosFaltantesFisicos);
 
-    const valorParaMeta = calcularValorDiaNormal(servicosParaMeta, config);
-    const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
+    const valorParaMeta = servicosBonus > 0
+    ? calcularValorDiaNormal(servicos, config)
+    : calcularValorDiaNormal(servicosParaMeta, config);    const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
     const caixasBrutasBonus = Math.round(proporcaoBonus * (servicosBrutos || servicos));
     const valorBonus = caixasBrutasBonus * (config.valorExtraPorUnidade * 2);
 
