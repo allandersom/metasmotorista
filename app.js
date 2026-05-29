@@ -792,6 +792,7 @@ window.mudarAba = function (aba) {
         rotas:       { btn: 'btnTabRotas',       view: 'viewRotas'       },
         cadastro:    { btn: 'btnTabCadastro',    view: 'viewCadastro'    },
         operador:    { btn: 'btnTabOperador',    view: 'viewOperador'    },
+        faltas:      { btn: 'btnTabFaltas',    view: 'viewFaltas'    },
     };
 
     const conf = mapaAbas[aba];
@@ -817,7 +818,9 @@ window.mudarAba = function (aba) {
         window.carregarRotasDia();
     } else if (aba === 'cadastro') {
         window.carregarMotoristas();
-    }
+    } else if (aba === 'faltas') {
+    window.popularSelectFaltas();
+    window.renderizarRelatorioFaltas();
 };
 
 // Garante que a primeira aba só carregue depois do HTML estar pronto
@@ -2612,46 +2615,52 @@ window.exportarPdfDomFeriados = function () {
     const fmtData = (s) => { const [y, m, d] = s.split('-'); return d + '/' + m + '/' + y; };
 
     function gerarTabela(lista, total) {
-        if (lista.length === 0) return '<p style="color:#888;font-style:italic;">Nenhum registro no período.</p>';
-        let nomeAtual = '';
-        let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-        html += '<thead><tr style="background:#f1f5f9;">'
-              + '<th style="text-align:left;padding:7px 10px;border:1px solid #ddd;">Motorista</th>'
-              + '<th style="padding:7px 10px;border:1px solid #ddd;">Data</th>'
-              + '<th style="padding:7px 10px;border:1px solid #ddd;">Qtd</th>'
-              + '<th style="padding:7px 10px;border:1px solid #ddd;">Valor</th>'
-              + '</tr></thead><tbody>';
-        lista.forEach(function(r) {
-    const isNovoNome = r.nome !== nomeAtual;
-    if (isNovoNome) nomeAtual = r.nome;
+    if (lista.length === 0) return '<p style="color:#888;font-style:italic;">Nenhum registro no período.</p>';
 
-    let qtdCell, valorCell;
-    if (!r.trabalhou) {
-        // Folga — não trabalhou
-        qtdCell  = '<td colspan="2" style="padding:6px 10px;border:1px solid #ddd;text-align:center;color:#94a3b8;font-style:italic;">NÃO TRABALHOU</td>';
-        valorCell = '';
-    } else {
-        const qtd = r.caixas > 0 ? (r.caixas + ' cx') : (r.viagens + ' vg');
-        const obs = r.valorExtra > 0
-            ? '<br><span style="font-size:11px;color:#7c3aed;font-weight:600;">Extra: ' + fmt(r.valorExtra) + '</span>'
-            : '';
-        qtdCell  = '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + qtd + '</td>';
-        valorCell = '<td style="padding:6px 10px;border:1px solid #ddd;text-align:right;color:#dc2626;font-weight:600;">' + fmt(r.valor) + obs + '</td>';
-    }
+    // Agrupa por motorista
+    const porMot = {};
+    lista.forEach(function(r) {
+        if (!porMot[r.nome]) porMot[r.nome] = [];
+        porMot[r.nome].push(r);
+    });
 
-    html += '<tr style="background:' + (isNovoNome ? '#f8fafc' : '#fff') + ';">'
-          + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isNovoNome ? '700' : '400') + ';color:' + (isNovoNome ? '#1e293b' : '#475569') + ';">' + (isNovoNome ? r.nome : '') + '</td>'
-          + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtData(r.dataStr) + '</td>'
-          + qtdCell
-          + valorCell
-          + '</tr>';
-});
-        html += '</tbody><tfoot><tr>'
-              + '<td colspan="3" style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;">Total:</td>'
-              + '<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#dc2626;">' + fmt(total) + '</td>'
-              + '</tr></tfoot></table>';
-        return html;
-    }
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+    html += '<thead><tr style="background:#f1f5f9;">'
+          + '<th style="text-align:left;padding:7px 10px;border:1px solid #ddd;">Motorista</th>'
+          + '<th style="padding:7px 10px;border:1px solid #ddd;">Data</th>'
+          + '<th style="padding:7px 10px;border:1px solid #ddd;">Qtd</th>'
+          + '<th style="padding:7px 10px;border:1px solid #ddd;">Valor</th>'
+          + '</tr></thead><tbody>';
+
+    Object.entries(porMot).forEach(function([nome, registros]) {
+        let subtotal = 0;
+        registros.forEach(function(r, i) {
+            subtotal += r.valor || 0;
+            const isFirst = i === 0;
+            const qtd = r.caixas > 0 ? (r.caixas + ' cx') : (r.viagens + ' vg');
+            const obs = r.valorExtra > 0
+                ? '<br><span style="font-size:11px;color:#7c3aed;font-weight:600;">Extra: ' + fmt(r.valorExtra) + '</span>'
+                : '';
+            html += '<tr style="background:' + (isFirst ? '#f8fafc' : '#fff') + ';">'
+                  + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isFirst ? '700' : '400') + ';color:' + (isFirst ? '#1e293b' : '#475569') + ';">' + (isFirst ? nome : '') + '</td>'
+                  + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtData(r.dataStr) + '</td>'
+                  + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + qtd + '</td>'
+                  + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:right;color:#dc2626;font-weight:600;">' + fmt(r.valor) + obs + '</td>'
+                  + '</tr>';
+        });
+        // Linha de subtotal por motorista
+        html += '<tr style="background:#fef9c3;">'
+              + '<td colspan="3" style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#92400e;font-size:12px;">Subtotal ' + nome + ':</td>'
+              + '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#92400e;">' + fmt(subtotal) + '</td>'
+              + '</tr>';
+    });
+
+    html += '</tbody><tfoot><tr>'
+          + '<td colspan="3" style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;">Total Geral:</td>'
+          + '<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#dc2626;">' + fmt(total) + '</td>'
+          + '</tr></tfoot></table>';
+    return html;
+}
 
     const periodoDom = (domInicio && domFim) ? (fmtData(domInicio) + ' – ' + fmtData(domFim)) : 'Todo o período';
     const periodoFer = (ferInicio && ferFim)  ? (fmtData(ferInicio) + ' – ' + fmtData(ferFim)) : 'Todo o período';
@@ -2670,6 +2679,175 @@ window.exportarPdfDomFeriados = function () {
         + gerarTabela(registrosFer, fatTotalFer)
         + '<div style="margin-top:24px;padding:12px 16px;background:#f1f5f9;border-radius:8px;text-align:right;font-size:15px;font-weight:700;">Total Geral: <span style="color:#dc2626;">' + fmt(fatTotalDom + fatTotalFer) + '</span></div>'
         + '</body></html>';
+
+    const win = window.open('', '_blank');
+    win.document.write(conteudo);
+    win.document.close();
+    win.print();
+};
+// ─── RELATÓRIO DE FALTAS / ATESTADOS ───────────────────────────────────────
+
+window.popularSelectFaltas = function () {
+    const sel = document.getElementById('filtroFaltasMot');
+    if (!sel) return;
+    const atual = sel.value;
+    sel.innerHTML = '<option value="todos">Todos os Motoristas</option>';
+    (window.motoristas || []).forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m; opt.textContent = m;
+        sel.appendChild(opt);
+    });
+    if (atual) sel.value = atual;
+};
+
+window.renderizarRelatorioFaltas = function () {
+    const banco   = window.bancoDadosCloud || {};
+    const motFilt = document.getElementById('filtroFaltasMot')?.value || 'todos';
+    const inicio  = document.getElementById('filtroFaltasInicio')?.value || '';
+    const fim     = document.getElementById('filtroFaltasFim')?.value || '';
+    const cont    = document.getElementById('tabelaFaltasContainer');
+    if (!cont) return;
+
+    const fmtD = s => { const [y,m,d] = s.split('-'); return d+'/'+m+'/'+y; };
+    const statusLabel = { falta:'Falta', atestado:'Atestado', folga:'Folga',
+        polioff:'Poli OFF', licenca:'Férias', desligado:'Desligado' };
+    const statusColor = { falta:'#dc2626', atestado:'#d97706', folga:'#64748b',
+        polioff:'#ea580c', licenca:'#7c3aed', desligado:'#991b1b' };
+
+    // Coleta registros com falta ou atestado (dias úteis — seg a sáb)
+    const registros = [];
+    for (const [dataStr, dadosDia] of Object.entries(banco)) {
+        const dataObj = new Date(dataStr + 'T00:00:00');
+        const dow = dataObj.getDay();
+        if (dow === 0) continue; // ignora domingos aqui
+        if (inicio && dataStr < inicio) continue;
+        if (fim    && dataStr > fim)    continue;
+        for (const [mot, dados] of Object.entries(dadosDia)) {
+            if (motFilt !== 'todos' && mot !== motFilt) continue;
+            if (!dados.status || dados.status === 'normal') continue;
+            registros.push({ dataStr, mot, dados });
+        }
+    }
+    registros.sort((a, b) => a.mot.localeCompare(b.mot) || a.dataStr.localeCompare(b.dataStr));
+
+    if (registros.length === 0) {
+        cont.innerHTML = '<p style="color:#94a3b8;font-style:italic;">Nenhum registro de falta ou atestado no período.</p>';
+        return;
+    }
+
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+    html += '<thead><tr style="background:#f1f5f9;">'
+        + '<th style="text-align:left;padding:8px 10px;border:1px solid #ddd;">Motorista</th>'
+        + '<th style="padding:8px 10px;border:1px solid #ddd;">Data</th>'
+        + '<th style="padding:8px 10px;border:1px solid #ddd;">Status</th>'
+        + '<th style="padding:8px 10px;border:1px solid #ddd;">Observação</th>'
+        + '<th style="padding:8px 10px;border:1px solid #ddd;">Anexo</th>'
+        + '</tr></thead><tbody>';
+
+    let nomePrev = '';
+    registros.forEach(function(r) {
+        const isNovo = r.mot !== nomePrev;
+        if (isNovo) nomePrev = r.mot;
+        const label = statusLabel[r.dados.status] || r.dados.status;
+        const cor   = statusColor[r.dados.status] || '#475569';
+        const obs   = r.dados.observacao || '—';
+        const anexo = r.dados.anexoUrl
+            ? `<a href="${r.dados.anexoUrl}" target="_blank" style="color:#2563eb;font-weight:600;text-decoration:underline;">Ver anexo</a>`
+            : '<span style="color:#94a3b8;font-style:italic;">Não anexado</span>';
+
+        html += '<tr style="background:' + (isNovo ? '#f8fafc' : '#fff') + ';">'
+            + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isNovo?'700':'400') + ';color:' + (isNovo?'#1e293b':'#475569') + ';">' + (isNovo ? r.mot : '') + '</td>'
+            + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtD(r.dataStr) + '</td>'
+            + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;"><span style="background:' + cor + ';color:#fff;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;">' + label + '</span></td>'
+            + '<td style="padding:6px 10px;border:1px solid #ddd;font-size:12px;color:#475569;max-width:200px;">' + obs + '</td>'
+            + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + anexo + '</td>'
+            + '</tr>';
+    });
+    html += '</tbody></table>';
+    cont.innerHTML = html;
+};
+
+window.exportarPdfFaltasAtestados = function (tipo) {
+    const banco   = window.bancoDadosCloud || {};
+    const motFilt = document.getElementById('filtroFaltasMot')?.value || 'todos';
+    const inicio  = document.getElementById('filtroFaltasInicio')?.value || '';
+    const fim     = document.getElementById('filtroFaltasFim')?.value || '';
+
+    const fmtD = s => { const [y,m,d] = s.split('-'); return d+'/'+m+'/'+y; };
+    const fmt  = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    const statusLabel = { falta:'Falta', atestado:'Atestado', folga:'Folga',
+        polioff:'Poli OFF', licenca:'Férias', desligado:'Desligado' };
+    const statusColor = { falta:'#dc2626', atestado:'#d97706', folga:'#64748b',
+        polioff:'#ea580c', licenca:'#7c3aed', desligado:'#991b1b' };
+
+    const tiposFiltro = tipo === 'todos' ? ['falta','atestado','folga','polioff','licenca','desligado']
+        : tipo === 'falta'    ? ['falta']
+        : ['atestado'];
+
+    const registros = [];
+    for (const [dataStr, dadosDia] of Object.entries(banco)) {
+        const dataObj = new Date(dataStr + 'T00:00:00');
+        if (dataObj.getDay() === 0) continue;
+        if (inicio && dataStr < inicio) continue;
+        if (fim    && dataStr > fim)    continue;
+        for (const [mot, dados] of Object.entries(dadosDia)) {
+            if (motFilt !== 'todos' && mot !== motFilt) continue;
+            if (!dados.status || !tiposFiltro.includes(dados.status)) continue;
+            registros.push({ dataStr, mot, dados });
+        }
+    }
+    registros.sort((a, b) => a.mot.localeCompare(b.mot) || a.dataStr.localeCompare(b.dataStr));
+
+    const titulos = { falta:'Relatório de Faltas', atestado:'Relatório de Atestados', todos:'Relatório de Faltas e Atestados' };
+    const periodoTxt = (inicio && fim) ? (fmtD(inicio) + ' a ' + fmtD(fim)) : 'Todo o período';
+    const motTxt = motFilt === 'todos' ? 'Todos os motoristas' : motFilt;
+
+    let linhas = '';
+    if (registros.length === 0) {
+        linhas = '<tr><td colspan="5" style="padding:16px;text-align:center;color:#94a3b8;font-style:italic;">Nenhum registro encontrado.</td></tr>';
+    } else {
+        let nomePrev = '';
+        registros.forEach(function(r) {
+            const isNovo = r.mot !== nomePrev;
+            if (isNovo) nomePrev = r.mot;
+            const label = statusLabel[r.dados.status] || r.dados.status;
+            const cor   = statusColor[r.dados.status] || '#475569';
+            const obs   = r.dados.observacao || '—';
+            const anexoTxt = r.dados.anexoUrl
+                ? `<a href="${r.dados.anexoUrl}" style="color:#2563eb;">Ver anexo</a>`
+                : '<span style="color:#94a3b8;font-style:italic;">Não anexado</span>';
+            linhas += '<tr style="background:' + (isNovo ? '#f8fafc' : '#fff') + ';">'
+                + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isNovo?'700':'400') + ';">' + (isNovo ? r.mot : '') + '</td>'
+                + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtD(r.dataStr) + '</td>'
+                + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;"><span style="background:' + cor + ';color:#fff;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;">' + label + '</span></td>'
+                + '<td style="padding:6px 10px;border:1px solid #ddd;font-size:12px;color:#475569;">' + obs + '</td>'
+                + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + anexoTxt + '</td>'
+                + '</tr>';
+        });
+    }
+
+    const conteudo = `<html><head><meta charset="UTF-8">
+<style>
+body{font-family:Arial,sans-serif;padding:30px;color:#1e293b;}
+h1{font-size:20px;margin-bottom:4px;}
+.sub{font-size:12px;color:#64748b;margin-bottom:20px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:#f1f5f9;padding:8px 10px;border:1px solid #ddd;text-align:center;}
+th:first-child{text-align:left;}
+</style></head><body>
+<h1>${titulos[tipo]}</h1>
+<div class="sub">
+    Período: ${periodoTxt} &nbsp;|&nbsp; Motorista: ${motTxt}<br>
+    Gerado em ${new Date().toLocaleString('pt-BR')}
+</div>
+<table>
+<thead><tr>
+<th style="text-align:left;">Motorista</th>
+<th>Data</th><th>Status</th><th>Observação</th><th>Anexo</th>
+</tr></thead>
+<tbody>${linhas}</tbody>
+</table>
+</body></html>`;
 
     const win = window.open('', '_blank');
     win.document.write(conteudo);

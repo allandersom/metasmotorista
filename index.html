@@ -70,6 +70,9 @@
     <i data-lucide="user-cog"></i>
     <span>Operador</span>
 </button>
+    <button id="btnTabFaltas" onclick="window.mudarAba('faltas')" class="nav-tab">
+    📋 Rel. Faltas/Atestados
+</button>
 </nav>
     </aside>
 
@@ -668,6 +671,47 @@
                     <div class="stat-sub" id="percentualInativos">0%</div>
                 </div>
             </div>
+            <div id="viewFaltas" style="display:none;">
+    <div class="page-header">
+        <div>
+            <h2>Relatórios de Faltas e Atestados</h2>
+            <p>Visualize e exporte relatórios de ausências, faltas e atestados médicos por motorista.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="flex flex-col gap-1">
+            <label style="font-size:13px;font-weight:600;color:#475569;">Motorista</label>
+            <select id="filtroFaltasMot" class="input-base" onchange="window.renderizarRelatorioFaltas()">
+                <option value="todos">Todos os Motoristas</option>
+            </select>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label style="font-size:13px;font-weight:600;color:#475569;">Data Início</label>
+            <input type="date" id="filtroFaltasInicio" class="input-base" onchange="window.renderizarRelatorioFaltas()">
+        </div>
+        <div class="flex flex-col gap-1">
+            <label style="font-size:13px;font-weight:600;color:#475569;">Data Fim</label>
+            <input type="date" id="filtroFaltasFim" class="input-base" onchange="window.renderizarRelatorioFaltas()">
+        </div>
+    </div>
+
+    <div class="flex gap-3 mb-6 flex-wrap">
+        <button onclick="window.exportarPdfFaltasAtestados('falta')" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">
+            ⬇️ Exportar PDF — Faltas
+        </button>
+        <button onclick="window.exportarPdfFaltasAtestados('atestado')" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">
+            ⬇️ Exportar PDF — Atestados
+        </button>
+        <button onclick="window.exportarPdfFaltasAtestados('todos')" style="background:#1e293b;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">
+            ⬇️ Exportar PDF — Ambos
+        </button>
+    </div>
+
+    <div id="tabelaFaltasContainer" style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:20px;overflow-x:auto;">
+        <p style="color:#94a3b8;font-style:italic;">Selecione os filtros acima para visualizar.</p>
+    </div>
+</div>
 
             <div style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
 
