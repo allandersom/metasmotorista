@@ -2853,4 +2853,4 @@ th:first-child{text-align:left;}
     win.document.write(conteudo);
     win.document.close();
     win.print();
-};
+};}
