@@ -2560,3 +2560,96 @@ window.toggleStatusMotorista = async function(nome, statusAtual) {
   // recarrega frota/meta também
   if (window.carregarDados) window.carregarDados();
 };
+window.exportarPdfDomFeriados = function () {
+    const bancoDados = window.bancoDadosCloud;
+    const domInicio = document.getElementById('dataDomInicio')?.value;
+    const domFim    = document.getElementById('dataDomFim')?.value;
+    const ferInicio = document.getElementById('dataFerInicio')?.value;
+    const ferFim    = document.getElementById('dataFerFim')?.value;
+
+    let registrosDom = [], registrosFer = [];
+    let fatTotalDom = 0, fatTotalFer = 0;
+
+    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        const dataObj   = new Date(dataStr + 'T00:00:00');
+        const isDomingo = dataObj.getDay() === 0;
+        for (const [mot, dados] of Object.entries(dadosDia)) {
+            if (!(dados.servicos > 0) && (!dados.status || dados.status === 'normal')) continue;
+            const obj = {
+                dataStr,
+                nome:    mot,
+                caixas:  dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0,
+                viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0,
+                valor:   dados.valor,
+            };
+            if (isDomingo && !dados.isFeriado) {
+                if (!domInicio || !domFim || dataEstaNoIntervalo(dataStr, domInicio, domFim)) {
+                    registrosDom.push(obj); fatTotalDom += dados.valor;
+                }
+            }
+            if (dados.isFeriado) {
+                if (!ferInicio || !ferFim || dataEstaNoIntervalo(dataStr, ferInicio, ferFim)) {
+                    registrosFer.push(obj); fatTotalFer += dados.valor;
+                }
+            }
+        }
+    }
+
+    const ordenar = (lista) => lista.sort((a, b) => a.nome.localeCompare(b.nome) || new Date(a.dataStr) - new Date(b.dataStr));
+    ordenar(registrosDom);
+    ordenar(registrosFer);
+
+    const fmt     = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtData = (s) => { const [y, m, d] = s.split('-'); return d + '/' + m + '/' + y; };
+
+    function gerarTabela(lista, total) {
+        if (lista.length === 0) return '<p style="color:#888;font-style:italic;">Nenhum registro no período.</p>';
+        let nomeAtual = '';
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+        html += '<thead><tr style="background:#f1f5f9;">'
+              + '<th style="text-align:left;padding:7px 10px;border:1px solid #ddd;">Motorista</th>'
+              + '<th style="padding:7px 10px;border:1px solid #ddd;">Data</th>'
+              + '<th style="padding:7px 10px;border:1px solid #ddd;">Qtd</th>'
+              + '<th style="padding:7px 10px;border:1px solid #ddd;">Valor</th>'
+              + '</tr></thead><tbody>';
+        lista.forEach(function(r) {
+            const isNovoNome = r.nome !== nomeAtual;
+            if (isNovoNome) nomeAtual = r.nome;
+            const qtd = r.caixas > 0 ? (r.caixas + ' cx') : (r.viagens + ' vg');
+            html += '<tr style="background:' + (isNovoNome ? '#f8fafc' : '#fff') + ';">'
+                  + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isNovoNome ? '700' : '400') + ';color:' + (isNovoNome ? '#1e293b' : '#475569') + ';">' + (isNovoNome ? r.nome : '') + '</td>'
+                  + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtData(r.dataStr) + '</td>'
+                  + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + qtd + '</td>'
+                  + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:right;color:#dc2626;font-weight:600;">' + fmt(r.valor) + '</td>'
+                  + '</tr>';
+        });
+        html += '</tbody><tfoot><tr>'
+              + '<td colspan="3" style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;">Total:</td>'
+              + '<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#dc2626;">' + fmt(total) + '</td>'
+              + '</tr></tfoot></table>';
+        return html;
+    }
+
+    const periodoDom = (domInicio && domFim) ? (fmtData(domInicio) + ' – ' + fmtData(domFim)) : 'Todo o período';
+    const periodoFer = (ferInicio && ferFim)  ? (fmtData(ferInicio) + ' – ' + fmtData(ferFim)) : 'Todo o período';
+
+    const conteudo = '<html><head><meta charset="UTF-8">'
+        + '<style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b;}'
+        + 'h1{font-size:20px;margin-bottom:4px;}'
+        + 'h2{font-size:15px;margin:28px 0 10px;color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:6px;}'
+        + '.sub{font-size:12px;color:#64748b;margin-bottom:20px;}</style>'
+        + '</head><body>'
+        + '<h1>Domingos &amp; Feriados — Relatório RH</h1>'
+        + '<div class="sub">Gerado em ' + new Date().toLocaleString('pt-BR') + '</div>'
+        + '<h2>☀️ Domingos <span style="font-size:12px;font-weight:400;color:#64748b;">(' + periodoDom + ')</span></h2>'
+        + gerarTabela(registrosDom, fatTotalDom)
+        + '<h2 style="margin-top:36px;">🎉 Feriados <span style="font-size:12px;font-weight:400;color:#64748b;">(' + periodoFer + ')</span></h2>'
+        + gerarTabela(registrosFer, fatTotalFer)
+        + '<div style="margin-top:24px;padding:12px 16px;background:#f1f5f9;border-radius:8px;text-align:right;font-size:15px;font-weight:700;">Total Geral: <span style="color:#dc2626;">' + fmt(fatTotalDom + fatTotalFer) + '</span></div>'
+        + '</body></html>';
+
+    const win = window.open('', '_blank');
+    win.document.write(conteudo);
+    win.document.close();
+    win.print();
+};
