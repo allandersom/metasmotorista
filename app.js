@@ -733,8 +733,29 @@ window.sincronizarMesData = function () {
     const msF = document.getElementById('mesFiltro');
     if (!dtG || !msF) return;
     msF.value = dtG.value;
+
+    // Atualiza data de lançamento para o 1º dia do mês selecionado
+    const dataLanc = document.getElementById('dataLancamento');
+    if (dataLanc) {
+        const [ano, mes] = dtG.value.split('-');
+        const hoje = new Date();
+        const mesHoje = String(hoje.getMonth() + 1).padStart(2, '0');
+        const anoHoje = String(hoje.getFullYear());
+        if (ano === anoHoje && mes === mesHoje) {
+            dataLanc.value = getHojeStr();
+        } else {
+            dataLanc.value = `${ano}-${mes}-01`;
+        }
+    }
+
     window.carregarDiasUteis(dtG.value);
     window.renderizarSidebar();
+    window.atualizarResumosGlobais();
+    if (window.motoristaSelecionado) {
+        window.atualizarResumosDoMotorista();
+        window.carregarHistoricoMotorista();
+        window.atualizarSlaInput();
+    }
 };
 
 window.sincronizarMesFiltro = function () {

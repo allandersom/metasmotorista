@@ -82,6 +82,17 @@
             <button onclick="window.toggleSidebar()" class="btn-icon">
                 <i data-lucide="menu"></i>
             </button>
+            <div style="display:flex; align-items:center; gap:10px; margin-left:16px;">
+    <label style="font-size:12px; font-weight:600; color:#64748b; white-space:nowrap;">
+        Mês de Referência:
+    </label>
+    <input 
+        type="month" 
+        id="dataGlobal"
+        onchange="window.sincronizarMesData(); window.renderizarSidebar(); window.atualizarResumosGlobais(); window.atualizarResumosDoMotorista();"
+        style="border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:13px; font-weight:600; color:#1e293b; background:#fff; cursor:pointer;"
+    >
+</div>
             <div class="header-actions">
                 <button onclick="window.abrirModalSistema()" class="btn-sistema">
                     <i data-lucide="settings"></i>
