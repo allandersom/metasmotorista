@@ -106,20 +106,53 @@ window.getMetaDiaria = getMetaDiaria;
 window.aplicarRestricoesInterface = function () {
     const funcao = window.usuarioAtualFuncao || 'operador';
 
-    if (funcao === 'operador') {
-        console.log('🔒 Modo Operador ativado. Ocultando abas sensíveis...');
+    // Mapa de abas: chave = nome da aba, valor = id do botão no sidebar
+    const todasAbas = {
+        lancamentos: 'btnTabLancamentos',
+        rankings:    'btnTabRankings',
+        domferiados: 'btnTabDomFeriados',
+        projecao:    'btnTabProjecao',
+        auditoria:   'btnTabAuditoria',
+        rotas:       'btnTabRotas',
+        cadastro:    'btnTabCadastro',
+        operador:    'btnTabOperador',
+        faltas:      'btnTabFaltas',
+    };
 
-        const abaFrota = document.getElementById('btnTabLancamentos');
-        if (abaFrota) abaFrota.style.display = 'none';
+    // Abas permitidas por função
+    const permissoes = {
+        admin: Object.keys(todasAbas), // todas
+        operador: ['rankings', 'projecao', 'rotas'],
+        rh: ['cadastro', 'operador', 'faltas', 'domferiados', 'rankings'],
+    };
 
-        const abaAuditoria = document.getElementById('btnTabAuditoria');
-        if (abaAuditoria) abaAuditoria.style.display = 'none';
+    const abasPermitidas = permissoes[funcao] || permissoes['operador'];
 
-        const btnSistema = document.querySelector('.btn-sistema[onclick="window.abrirModalSistema()"]');
-        if (btnSistema) btnSistema.style.display = 'none';
+    // Oculta as abas não permitidas
+    Object.entries(todasAbas).forEach(([aba, btnId]) => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.style.display = abasPermitidas.includes(aba) ? '' : 'none';
+        }
+    });
 
-        window.mudarAba('rotas');
-    } else {
+    // Esconde o botão Sistema/Backup para não-admins
+    const btnSistema = document.querySelector('.btn-sistema[onclick="window.abrirModalSistema()"]');
+    if (btnSistema) {
+        btnSistema.style.display = funcao === 'admin' ? '' : 'none';
+    }
+
+    // Define qual aba abrir por padrão conforme a função
+    const abaInicial = {
+        admin:    'lancamentos',
+        operador: 'rotas',
+        rh:       'cadastro',
+    };
+
+    console.log(`🔐 Perfil "${funcao}" ativado. Abas liberadas: ${abasPermitidas.join(', ')}`);
+    window.mudarAba(abaInicial[funcao] || abasPermitidas[0]);
+
+    if (funcao === 'admin') {
         console.log('🔓 Modo Admin ativado. Acesso total.');
     }
 };

@@ -11,17 +11,19 @@ function byId(id) {
 // ==========================================
 async function carregarPerfilUsuario(userId) {
     const { data, error } = await supabaseClient
-        .from('perfis')
-        .select('funcao')
-        .eq('id', userId)
-        .maybeSingle();
+    .from('usuarios_perfis')
+    .select('papel, aprovado')
+    .eq('id', userId)
+    .maybeSingle();
 
-    if (error || !data) {
-        console.warn('Perfil não encontrado, assumindo padrão: operador');
-        window.usuarioAtualFuncao = 'operador';
-    } else {
-        window.usuarioAtualFuncao = data.funcao;
-    }
+if (error || !data || !data.aprovado) {
+    console.warn('Perfil não encontrado ou não aprovado.');
+    await supabaseClient.auth.signOut();
+    window.location.reload();
+    return;
+}
+
+window.usuarioAtualFuncao = data.papel;
 }
 
 function injectAuthStyles() {
