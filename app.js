@@ -194,6 +194,8 @@ async function carregarDadosDoSupabase() {
                     anexoPath: l.anexo_path,
                     anexoTipo: l.anexo_tipo,
                     servicos: l.quantidade_servicos,
+                    caixasBrutas:  l.caixas_brutas  ?? (l.tipo_veiculo === 'cacamba' ? 0 : l.quantidade_servicos),   // ← ADICIONAR
+                    viagensBrutas: l.viagens_brutas ?? (l.tipo_veiculo === 'cacamba' ? l.quantidade_servicos : 0),   // ← ADICIONAR
                     valor: parseFloat(l.valor_faturamento) || 0,
                     isFeriado: l.is_feriado,
                     ganhouBonusSemana: l.ganhou_bonus_semana,
@@ -302,6 +304,8 @@ window.syncToSupabase = async function (dataStr, motoristaNome) {
     status_servico:       lanc.status,
     tipo_veiculo:         lanc.tipoVeiculo,
     quantidade_servicos:  lanc.servicos,
+    caixas_brutas:        lanc.caixasBrutas  ?? 0,  
+    viagens_brutas:       lanc.viagensBrutas ?? 0, 
     valor_faturamento:    lanc.valor,
     valor_extra:          lanc.valorExtra,
     is_feriado:           lanc.isFeriado,
@@ -1066,6 +1070,8 @@ window._viagensBrutasMisto = vgExistente + vgNovo;
         anexoPath:         dadosAnexo?.path  || lancamentoExistente?.anexoPath  || null,
         anexoTipo:         dadosAnexo?.tipo  || lancamentoExistente?.anexoTipo  || null,
         servicos:          servicosFinais,
+        caixasBrutas:      tipoVeiculoFinal === 'misto' ? window._caixasBrutasMisto  : (tipoVeiculoFinal === 'cacamba' ? 0 : servicosFinais),  // ← ADICIONAR
+viagensBrutas:     tipoVeiculoFinal === 'misto' ? window._viagensBrutasMisto : (tipoVeiculoFinal === 'cacamba' ? servicosFinais : 0),  // ← ADICIONAR
         valor:             valorFinal,
         isFeriado:         isFeriadoFinal,
         ganhouBonusSemana: bateuMetaSemana,
