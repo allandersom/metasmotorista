@@ -1162,11 +1162,8 @@ window.carregarHistoricoMotorista = function () {
             misto:      'VEÍC. MISTO',
         }[item.dados.tipoVeiculo] || 'POLIGUINDASTE';
 
-       const feriadoBadge = item.dados.isFeriado
-            ? `<span class="badge-feriado" style="margin-left:4px;">FERIADO</span>`
-            : '';
         const stringColuna2 = tagStatus
-            ? `${tagStatus}${feriadoBadge}`
+            ? tagStatus
             : `<span class="badge-veiculo">${tagVeiculo}</span><br><span class="inline-block mt-1">${tagsDia}</span>`;
 
         let qtdText = item.dados.tipoVeiculo === 'cacamba'
@@ -1257,26 +1254,17 @@ window.atualizarResumosDoMotorista = function () {
     const elTotalSemana = document.getElementById('motoristaTotalSemana');
     if (elTotalSemana) elTotalSemana.innerText = formatarMoeda(totalSemana);
 
-    // Totais do mês — usa sempre o dataGlobal (mês de referência principal)
+    // Totais do mês
     const elMes = document.getElementById('dataGlobal');
-    const anoMesFiltro = (elMes?.value || dataRefStr).substring(0, 7);
+    const anoMesFiltro = elMes?.value ? elMes.value.substring(0, 7) : dataRefStr.substring(0, 7);
     let totalCaixasMes = 0, totalViagensMes = 0, totalFatMes = 0, totalPontosMes = 0;
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataEstaNoMes(dataStr, anoMesFiltro) && dadosDia[window.motoristaSelecionado]) {
             const r = dadosDia[window.motoristaSelecionado];
             if (!r.status || r.status === 'normal') {
-                const srv = r.servicos || 0;
-                // Registros antigos podem ter caixasBrutas=0 mesmo tendo serviços
-                // então usa || em vez de ?? para forçar recálculo quando for 0
-                const cxBrutas = r.caixasBrutas > 0 ? r.caixasBrutas
-                    : (r.tipoVeiculo === 'cacamba' ? 0
-                    : r.tipoVeiculo === 'poli_duplo' ? srv * 2
-                    : srv);
-                const vgBrutas = r.viagensBrutas > 0 ? r.viagensBrutas
-                    : (r.tipoVeiculo === 'cacamba' ? srv : 0);
-                totalCaixasMes  += cxBrutas;
-                totalViagensMes += vgBrutas;
+               totalCaixasMes  += (r.caixasBrutas  ?? (r.tipoVeiculo === 'cacamba' ? 0 : (r.servicos || 0)));
+                totalViagensMes += (r.viagensBrutas ?? (r.tipoVeiculo === 'cacamba' ? (r.servicos || 0) : 0));
                 totalPontosMes += r.pontos !== undefined
                     ? r.pontos
                     : window.calcularPontosMotorista(window.motoristaSelecionado, r.servicos || 0, r.tipoVeiculo);
@@ -1303,8 +1291,7 @@ window.atualizarResumosDoMotorista = function () {
         const elCaixas = document.getElementById('motoristaCaixasMes');
         if (elCaixas) elCaixas.innerText = totalViagensMes > 0
             ? `${totalCaixasMes} cx + ${totalViagensMes} vg`
-            : `${totalCaixasMes} cx`;
-        const exibeCaixas = totalPontosMes > 0 && totalCaixasMes > totalPontosMes
+            : `${totalCaixasMes} cx`;        const exibeCaixas = totalPontosMes > 0 && totalCaixasMes > totalPontosMes
             ? Math.round(previsaoPontos * (totalCaixasMes / totalPontosMes))
             : previsaoPontos;
         const elPrevisao = document.getElementById('motoristaPrevisaoMes');
@@ -1680,7 +1667,7 @@ window.gerarRankingMensal = function () {
     const feitasGeral = feitasRayanna + feitasJulia;
 
     const elViagens = document.getElementById('totalViajensMesGlobal');
-    if (elViagens) elViagens.innerText = `${totalViagensFrota} vg`;
+    if (elViagens) elViagens.innerText = `${totalViajensFrota} vg`;
     const elFat = document.getElementById('totalFatMensalLeaderboard');
     if (elFat) elFat.innerText = formatarMoeda(totalFatMesFrota);
 
