@@ -2968,20 +2968,32 @@ window.caminhoesCache = [];
 
 window.carregarCaminhoes = async function() {
     try {
+        // Garante o cache de motoristas
+        if (!window.motoristasCache || window.motoristasCache.length === 0) {
+            const { data: mots } = await window.supabaseClient
+                .from('motoristas')
+                .select('*')
+                .eq('status', 'ativo')
+                .order('nome');
+            window.motoristasCache = mots || [];
+        }
+
         const { data, error } = await window.supabaseClient
             .from('caminhoes')
             .select('*')
             .order('placa');
         if (error) throw error;
+
         window.caminhoesCache = data || [];
         window.renderizarTabelaCaminhoes(window.caminhoesCache);
         window.popularSelectMotoristaCaminhao();
-        // Stat cards
+
         const total = data.length;
         const ativos = data.filter(c => c.status === 'ativo').length;
         document.getElementById('totalCaminhoes').textContent = total;
         document.getElementById('totalCaminhoesAtivos').textContent = ativos;
         document.getElementById('totalCaminhoesInativos').textContent = total - ativos;
+
         if (window.lucide) window.lucide.createIcons();
     } catch (err) {
         console.error('Erro ao carregar caminhões:', err);
