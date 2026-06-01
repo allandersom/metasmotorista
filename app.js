@@ -990,6 +990,13 @@ window.salvarLancamento = async function () {
     const pontosNovo = tipoVeiculoInput === 'poli_duplo' ? servicosInput * 0.5 : servicosInput;
     const pontosExistente = lancamentoExistente.tipoVeiculo === 'poli_duplo' ? (lancamentoExistente.servicos || 0) * 0.5 : (lancamentoExistente.servicos || 0);
     window._pontosFinaisMisto = pontosNovo + pontosExistente;
+    // Guarda as quantidades brutas separadas para exibição
+const cxExistente  = lancamentoExistente.tipoVeiculo === 'cacamba'    ? 0 : (lancamentoExistente.servicos || 0);
+const vgExistente  = lancamentoExistente.tipoVeiculo === 'cacamba'    ? (lancamentoExistente.servicos || 0) : 0;
+const cxNovo       = tipoVeiculoInput === 'cacamba'                   ? 0 : servicosInput;
+const vgNovo       = tipoVeiculoInput === 'cacamba'                   ? servicosInput : 0;
+window._caixasBrutasMisto  = cxExistente  + cxNovo;
+window._viagensBrutasMisto = vgExistente + vgNovo;
 }
 
         isFeriadoFinal = isFeriadoInput || lancamentoExistente.isFeriado;
@@ -1067,6 +1074,8 @@ window.salvarLancamento = async function () {
         pontos:            window.calcularPontosMotorista(window.motoristaSelecionado, servicosFinais, tipoVeiculoFinal),
         observacao:        observacaoFinal,
         status:            statusFinal,
+        caixasBrutas:      tipoVeiculoFinal === 'misto' ? window._caixasBrutasMisto  : (tipoVeiculoFinal === 'cacamba' ? 0 : servicosFinais),
+        viagensBrutas:     tipoVeiculoFinal === 'misto' ? window._viagensBrutasMisto : (tipoVeiculoFinal === 'cacamba' ? servicosFinais : 0),
     };
 
     await window.syncToSupabase(dataStr, window.motoristaSelecionado);
@@ -1248,8 +1257,8 @@ window.atualizarResumosDoMotorista = function () {
         if (dataEstaNoMes(dataStr, anoMesFiltro) && dadosDia[window.motoristaSelecionado]) {
             const r = dadosDia[window.motoristaSelecionado];
             if (!r.status || r.status === 'normal') {
-                if (r.tipoVeiculo === 'cacamba') totalViagensMes += (r.servicos || 0);
-                else                             totalCaixasMes  += (r.servicos || 0);
+               totalCaixasMes  += (r.caixasBrutas  ?? (r.tipoVeiculo === 'cacamba' ? 0 : (r.servicos || 0)));
+                totalViagensMes += (r.viagensBrutas ?? (r.tipoVeiculo === 'cacamba' ? (r.servicos || 0) : 0));
                 totalPontosMes += r.pontos !== undefined
                     ? r.pontos
                     : window.calcularPontosMotorista(window.motoristaSelecionado, r.servicos || 0, r.tipoVeiculo);
@@ -1274,8 +1283,9 @@ window.atualizarResumosDoMotorista = function () {
     } else {
         textoMeta = `${metaMensalPontos} cx`;
         const elCaixas = document.getElementById('motoristaCaixasMes');
-        if (elCaixas) elCaixas.innerText = `${totalCaixasMes} cx`;
-        const exibeCaixas = totalPontosMes > 0 && totalCaixasMes > totalPontosMes
+        if (elCaixas) elCaixas.innerText = totalViagensMes > 0
+            ? `${totalCaixasMes} cx + ${totalViagensMes} vg`
+            : `${totalCaixasMes} cx`;        const exibeCaixas = totalPontosMes > 0 && totalCaixasMes > totalPontosMes
             ? Math.round(previsaoPontos * (totalCaixasMes / totalPontosMes))
             : previsaoPontos;
         const elPrevisao = document.getElementById('motoristaPrevisaoMes');
@@ -1363,17 +1373,12 @@ window.gerarRankingPeriodo = function () {
 
                 if (!dados.status || dados.status === 'normal') {
                     const srv = dados.servicos || 0;
-                    if (dados.tipoVeiculo === 'cacamba') {
-                        rankPeriodo[mot].viagens += srv;
-                        totalViagensGeral += srv;
-                    } else if (dados.tipoVeiculo === 'poli_duplo') {
-                        // 1 serviço poli duplo = 2 caixas equivalentes para exibição/meta
-                        rankPeriodo[mot].caixas  += srv * 2;
-                        totalCaixasGeral += srv * 2;
-                    } else {
-                        rankPeriodo[mot].caixas  += srv;
-                        totalCaixasGeral += srv;
-                    }
+                    const cx = dados.caixasBrutas  ?? (dados.tipoVeiculo === 'cacamba' ? 0 : (dados.tipoVeiculo === 'poli_duplo' ? srv * 2 : srv));
+                    const vg = dados.viagensBrutas ?? (dados.tipoVeiculo === 'cacamba' ? srv : 0);
+                    rankPeriodo[mot].caixas  += cx;
+                    rankPeriodo[mot].viagens += vg;
+                    totalCaixasGeral  += cx;
+                    totalViagensGeral += vg;
                     rankPeriodo[mot].pontos += dados.pontos !== undefined
                         ? dados.pontos
                         : window.calcularPontosMotorista(mot, srv, dados.tipoVeiculo);
@@ -1615,17 +1620,13 @@ window.gerarRankingMensal = function () {
                 const statusMot = (dados.status || 'normal').toLowerCase();
                 if (statusMot === 'normal') {
                     const srv = dados.servicos || 0;
-                    if (dados.tipoVeiculo === 'cacamba') {
-                        acumuladoMes[mot].viagens += srv;
-                        totalViagensFrota += srv;
-                    } else if (dados.tipoVeiculo === 'poli_duplo') {
-                        // 1 serviço poli duplo = 2 caixas equivalentes para exibição/meta
-                        acumuladoMes[mot].caixas += srv * 2;
-                        totalCaixasFrota += srv * 2;
-                    } else {
-                        acumuladoMes[mot].caixas += srv;
-                        totalCaixasFrota += srv;
-                    }
+                    const cx = dados.caixasBrutas  ?? (dados.tipoVeiculo === 'cacamba' ? 0 : (dados.tipoVeiculo === 'poli_duplo' ? srv * 2 : srv));
+                    const vg = dados.viagensBrutas ?? (dados.tipoVeiculo === 'cacamba' ? srv : 0);
+                    acumuladoMes[mot].caixas  += cx;
+                    acumuladoMes[mot].viagens += vg;
+                    totalCaixasFrota  += cx;
+                    totalViagensFrota += vg;
+
                     acumuladoMes[mot].pontos += dados.pontos !== undefined
                         ? dados.pontos
                         : window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
