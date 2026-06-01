@@ -62,19 +62,28 @@ export function formatarQuantidade(quantidade, tipoVeiculo) {
 }
 
 /**
- * Formata a exibição combinada de caixas e viagens
- * para motoristas com tipo misto ou especial.
+ * Formata a exibição combinada de caixas e viagens.
+ *
+ * Regras:
+ * - Motorista especial (caçamba): sempre mostra cx e vg
+ * - Motorista normal: mostra "X cx" e, se tiver viagens, acrescenta "+ Y vg"
+ *   (cada viagem de poli duplo conta como 2 cx para fins de meta)
  *
  * @param {number} caixas
  * @param {number} viagens
  * @param {boolean} isEspecial  — true se o motorista é da lista motOutros
- * @returns {string} Ex: "8 cx" ou "0 cx | 4 vg"
+ * @returns {string} Ex: "8 cx" | "8 cx + 2 vg" | "0 cx | 4 vg"
  */
 export function formatarQuantidadeMista(caixas, viagens, isEspecial) {
-    if (!isEspecial) return `${caixas} cx`;
-    if (caixas > 0 && viagens > 0) return `${caixas} cx | ${viagens} vg`;
-    if (caixas > 0) return `${caixas} cx | 0 vg`;
-    return `0 cx | ${viagens} vg`;
+    if (isEspecial) {
+        if (caixas > 0 && viagens > 0) return `${caixas} cx | ${viagens} vg`;
+        if (caixas > 0) return `${caixas} cx | 0 vg`;
+        return `0 cx | ${viagens} vg`;
+    }
+    // Motorista normal: mostra viagens adicionais se houver
+    if (caixas > 0 && viagens > 0) return `${caixas} cx + ${viagens} vg`;
+    if (viagens > 0) return `${viagens} vg`;
+    return `${caixas} cx`;
 }
 
 // =============================================================

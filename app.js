@@ -1362,16 +1362,21 @@ window.gerarRankingPeriodo = function () {
                 totalFatGeral += dados.valor;
 
                 if (!dados.status || dados.status === 'normal') {
+                    const srv = dados.servicos || 0;
                     if (dados.tipoVeiculo === 'cacamba') {
-                        rankPeriodo[mot].viagens += dados.servicos || 0;
-                        totalViagensGeral += dados.servicos || 0;
+                        rankPeriodo[mot].viagens += srv;
+                        totalViagensGeral += srv;
+                    } else if (dados.tipoVeiculo === 'poli_duplo') {
+                        // 1 serviço poli duplo = 2 caixas equivalentes para exibição/meta
+                        rankPeriodo[mot].caixas  += srv * 2;
+                        totalCaixasGeral += srv * 2;
                     } else {
-                        rankPeriodo[mot].caixas  += dados.servicos || 0;
-                        totalCaixasGeral += dados.servicos || 0;
+                        rankPeriodo[mot].caixas  += srv;
+                        totalCaixasGeral += srv;
                     }
                     rankPeriodo[mot].pontos += dados.pontos !== undefined
                         ? dados.pontos
-                        : window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
+                        : window.calcularPontosMotorista(mot, srv, dados.tipoVeiculo);
                     if (diaDaSemana !== 0 && diaDaSemana !== 6 && !dados.isFeriado) rankPeriodo[mot].diasTrab++;
                 }
             }
@@ -1609,12 +1614,17 @@ window.gerarRankingMensal = function () {
                 if (!acumuladoMes[mot]) continue;
                 const statusMot = (dados.status || 'normal').toLowerCase();
                 if (statusMot === 'normal') {
+                    const srv = dados.servicos || 0;
                     if (dados.tipoVeiculo === 'cacamba') {
-                        acumuladoMes[mot].viagens += dados.servicos || 0;
-                        totalViagensFrota += dados.servicos || 0;
+                        acumuladoMes[mot].viagens += srv;
+                        totalViagensFrota += srv;
+                    } else if (dados.tipoVeiculo === 'poli_duplo') {
+                        // 1 serviço poli duplo = 2 caixas equivalentes para exibição/meta
+                        acumuladoMes[mot].caixas += srv * 2;
+                        totalCaixasFrota += srv * 2;
                     } else {
-                        acumuladoMes[mot].caixas += dados.servicos || 0;
-                        totalCaixasFrota += dados.servicos || 0;
+                        acumuladoMes[mot].caixas += srv;
+                        totalCaixasFrota += srv;
                     }
                     acumuladoMes[mot].pontos += dados.pontos !== undefined
                         ? dados.pontos
