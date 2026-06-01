@@ -1257,9 +1257,9 @@ window.atualizarResumosDoMotorista = function () {
     const elTotalSemana = document.getElementById('motoristaTotalSemana');
     if (elTotalSemana) elTotalSemana.innerText = formatarMoeda(totalSemana);
 
-    // Totais do mês
+    // Totais do mês — usa sempre o dataGlobal (mês de referência principal)
     const elMes = document.getElementById('dataGlobal');
-    const anoMesFiltro = elMes?.value ? elMes.value.substring(0, 7) : dataRefStr.substring(0, 7);
+    const anoMesFiltro = (elMes?.value || dataRefStr).substring(0, 7);
     let totalCaixasMes = 0, totalViagensMes = 0, totalFatMes = 0, totalPontosMes = 0;
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
@@ -1294,7 +1294,8 @@ window.atualizarResumosDoMotorista = function () {
         const elCaixas = document.getElementById('motoristaCaixasMes');
         if (elCaixas) elCaixas.innerText = totalViagensMes > 0
             ? `${totalCaixasMes} cx + ${totalViagensMes} vg`
-            : `${totalCaixasMes} cx`;        const exibeCaixas = totalPontosMes > 0 && totalCaixasMes > totalPontosMes
+            : `${totalCaixasMes} cx`;
+        const exibeCaixas = totalPontosMes > 0 && totalCaixasMes > totalPontosMes
             ? Math.round(previsaoPontos * (totalCaixasMes / totalPontosMes))
             : previsaoPontos;
         const elPrevisao = document.getElementById('motoristaPrevisaoMes');
@@ -1670,7 +1671,7 @@ window.gerarRankingMensal = function () {
     const feitasGeral = feitasRayanna + feitasJulia;
 
     const elViagens = document.getElementById('totalViajensMesGlobal');
-    if (elViagens) elViagens.innerText = `${totalViajensFrota} vg`;
+    if (elViagens) elViagens.innerText = `${totalViagensFrota} vg`;
     const elFat = document.getElementById('totalFatMensalLeaderboard');
     if (elFat) elFat.innerText = formatarMoeda(totalFatMesFrota);
 
