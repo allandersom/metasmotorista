@@ -1162,8 +1162,11 @@ window.carregarHistoricoMotorista = function () {
             misto:      'VEÍC. MISTO',
         }[item.dados.tipoVeiculo] || 'POLIGUINDASTE';
 
+       const feriadoBadge = item.dados.isFeriado
+            ? `<span class="badge-feriado" style="margin-left:4px;">FERIADO</span>`
+            : '';
         const stringColuna2 = tagStatus
-            ? tagStatus
+            ? `${tagStatus}${feriadoBadge}`
             : `<span class="badge-veiculo">${tagVeiculo}</span><br><span class="inline-block mt-1">${tagsDia}</span>`;
 
         let qtdText = item.dados.tipoVeiculo === 'cacamba'
