@@ -1124,7 +1124,7 @@ window.carregarHistoricoMotorista = function () {
     };
     const statusLabel = {
         falta: 'Falta', folga: 'Folga', atestado: 'Atestado',
-        polioff: 'Poli OFF', licenca: 'Licença', desligado: 'Desligado',
+        polioff: 'Poli OFF', licenca: 'Férias', desligado: 'Desligado',
     };
 
     historico.forEach(item => {
