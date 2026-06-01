@@ -866,6 +866,11 @@ window.mudarAba = function (aba) {
     const viewEl = document.getElementById(conf.view);
     if (viewEl) viewEl.style.display = 'block';
 
+    // Abas que usam o seletor de Mês de Referência
+    const abasComMes = ['lancamentos', 'rankings', 'domferiados', 'projecao', 'rotas', 'faltas'];
+    const containerMes = document.getElementById('dataGlobal')?.closest('div');
+    if (containerMes) containerMes.style.display = abasComMes.includes(aba) ? 'flex' : 'none';
+
     // Ações específicas por aba
     if (aba === 'rankings') {
         window.gerarRankingPeriodo();
