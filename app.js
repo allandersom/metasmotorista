@@ -1119,7 +1119,7 @@ window.carregarHistoricoMotorista = function () {
         folga:      'bg-slate-500 text-white',
         atestado:   'bg-yellow-400 text-slate-800',
         polioff:    'bg-orange-500 text-white',
-        licenca:    'bg-purple-500 text-white',
+        ferias:    'bg-purple-500 text-white',
         desligado:  'bg-red-800 text-white shadow-sm',
     };
     const statusLabel = {
@@ -1338,30 +1338,36 @@ window.gerarRankingPeriodo = function () {
     const bancoDados = window.bancoDadosCloud;
     let rankPeriodo  = {};
     
-    // Variáveis que vão contar TUDO para o topo
     let totalFatGeral = 0;
     let totalCaixasGeral = 0;
     let totalViagensGeral = 0;
 
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataEstaNoIntervalo(dataStr, inicio, fim)) {
-            const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
+            const dataObj = new Date(dataStr + 'T00:00:00');
+            const diaDaSemana = dataObj.getDay();
+
+            // Pula domingos
+            if (diaDaSemana === 0) continue;
+
             for (const [mot, dados] of Object.entries(dadosDia)) {
+                // Pula feriados
+                if (dados.isFeriado) continue;
+
                 if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
                 
                 rankPeriodo[mot].valor += dados.valor;
                 rankPeriodo[mot].extra += dados.valorExtra || 0;
                 
-                // Soma no Faturamento Geral do topo
                 totalFatGeral += dados.valor;
 
                 if (!dados.status || dados.status === 'normal') {
                     if (dados.tipoVeiculo === 'cacamba') {
                         rankPeriodo[mot].viagens += dados.servicos || 0;
-                        totalViagensGeral += dados.servicos || 0; // Soma Viagens pro topo
+                        totalViagensGeral += dados.servicos || 0;
                     } else {
                         rankPeriodo[mot].caixas  += dados.servicos || 0;
-                        totalCaixasGeral += dados.servicos || 0; // Soma Caixas pro topo
+                        totalCaixasGeral += dados.servicos || 0;
                     }
                     rankPeriodo[mot].pontos += dados.pontos !== undefined
                         ? dados.pontos
@@ -1372,7 +1378,6 @@ window.gerarRankingPeriodo = function () {
         }
     }
 
-    // AQUI É A MÁGICA QUE INJETA NO HTML
     const elQtd = document.getElementById('totalQtdPeriodo');
     if (elQtd) elQtd.innerText = `${totalCaixasGeral} cx | ${totalViagensGeral} vg`;
     
@@ -1405,33 +1410,31 @@ window.gerarRankingPeriodo = function () {
             : '';
         const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
 
-// Busca a chave PIX do motorista no cache
-const cadastro = (window.motoristasCache || []).find(m => m.nome === mot.nome);
-const pixHtml = cadastro?.chave_pix
-    ? `<span style="font-size:11px; color:var(--gray-400); display:flex; align-items:center; gap:4px; margin-top:2px;">
-           <i data-lucide="diamond" style="width:11px; height:11px; color:#16a34a;"></i>
-           ${cadastro.chave_pix}
-       </span>`
-    : '';
+        const cadastro = (window.motoristasCache || []).find(m => m.nome === mot.nome);
+        const pixHtml = cadastro?.chave_pix
+            ? `<span style="font-size:11px; color:var(--gray-400); display:flex; align-items:center; gap:4px; margin-top:2px;">
+                   <i data-lucide="diamond" style="width:11px; height:11px; color:#16a34a;"></i>
+                   ${cadastro.chave_pix}
+               </span>`
+            : '';
 
-const linha = document.createElement('div');
-linha.className = 'diario-row';
-linha.innerHTML = `
-    <div class="diario-top">
-        <div style="display:flex; flex-direction:column;">
-            <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
-            ${pixHtml}
-        </div>
-        <span class="diario-faturamento">${formatarMoeda(mot.valor)}</span>
-    </div>
-    <div class="progress-wrapper">
-        <div class="progress-bar-bg"><div class="progress-bar-fill ${classeBarra}" style="width: ${larguraBarra}%;"></div></div>
-        <span class="progress-text" title="Baseado nos dias trabalhados">${porcentagemStr}</span>
-    </div>
-`;
+        const linha = document.createElement('div');
+        linha.className = 'diario-row';
+        linha.innerHTML = `
+            <div class="diario-top">
+                <div style="display:flex; flex-direction:column;">
+                    <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
+                    ${pixHtml}
+                </div>
+                <span class="diario-faturamento">${formatarMoeda(mot.valor)}</span>
+            </div>
+            <div class="progress-wrapper">
+                <div class="progress-bar-bg"><div class="progress-bar-fill ${classeBarra}" style="width: ${larguraBarra}%;"></div></div>
+                <span class="progress-text" title="Baseado nos dias trabalhados">${porcentagemStr}</span>
+            </div>
+        `;
 
-// Re-renderiza os ícones Lucide nas novas linhas
-if (window.lucide) window.lucide.createIcons({ nodes: [linha] });
+        if (window.lucide) window.lucide.createIcons({ nodes: [linha] });
         divLista.appendChild(linha);
     });
 };
@@ -2883,11 +2886,11 @@ window.exportarPdfFaltasAtestados = function (tipo) {
     const fmtD = s => { const [y,m,d] = s.split('-'); return d+'/'+m+'/'+y; };
     const fmt  = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
     const statusLabel = { falta:'Falta', atestado:'Atestado', folga:'Folga',
-        polioff:'Poli OFF', licenca:'Férias', desligado:'Desligado' };
+        polioff:'Poli OFF', ferias:'Férias', desligado:'Desligado' };
     const statusColor = { falta:'#dc2626', atestado:'#d97706', folga:'#64748b',
-        polioff:'#ea580c', licenca:'#7c3aed', desligado:'#991b1b' };
+        polioff:'#ea580c', ferias:'#7c3aed', desligado:'#991b1b' };
 
-    const tiposFiltro = tipo === 'todos' ? ['falta','atestado','folga','polioff','licenca','desligado']
+    const tiposFiltro = tipo === 'todos' ? ['falta','atestado','folga','polioff','ferias','desligado']
         : tipo === 'falta'    ? ['falta']
         : ['atestado'];
 
