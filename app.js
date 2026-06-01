@@ -1266,8 +1266,17 @@ window.atualizarResumosDoMotorista = function () {
         if (dataEstaNoMes(dataStr, anoMesFiltro) && dadosDia[window.motoristaSelecionado]) {
             const r = dadosDia[window.motoristaSelecionado];
             if (!r.status || r.status === 'normal') {
-               totalCaixasMes  += (r.caixasBrutas  ?? (r.tipoVeiculo === 'cacamba' ? 0 : (r.servicos || 0)));
-                totalViagensMes += (r.viagensBrutas ?? (r.tipoVeiculo === 'cacamba' ? (r.servicos || 0) : 0));
+                const srv = r.servicos || 0;
+                // Registros antigos podem ter caixasBrutas=0 mesmo tendo serviços
+                // então usa || em vez de ?? para forçar recálculo quando for 0
+                const cxBrutas = r.caixasBrutas > 0 ? r.caixasBrutas
+                    : (r.tipoVeiculo === 'cacamba' ? 0
+                    : r.tipoVeiculo === 'poli_duplo' ? srv * 2
+                    : srv);
+                const vgBrutas = r.viagensBrutas > 0 ? r.viagensBrutas
+                    : (r.tipoVeiculo === 'cacamba' ? srv : 0);
+                totalCaixasMes  += cxBrutas;
+                totalViagensMes += vgBrutas;
                 totalPontosMes += r.pontos !== undefined
                     ? r.pontos
                     : window.calcularPontosMotorista(window.motoristaSelecionado, r.servicos || 0, r.tipoVeiculo);
