@@ -93,11 +93,26 @@ servicosFeitosSemana += srv * fatorDia;
     const servicosParaMeta = Math.min(servicos, servicosFaltantesFisicos);
     const servicosBonus = Math.max(0, servicos - servicosFaltantesFisicos);
 
-    const valorParaMeta = servicosBonus > 0
-    ? calcularValorDiaNormal(servicos, config)
-    : calcularValorDiaNormal(servicosParaMeta, config);    const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
+let valorParaMeta, valorBonus;
+
+if (servicosBonus > 0) {
+    // Opção A: valor usando a lógica de dia normal (bate meta diária = R$50 + excedentes normais)
+    const opcaoA = calcularValorDiaNormal(servicos, config);
+
+    // Opção B: só o bônus das caixas excedentes (sem base de R$50)
+    const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
     const caixasBrutasBonus = Math.round(proporcaoBonus * (servicosBrutos || servicos));
-    const valorBonus = caixasBrutasBonus * (config.valorExtraPorUnidade * 2);
+    const opcaoB = caixasBrutasBonus * (config.valorExtraPorUnidade * 2);
+
+    // Pega sempre o maior
+    valorParaMeta = Math.max(opcaoA, opcaoB);
+    valorBonus = 0; // já embutido no valorParaMeta
+} else {
+    valorParaMeta = calcularValorDiaNormal(servicosParaMeta, config);
+    const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
+    const caixasBrutasBonus = Math.round(proporcaoBonus * (servicosBrutos || servicos));
+    valorBonus = caixasBrutasBonus * (config.valorExtraPorUnidade * 2);
+}
 
     return {
         valorBase: valorParaMeta + valorBonus,
