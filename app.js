@@ -841,7 +841,7 @@ window.toggleSidebar = function () {
 window.mudarAba = function (aba) {
     document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
 
-['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas', 'viewCadastro', 'viewOperador', 'viewFaltas'].forEach(id => {        const el = document.getElementById(id);
+['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas', 'viewCadastro', 'viewOperador', 'viewFaltas', 'viewCaminhoes'].forEach(id => {        const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
 
@@ -855,6 +855,7 @@ window.mudarAba = function (aba) {
         cadastro:    { btn: 'btnTabCadastro',    view: 'viewCadastro'    },
         operador:    { btn: 'btnTabOperador',    view: 'viewOperador'    },
         faltas:      { btn: 'btnTabFaltas',    view: 'viewFaltas'    },
+        caminhoes: { btn: 'btnTabCaminhoes', view: 'viewCaminhoes' },
     };
 
     const conf = mapaAbas[aba];
@@ -888,7 +889,10 @@ window.mudarAba = function (aba) {
     } else if (aba === 'faltas') {
         window.popularSelectFaltas();
         window.renderizarRelatorioFaltas();
+    } else if (aba === 'caminhoes') {
+    window.carregarCaminhoes();
     }
+
 };
 
 // Garante que a primeira aba só carregue depois do HTML estar pronto
@@ -2956,4 +2960,177 @@ th:first-child{text-align:left;}
     win.document.write(conteudo);
     win.document.close();
     win.print();
+};
+
+// ========== CAMINHÕES ==========
+
+window.caminhoesCache = [];
+
+window.carregarCaminhoes = async function() {
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('caminhoes')
+            .select('*')
+            .order('placa');
+        if (error) throw error;
+        window.caminhoesCache = data || [];
+        window.renderizarTabelaCaminhoes(window.caminhoesCache);
+        window.popularSelectMotoristaCaminhao();
+        // Stat cards
+        const total = data.length;
+        const ativos = data.filter(c => c.status === 'ativo').length;
+        document.getElementById('totalCaminhoes').textContent = total;
+        document.getElementById('totalCaminhoesAtivos').textContent = ativos;
+        document.getElementById('totalCaminhoesInativos').textContent = total - ativos;
+        if (window.lucide) window.lucide.createIcons();
+    } catch (err) {
+        console.error('Erro ao carregar caminhões:', err);
+        alert('Erro ao carregar caminhões: ' + err.message);
+    }
+};
+
+window.renderizarTabelaCaminhoes = function(lista = []) {
+    const tbody = document.getElementById('tabelaCaminhoes');
+    if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:#999;">Nenhum caminhão cadastrado</td></tr>';
+        return;
+    }
+    const badgeStatus = { ativo: '#16a34a', manutencao: '#d97706', inativo: '#dc2626' };
+    const labelStatus = { ativo: 'Ativo', manutencao: 'Manutenção', inativo: 'Inativo' };
+    tbody.innerHTML = lista.map(c => `
+        <tr style="border-bottom:1px solid #e5e7eb;">
+            <td style="padding:12px;font-weight:600;color:var(--gray-100);">${c.placa}</td>
+            <td style="padding:12px;color:var(--gray-300);">${c.modelo || '—'} ${c.ano ? '(' + c.ano + ')' : ''}</td>
+            <td style="padding:12px;text-align:center;">
+                <span style="background:${badgeStatus[c.status] || '#64748b'};color:#fff;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">
+                    ${labelStatus[c.status] || c.status}
+                </span>
+            </td>
+            <td style="padding:12px;color:var(--gray-300);">${c.motorista_fixo || '—'}</td>
+            <td style="padding:12px;text-align:center;">
+                ${c.doc_url
+                    ? `<a href="${c.doc_url}" target="_blank" title="${c.doc_nome || 'Ver documento'}" style="color:#0ea5e9;font-size:18px;">📄</a>`
+                    : '<span style="color:#64748b;font-size:12px;">—</span>'}
+            </td>
+            <td style="padding:12px;text-align:center;">
+                <button onclick="window.editarCaminhao('${c.id}')" style="background:none;border:none;cursor:pointer;color:#0ea5e9;font-size:16px;" title="Editar">✏️</button>
+                <button onclick="window.excluirCaminhao('${c.id}')" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:16px;" title="Excluir">🗑️</button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+window.popularSelectMotoristaCaminhao = function() {
+    const sel = document.getElementById('cadCamMotoristaFixo');
+    if (!sel) return;
+    const atual = sel.value;
+    const ativos = (window.motoristasCache || []).filter(m => m.status === 'ativo');
+    sel.innerHTML = '<option value="">— Nenhum —</option>'
+        + ativos.map(m => `<option value="${m.nome}" ${m.nome === atual ? 'selected' : ''}>${m.nome}</option>`).join('');
+};
+
+window.salvarCaminhao = async function() {
+    const placa = document.getElementById('cadCamPlaca').value.trim().toUpperCase();
+    if (!placa) return alert('Placa é obrigatória.');
+
+    const id      = document.getElementById('cadCamId').value;
+    const modelo  = document.getElementById('cadCamModelo').value.trim();
+    const ano     = document.getElementById('cadCamAno').value || null;
+    const status  = document.getElementById('cadCamStatus').value;
+    const moto    = document.getElementById('cadCamMotoristaFixo').value;
+    const obs     = document.getElementById('cadCamObs').value.trim();
+    const arquivo = document.getElementById('cadCamDoc').files[0];
+    const btn     = document.getElementById('btnSalvarCaminhao');
+    btn.disabled  = true;
+    btn.textContent = 'Salvando...';
+
+    try {
+        let doc_url  = id ? (window.caminhoesCache.find(c => c.id === id)?.doc_url || null) : null;
+        let doc_nome = id ? (window.caminhoesCache.find(c => c.id === id)?.doc_nome || null) : null;
+
+        // Upload do arquivo se houver
+        if (arquivo) {
+            const ext  = arquivo.name.split('.').pop();
+            const path = `caminhoes/${placa}_${Date.now()}.${ext}`;
+            const { error: upErr } = await window.supabaseClient.storage
+                .from('caminhoes-docs')
+                .upload(path, arquivo, { upsert: true });
+            if (upErr) throw upErr;
+            const { data: urlData } = window.supabaseClient.storage
+                .from('caminhoes-docs')
+                .getPublicUrl(path);
+            doc_url  = urlData.publicUrl;
+            doc_nome = arquivo.name;
+        }
+
+        const payload = { placa, modelo, ano: ano ? parseInt(ano) : null, status, motorista_fixo: moto || null, doc_url, doc_nome, obs };
+
+        let erro;
+        if (id) {
+            ({ error: erro } = await window.supabaseClient.from('caminhoes').update(payload).eq('id', id));
+        } else {
+            ({ error: erro } = await window.supabaseClient.from('caminhoes').insert(payload));
+        }
+        if (erro) throw erro;
+
+        window.limparFormCaminhao();
+        await window.carregarCaminhoes();
+    } catch (err) {
+        alert('Erro ao salvar: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="save" style="width:16px;height:16px;"></i> Salvar Caminhão';
+        if (window.lucide) window.lucide.createIcons();
+    }
+};
+
+window.editarCaminhao = function(id) {
+    const c = window.caminhoesCache.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('cadCamId').value            = c.id;
+    document.getElementById('cadCamPlaca').value         = c.placa;
+    document.getElementById('cadCamModelo').value        = c.modelo || '';
+    document.getElementById('cadCamAno').value           = c.ano || '';
+    document.getElementById('cadCamStatus').value        = c.status || 'ativo';
+    document.getElementById('cadCamObs').value           = c.obs || '';
+    document.getElementById('labelFormCaminhao').textContent = 'Editar Caminhão';
+    document.getElementById('btnSalvarCaminhao').innerHTML = '<i data-lucide="save" style="width:16px;height:16px;"></i> Atualizar Caminhão';
+    // Motorista fixo
+    window.popularSelectMotoristaCaminhao();
+    document.getElementById('cadCamMotoristaFixo').value = c.motorista_fixo || '';
+    // Mostra doc atual
+    const docDiv = document.getElementById('docAtualCaminhao');
+    docDiv.innerHTML = c.doc_url ? `Doc atual: <a href="${c.doc_url}" target="_blank" style="color:#0ea5e9;">${c.doc_nome || 'Ver'}</a>` : '';
+    if (window.lucide) window.lucide.createIcons();
+    // Scroll pro form
+    document.getElementById('cadCamPlaca').scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+window.excluirCaminhao = async function(id) {
+    if (!confirm('Excluir este caminhão? Esta ação não pode ser desfeita.')) return;
+    const { error } = await window.supabaseClient.from('caminhoes').delete().eq('id', id);
+    if (error) return alert('Erro ao excluir: ' + error.message);
+    await window.carregarCaminhoes();
+};
+
+window.limparFormCaminhao = function() {
+    ['cadCamId','cadCamPlaca','cadCamModelo','cadCamAno','cadCamObs'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('cadCamStatus').value = 'ativo';
+    document.getElementById('cadCamMotoristaFixo').value = '';
+    document.getElementById('cadCamDoc').value = '';
+    document.getElementById('docAtualCaminhao').innerHTML = '';
+    document.getElementById('labelFormCaminhao').textContent = 'Novo Caminhão';
+    document.getElementById('btnSalvarCaminhao').innerHTML = '<i data-lucide="save" style="width:16px;height:16px;"></i> Salvar Caminhão';
+    if (window.lucide) window.lucide.createIcons();
+};
+
+window.filtrarTabelaCaminhoes = function() {
+    const busca = document.getElementById('buscaCaminhao').value.toLowerCase();
+    const filtrada = window.caminhoesCache.filter(c =>
+        c.placa.toLowerCase().includes(busca) ||
+        (c.modelo || '').toLowerCase().includes(busca)
+    );
+    window.renderizarTabelaCaminhoes(filtrada);
 };

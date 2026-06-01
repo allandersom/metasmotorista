@@ -855,6 +855,125 @@
         <p style="color:#94a3b8;font-style:italic;">Selecione os filtros acima para visualizar.</p>
     </div>
 </div>
+<div id="viewCaminhoes" style="display:none;">
+    <div class="page-header" style="margin-bottom:24px;">
+        <div>
+            <h2>Caminhões</h2>
+            <p>Gerencie a frota de caminhões, documentos e motoristas fixos.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+        <div class="stat-card stat-card-brand">
+            <div class="stat-label">Total de Caminhões</div>
+            <div class="stat-value" id="totalCaminhoes">0</div>
+        </div>
+        <div class="stat-card stat-card-emerald">
+            <div class="stat-label">Ativos</div>
+            <div class="stat-value" id="totalCaminhoesAtivos">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Em Manutenção / Inativos</div>
+            <div class="stat-value" id="totalCaminhoesInativos">0</div>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:360px 1fr; gap:24px; align-items:start;">
+
+        <!-- FORMULÁRIO -->
+        <div class="driver-panel" style="width:100%;">
+            <div class="driver-panel-header">
+                <h3 style="display:flex;align-items:center;gap:8px;margin:0;">
+                    <i data-lucide="truck" style="width:16px;height:16px;color:var(--brand-400);"></i>
+                    <span id="labelFormCaminhao">Novo Caminhão</span>
+                </h3>
+            </div>
+            <div style="padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4);">
+                <input type="hidden" id="cadCamId">
+
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Placa *</label>
+                    <input id="cadCamPlaca" type="text" placeholder="Ex: ABC-1234" class="input-base" style="width:100%;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Modelo</label>
+                    <input id="cadCamModelo" type="text" placeholder="Ex: Volvo FH 460" class="input-base" style="width:100%;">
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Ano</label>
+                    <input id="cadCamAno" type="number" placeholder="Ex: 2020" class="input-base" style="width:100%;" min="1990" max="2099">
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Status *</label>
+                    <select id="cadCamStatus" class="input-base" style="width:100%;">
+                        <option value="ativo">✅ Ativo</option>
+                        <option value="manutencao">🔧 Em Manutenção</option>
+                        <option value="inativo">🚫 Inativo</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Motorista Fixo</label>
+                    <select id="cadCamMotoristaFixo" class="input-base" style="width:100%;">
+                        <option value="">— Nenhum —</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Documento (PDF ou Imagem)</label>
+                    <input id="cadCamDoc" type="file" accept=".pdf,image/*" class="input-base" style="width:100%;">
+                    <div id="docAtualCaminhao" style="font-size:11px;color:var(--gray-400);margin-top:4px;"></div>
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Observação</label>
+                    <textarea id="cadCamObs" rows="2" placeholder="Observações gerais..." class="input-base" style="width:100%;resize:vertical;"></textarea>
+                </div>
+
+                <button id="btnSalvarCaminhao" onclick="window.salvarCaminhao()" class="btn-primary"
+                    style="height:44px;font-size:14px;width:100%;border-radius:10px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+                    <i data-lucide="save" style="width:16px;height:16px;"></i>
+                    Salvar Caminhão
+                </button>
+                <button onclick="window.limparFormCaminhao()" style="background:none;border:1px solid var(--border-subtle);color:var(--gray-400);border-radius:10px;padding:8px;font-size:13px;cursor:pointer;width:100%;">
+                    Cancelar / Limpar
+                </button>
+            </div>
+        </div>
+
+        <!-- TABELA -->
+        <div class="rank-card" style="padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-size:15px;font-weight:700;color:var(--gray-100);display:flex;align-items:center;gap:8px;">
+                    <i data-lucide="truck" style="width:16px;height:16px;color:var(--brand-400);"></i>
+                    Frota Cadastrada
+                </h3>
+                <input type="text" id="buscaCaminhao" placeholder="Buscar placa ou modelo..." class="input-base" style="width:200px;height:34px;font-size:12px;" oninput="window.filtrarTabelaCaminhoes()">
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border-subtle);">
+                            <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Placa</th>
+                            <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Modelo / Ano</th>
+                            <th style="text-align:center;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Status</th>
+                            <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Motorista Fixo</th>
+                            <th style="text-align:center;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Doc</th>
+                            <th style="text-align:center;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCaminhoes">
+                        <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--gray-500);">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
         </div></main>
 
     <div id="modalGerenciar" class="modal-backdrop hidden" style="display:none;">
