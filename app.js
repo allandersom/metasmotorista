@@ -1222,9 +1222,16 @@ window.carregarHistoricoMotorista = function () {
             misto:      'VEÍC. MISTO',
         }[item.dados.tipoVeiculo] || 'POLIGUINDASTE';
 
-        const stringColuna2 = tagStatus
-            ? tagStatus
-            : `<span class="badge-veiculo">${tagVeiculo}</span><br><span class="inline-block mt-1">${tagsDia}</span>`;
+       let stringColuna2 = '';
+            if (tagStatus) {
+                stringColuna2 = tagStatus;
+                // Se tiver status e for um dia especial, coloca a badge de Feriado/Domingo embaixo
+                if (tagsDia !== 'Normal') {
+                    stringColuna2 += `<br><span class="inline-block mt-1">${tagsDia}</span>`;
+                }
+            } else {
+                stringColuna2 = `<span class="badge-veiculo">${tagVeiculo}</span><br><span class="inline-block mt-1">${tagsDia}</span>`;
+            }
 
         let qtdText = item.dados.tipoVeiculo === 'cacamba'
             ? `${item.dados.servicos} vg`
@@ -1412,6 +1419,24 @@ window.atualizarResumosGlobais = function () {
     _set('caixasSemanaGlobal', formatarQuantidadeMista(caixasMesGlobal, viagensMesGlobal, false));
 };
 
+window._apenasUteis = false;
+window.toggleApenasUteis = function () {
+    window._apenasUteis = !window._apenasUteis;
+    const btn = document.getElementById('btnApenasUteis');
+    if (btn) {
+        if (window._apenasUteis) {
+            btn.style.background = '#dcfce7';
+            btn.style.color = '#15803d';
+            btn.style.borderColor = '#86efac';
+        } else {
+            btn.style.background = '#f3f4f6';
+            btn.style.color = '#374151';
+            btn.style.borderColor = '#d1d5db';
+        }
+    }
+    window.gerarRankingPeriodo();
+};
+
 window.gerarRankingPeriodo = function () {
     const elInicio = document.getElementById('dataRankingInicio');
     const elFim    = document.getElementById('dataRankingFim');
@@ -1433,12 +1458,11 @@ window.gerarRankingPeriodo = function () {
             const diaDaSemana = dataObj.getDay();
 
             // Pula domingos
-            if (diaDaSemana === 0) continue;
+if (window._apenasUteis && diaDaSemana === 0) continue;
 
             for (const [mot, dados] of Object.entries(dadosDia)) {
                 // Pula feriados
-                if (dados.isFeriado) continue;
-
+if (window._apenasUteis && dados.isFeriado) continue;
                 if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
                 
                 rankPeriodo[mot].valor += dados.valor;
@@ -1462,7 +1486,11 @@ window.gerarRankingPeriodo = function () {
                     rankPeriodo[mot].pontos += dados.pontos !== undefined
                         ? dados.pontos
                         : window.calcularPontosMotorista(mot, srv, dados.tipoVeiculo);
-                    if (diaDaSemana !== 0 && diaDaSemana !== 6 && !dados.isFeriado) rankPeriodo[mot].diasTrab++;
+                   if (window._apenasUteis) {
+                 if (diaDaSemana !== 0 && !dados.isFeriado) rankPeriodo[mot].diasTrab++;
+            } else {
+        rankPeriodo[mot].diasTrab++;
+}
                 }
             }
         }
@@ -1540,6 +1568,7 @@ window.exportarRankingPeriodoPDF = function() {
     // Formata datas para exibição: 2026-05-01 → 01/05/2026
     const fmt = d => d.split('-').reverse().join('/');
     const periodoLabel = `${fmt(inicio)} até ${fmt(fim)}`;
+    const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e feriados)' : '';
 
     // Pega as linhas já renderizadas e reconstrói com PIX
     const linhasOriginais = document.querySelectorAll('#listaRankingDiario .diario-row');
@@ -1647,7 +1676,7 @@ if (Object.keys(statusPorMot).length > 0) {
         </div>
     </div>
     <!-- Período -->
-    <div style="font-size:11px;color:#6b7280;margin-bottom:16px;padding-left:52px;">📅 ${periodoLabel}</div>
+    <div style="font-size:11px;color:#6b7280;margin-bottom:16px;padding-left:52px;">📅 ${periodoLabel}${uteisSufixo}</div>
     <!-- Badge de totais -->
     <div style="display:flex;justify-content:space-between;background:#f9fafb;border:1px solid #d1fae5;border-radius:10px;padding:12px 16px;margin-bottom:20px;">
         <div>
@@ -1704,16 +1733,13 @@ window.gerarRankingMensal = function () {
                         acumuladoMes[mot].viagens += srv;
                         totalViagensFrota += srv;
                     } else if (dados.tipoVeiculo === 'poli_duplo') {
-                        // 1 serviço poli duplo = 2 caixas equivalentes para exibição/meta
                         acumuladoMes[mot].caixas += srv * 2;
                         totalCaixasFrota += srv * 2;
                     } else {
                         acumuladoMes[mot].caixas += srv;
                         totalCaixasFrota += srv;
                     }
-                    acumuladoMes[mot].pontos += dados.pontos !== undefined
-                        ? dados.pontos
-                        : window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
+                    acumuladoMes[mot].pontos += window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
                 }
                 acumuladoMes[mot].valor += dados.valor;
                 totalFatMesFrota += dados.valor;
@@ -1744,11 +1770,6 @@ window.gerarRankingMensal = function () {
     const ptsGeral    = ptsRayanna + ptsJulia;
     const feitasGeral = feitasRayanna + feitasJulia;
 
-    const elViagens = document.getElementById('totalViajensMesGlobal');
-    if (elViagens) elViagens.innerText = `${totalViajensFrota} vg`;
-    const elFat = document.getElementById('totalFatMensalLeaderboard');
-    if (elFat) elFat.innerText = formatarMoeda(totalFatMesFrota);
-
     function renderizarMeta(feitas, meta, elValor, elFalta) {
         const perc           = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0;
         const faltam         = Math.max(0, meta - feitas);
@@ -1765,11 +1786,35 @@ window.gerarRankingMensal = function () {
     renderizarMeta(feitasJulia,   ptsJulia,   'metaJuliaGlobal',   'faltaJuliaGlobal');
 
     const rankFinal = Object.keys(acumuladoMes).map(mot => {
-        const info            = acumuladoMes[mot];
+        const info              = acumuladoMes[mot];
         const metaMensalPontos = getMetaCalculadaMotorista(mot);
         const percentualMeta  = metaMensalPontos > 0 ? (info.pontos / metaMensalPontos) * 100 : 0;
        return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos, inativo: window.motoristasInativos.includes(mot) };
     }).filter(item => item.pontos > 0 || item.valor > 0).sort((a, b) => b.percentual - a.percentual);
+
+    // ========================================================
+    // SOMA DO PAINEL VERDE (Com bloqueio < 80%)
+    // ========================================================
+    let totalLiberado = 0;
+    let somaCaixas = 0;
+    let somaViagens = 0;
+
+    rankFinal.forEach(mot => {
+        if (mot.percentual >= 80) {
+            totalLiberado += mot.valor; 
+        }
+        somaCaixas += mot.caixas || 0;
+        somaViagens += mot.viagens || 0;
+    });
+
+    const elQtd = document.getElementById('totalQtdMensalLeaderboard');
+    if (elQtd) elQtd.innerText = formatarQuantidadeMista(somaCaixas, somaViagens, false);
+
+    const elFat = document.getElementById('totalFatMensalLeaderboard');
+    if (elFat) elFat.innerText = formatarMoeda(totalFatMesFrota);
+
+    const elPagar = document.getElementById('totalPagarMensalLeaderboard');
+    if (elPagar) elPagar.innerText = formatarMoeda(totalLiberado);
 
     const divLista = document.getElementById('listaLeaderboard');
     if (!divLista) return;
@@ -1803,11 +1848,18 @@ window.gerarRankingMensal = function () {
             htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta OK!</span>`;
         }
 
+        // --- BLOQUEIO VISUAL (Vermelho e aviso) ---
+        const corFaturamento = mot.percentual >= 80 ? 'color: var(--gray-400);' : 'color: #ef4444; font-weight: 700;';
+        const avisoBloqueio = mot.percentual >= 80 ? '' : ' <span style="font-size:9px; color:#ef4444; margin-left:4px;">(Bloqueado)</span>';
+
         const linha = document.createElement('div');
         linha.className = 'elo-row';
         linha.innerHTML = `
             <div class="posicao">#${index + 1}</div>
-            <div class="nome-motorista-rank" ${mot.inativo ? 'style="color:#ef4444;"' : ''}>${mot.nome}<span class="valor-sub">Fat: ${formatarMoeda(mot.valor)}</span></div>
+            <div class="nome-motorista-rank" ${mot.inativo ? 'style="color:#ef4444;"' : ''}>
+                ${mot.nome}
+                <span class="valor-sub" style="${corFaturamento}">Fat: ${formatarMoeda(mot.valor)}${avisoBloqueio}</span>
+            </div>
             <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
             <div class="valor-destaque text-blue-500 flex items-center">
                 ${textoQtd}

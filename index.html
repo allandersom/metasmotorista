@@ -386,9 +386,21 @@
                                 onchange="window.sincronizarMesFiltro(); window.gerarRankingMensal(); window.atualizarGraficosProjecao();">
                         </div>
 
-                        <div class="fat-total-badge mb-5">
-                            <span>Faturamento Total (Mês)</span>
-                            <span id="totalFatMensalLeaderboard">R$ 0,00</span>
+                        <div class="fat-total-badge mb-5" style="display: flex; flex-direction: column; gap: 8px; background: var(--gray-50);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--gray-400);">Total de Serviços</span>
+                                    <span id="totalQtdMensalLeaderboard" style="color: var(--brand-600); font-size: 14px; font-weight: 700;">0 cx | 0 vg</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--gray-400);">Fat. Bruto (Todos)</span>
+                                    <span id="totalFatMensalLeaderboard" style="color: var(--gray-400); font-size: 13px; text-decoration: line-through;">R$ 0,00</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e5e7eb; padding-top: 8px;">
+                                <span style="font-size: 12px; font-weight: 700; color: #059669;">Liberado p/ Pagamento (Meta ≥ 80%)</span>
+                                <span id="totalPagarMensalLeaderboard" style="color: #10b981; font-size: 16px; font-weight: 800;">R$ 0,00</span>
+                            </div>
                         </div>
 
                         <div id="listaLeaderboard" class="space-y-2"></div>
@@ -415,6 +427,10 @@
                                 <input type="date" id="dataRankingInicio" class="inline-date" onchange="window.gerarRankingPeriodo()">
                                 <span style="color:var(--gray-400);font-size:12px;font-weight:600;">até</span>
                                 <input type="date" id="dataRankingFim" class="inline-date" onchange="window.gerarRankingPeriodo()">
+                                <button id="btnApenasUteis" onclick="window.toggleApenasUteis()" class="btn-sistema" style="height:30px;padding:0 12px;font-size:12px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:600;">
+    <i data-lucide="calendar-check" style="width:13px;height:13px;"></i>
+    Apenas dias úteis
+</button>
                             </div>
                         </div>
 
