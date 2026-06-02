@@ -239,19 +239,30 @@
                                 </div>
 
                                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
-                                    <div class="flex flex-col gap-1">
-                                        <label>Data do Serviço</label>
-                                        <input type="date" id="dataLancamento" class="input-base"
-                                            onchange="window.atualizarResumosDoMotorista(); window.atualizarSlaInput();">
-                                        <div class="feriado-row">
-                                            <input type="checkbox" id="feriado">
-                                            <label for="feriado">É Feriado?</label>
-                                        </div>
-                                    </div>
+                                    <!-- Demos um ID 'boxDataUnica' para esta div -->
+<div class="flex flex-col gap-1" id="boxDataUnica">
+    <label>Data do Serviço</label>
+    <input type="date" id="dataLancamento" class="input-base" onchange="window.atualizarResumosDoMotorista(); window.atualizarSlaInput();">
+    <div class="feriado-row">
+        <input type="checkbox" id="feriado">
+        <label for="feriado">É Feriado?</label>
+    </div>
+</div>
 
-                                    <div class="flex flex-col gap-1 mb-[22px]">
-                                        <label>Status</label>
-                                        <select id="statusServico" class="input-base">
+<!-- NOVO BOX FÉRIAS (Oculto por padrão) -->
+<div class="flex flex-col gap-1 hidden" id="boxFerias" style="display:none; grid-column: span 2;">
+    <label class="text-red-500 font-bold">Período de Férias</label>
+    <div class="flex gap-2">
+        <input type="date" id="dataFeriasInicio" class="input-base">
+        <span class="self-center font-bold text-slate-400">até</span>
+        <input type="date" id="dataFeriasFim" class="input-base">
+    </div>
+</div>
+
+<div class="flex flex-col gap-1 mb-[22px]">
+    <label>Status</label>
+    <!-- Adicionamos o onchange aqui para acionar a mágica -->
+    <select id="statusServico" class="input-base" onchange="window.toggleCamposFerias()">
                                             <option value="normal">Trabalhou Normal</option>
                                             <option value="falta">Falta</option>
                                             <option value="folga">Folga</option>

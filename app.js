@@ -949,19 +949,94 @@ window.selecionarMotoristaProjecao = function (nome) {
 };
 
 // =============================================================
+// CONTROLE DE TELA DE FÉRIAS
+// =============================================================
+window.toggleCamposFerias = function() {
+    const status = document.getElementById('statusServico').value;
+    const boxDataUnica = document.getElementById('boxDataUnica');
+    const boxFerias = document.getElementById('boxFerias');
+
+    if (status === 'licenca') { // 'licenca' é o value do option Férias
+        boxDataUnica.style.display = 'none';
+        boxFerias.style.display = 'flex';
+    } else {
+        boxDataUnica.style.display = 'flex';
+        boxFerias.style.display = 'none';
+    }
+};''
+
+
+// =============================================================
 // SALVAR LANÇAMENTO
 // =============================================================
 window.salvarLancamento = async function () {
-    if (window._salvandoLancamento) return;
-    window._salvandoLancamento = true;
-    if (!window.motoristaSelecionado) { window._salvandoLancamento = false; alert('Selecione um motorista primeiro!'); return; }
+  if (window._salvandoLancamento) return;
+  window._salvandoLancamento = true;
+  if (!window.motoristaSelecionado) { window._salvandoLancamento = false; alert('Selecione um motorista primeiro!'); return; }
 
-    const elData  = document.getElementById('dataLancamento');
-    const dataStr = elData ? elData.value : null;
-    if (!dataStr) { alert('Preencha a data do serviço.'); return; }
+  const statusInput = document.getElementById('statusServico').value;
 
-    const statusInput     = document.getElementById('statusServico').value;
-    const tipoVeiculoInput = document.getElementById('tipoVeiculo').value;
+  // ===== NOVA LÓGICA DE FÉRIAS EM LOTE =====
+  if (statusInput === 'licenca') {
+    const inicio = document.getElementById('dataFeriasInicio').value;
+    const fim = document.getElementById('dataFeriasFim').value;
+    
+    if (!inicio || !fim) {
+      window._salvandoLancamento = false;
+      alert('Preencha a Data de Início e Término das férias.');
+      return;
+    }
+
+    const upsertArray = [];
+    let dataAtual = new Date(inicio + 'T00:00:00');
+    const dataLimite = new Date(fim + 'T00:00:00');
+
+    const btn = document.getElementById('btnSalvarL');
+    const btnHtmlAntigo = btn.innerHTML;
+    btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Lançando...';
+
+    while (dataAtual <= dataLimite) {
+      const dataStrLote = window.formatarDataParaBusca(dataAtual);
+      upsertArray.push({
+        data: dataStrLote,
+        motorista_nome: window.motoristaSelecionado,
+        status_servico: 'licenca',
+        tipo_veiculo: document.getElementById('tipoVeiculo').value,
+        quantidade_servicos: 0,
+        valor_faturamento: 0,
+        valor_extra: 0,
+        is_feriado: false,
+        ganhou_bonus_semana: false,
+        observacao: document.getElementById('observacao')?.value.trim() || 'Férias'
+      });
+      dataAtual.setDate(dataAtual.getDate() + 1);
+    }
+
+    const { error } = await supabase.from('lancamentos').upsert(upsertArray, { onConflict: 'data,motorista_nome' });
+
+    if (error) {
+      alert('Erro ao lançar férias: ' + error.message);
+    } else {
+      await window.carregarDadosDoSupabase();
+      document.getElementById('statusServico').value = 'normal';
+      window.toggleCamposFerias();
+      document.getElementById('dataFeriasInicio').value = '';
+      document.getElementById('dataFeriasFim').value = '';
+      document.getElementById('observacao').value = '';
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    btn.innerHTML = btnHtmlAntigo;
+    window._salvandoLancamento = false;
+    return;
+  }
+  // ===== FIM DA LÓGICA DE FÉRIAS =====
+
+  const elData = document.getElementById('dataLancamento');
+  const dataStr = elData ? elData.value : null;
+  if (!dataStr) { window._salvandoLancamento = false; alert('Preencha a data do serviço.'); return; }
+
+  const tipoVeiculoInput = document.getElementById('tipoVeiculo').value;
     let servicosInput     = parseInt(document.getElementById('servicos').value) || 0;
     let valorExtraInput   = parseFloat(document.getElementById('valorExtra').value.replace(',', '.')) || 0;
     const isFeriadoInput  = document.getElementById('feriado')?.checked ?? false;
@@ -1115,13 +1190,13 @@ window.carregarHistoricoMotorista = function () {
     }
 
     const statusMap = {
-        falta:      'bg-red-500 text-white',
-        folga:      'bg-slate-500 text-white',
-        atestado:   'bg-yellow-400 text-slate-800',
-        polioff:    'bg-orange-500 text-white',
-        ferias:    'bg-purple-500 text-white',
-        desligado:  'bg-red-800 text-white shadow-sm',
-    };
+    falta:   'bg-red-500 text-white',
+    folga:   'bg-slate-500 text-white',
+    atestado: 'bg-yellow-400 text-slate-800',
+    polioff:  'bg-orange-500 text-white',
+    licenca:  'bg-red-600 text-white shadow-sm',
+    desligado:  'bg-red-900 text-white shadow-sm',
+  };
     const statusLabel = {
         falta: 'Falta', folga: 'Folga', atestado: 'Atestado',
         polioff: 'Poli OFF', licenca: 'Férias', desligado: 'Desligado',
