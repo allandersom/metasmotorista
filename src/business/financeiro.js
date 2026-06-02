@@ -323,9 +323,19 @@ function aplicarCorrecaoRankings() {
             return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos };
         }).filter(item => item.pontos > 0 || item.valor > 0).sort((a, b) => b.percentual - a.percentual);
 
-        const divLista = document.getElementById('listaLeaderboard');
-        if (!divLista) return;
-        divLista.innerHTML = '';
+        // Calcula o total liberado (≥ 80%)
+let totalLiberado = 0;
+rankFinal.forEach(mot => {
+    if (mot.percentual >= 80) {
+        totalLiberado += mot.valor;
+    }
+});
+const elPagar = document.getElementById('totalPagarMensalLeaderboard');
+if (elPagar) elPagar.innerText = formatarMoeda(totalLiberado);
+
+const divLista = document.getElementById('listaLeaderboard');
+if (!divLista) return;
+divLista.innerHTML = '';
 
         if (rankFinal.length === 0) {
             divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Sem registros válidos.</div>';
