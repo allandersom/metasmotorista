@@ -1272,9 +1272,10 @@ window.atualizarResumosDoMotorista = function () {
         const elPrevisao = document.getElementById('motoristaPrevisaoMes');
         if (elPrevisao) elPrevisao.innerText = `${previsaoPontos / 2} vg`;
     } else {
-        textoMeta = `${metaMensalPontos} cx`;
-        const elCaixas = document.getElementById('motoristaCaixasMes');
-        if (elCaixas) elCaixas.innerText = `${totalCaixasMes} cx`;
+    textoMeta = `${metaMensalPontos} cx`;
+    const elCaixas = document.getElementById('motoristaCaixasMes');
+    // Usa a sua função que formata perfeitamente (ex: 2 cx + 4 vg)
+    if (elCaixas) elCaixas.innerText = formatarQuantidadeMista(totalCaixasMes, totalViagensMes, false);
         const exibeCaixas = totalPontosMes > 0 && totalCaixasMes > totalPontosMes
             ? Math.round(previsaoPontos * (totalCaixasMes / totalPontosMes))
             : previsaoPontos;
@@ -1296,35 +1297,44 @@ window.atualizarResumosGlobais = function () {
     if (!mesGlobalStr) return;
 
     const bancoDados = window.bancoDadosCloud;
-    let totalDiaGlobal = 0, caixasDiaGlobal = 0, totalMesGlobal = 0, caixasMesGlobal = 0;
+    // Criei as variáveis para viagens aqui:
+    let totalDiaGlobal = 0, caixasDiaGlobal = 0, viagensDiaGlobal = 0;
+    let totalMesGlobal = 0, caixasMesGlobal = 0, viagensMesGlobal = 0;
 
+    // Soma do Dia
     if (dataRefStr && bancoDados[dataRefStr]) {
         for (const mot in bancoDados[dataRefStr]) {
             const d = bancoDados[dataRefStr][mot];
             totalDiaGlobal += d.valor;
-            if (d.tipoVeiculo !== 'cacamba' && (!d.status || d.status === 'normal')) {
-                caixasDiaGlobal += d.servicos || 0;
+            if (!d.status || d.status === 'normal') {
+                if (d.tipoVeiculo === 'cacamba') viagensDiaGlobal += (d.servicos || 0);
+                else caixasDiaGlobal += (d.servicos || 0);
             }
         }
     }
 
+    // Soma do Mês
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
         if (dataEstaNoMes(dataStr, mesGlobalStr)) {
             for (const mot in dadosDia) {
                 const d = dadosDia[mot];
                 totalMesGlobal += d.valor;
-                if (d.tipoVeiculo !== 'cacamba' && (!d.status || d.status === 'normal')) {
-                    caixasMesGlobal += d.servicos || 0;
+                if (!d.status || d.status === 'normal') {
+                    if (d.tipoVeiculo === 'cacamba') viagensMesGlobal += (d.servicos || 0);
+                    else caixasMesGlobal += (d.servicos || 0);
                 }
             }
         }
     }
 
     const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+    
     _set('totalDiaGlobal',     formatarMoeda(totalDiaGlobal));
-    _set('caixasDiaGlobal',    `${caixasDiaGlobal} cx`);
     _set('totalSemanaGlobal',  formatarMoeda(totalMesGlobal));
-    _set('caixasSemanaGlobal', `${caixasMesGlobal} cx`);
+    
+    // Agora os textos usam sua função e vão aparecer "X cx + Y vg"
+    _set('caixasDiaGlobal',    formatarQuantidadeMista(caixasDiaGlobal, viagensDiaGlobal, false));
+    _set('caixasSemanaGlobal', formatarQuantidadeMista(caixasMesGlobal, viagensMesGlobal, false));
 };
 
 window.gerarRankingPeriodo = function () {
