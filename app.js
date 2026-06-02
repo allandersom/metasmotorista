@@ -963,7 +963,7 @@ window.toggleCamposFerias = function() {
         boxDataUnica.style.display = 'flex';
         boxFerias.style.display = 'none';
     }
-};''
+};
 
 
 // =============================================================
@@ -1740,9 +1740,9 @@ window.gerarRankingMensal = function () {
                         totalCaixasFrota += srv;
                     }
                     acumuladoMes[mot].pontos += window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
+                    acumuladoMes[mot].valor += dados.valor;
+                    totalFatMesFrota += dados.valor;
                 }
-                acumuladoMes[mot].valor += dados.valor;
-                totalFatMesFrota += dados.valor;
             }
         }
     }
@@ -3159,11 +3159,13 @@ window.renderizarTabelaCaminhoes = function(lista = []) {
     }
     const badgeStatus = { ativo: '#16a34a', manutencao: '#d97706', inativo: '#dc2626' };
     const labelStatus = { ativo: 'Ativo', manutencao: 'Manutenção', inativo: 'Inativo' };
+    const labelTipo   = { poliguindaste: '🏗️ Poliguindaste', cacamba: '🚛 Caçamba' };
     tbody.innerHTML = lista.map(c => `
         <tr style="border-bottom:1px solid #e5e7eb;">
             <td style="padding:12px;font-weight:600;color:var(--gray-100);">${c.placa}</td>
             <td style="padding:12px;color:var(--gray-300);">${c.modelo || '—'} ${c.ano ? '(' + c.ano + ')' : ''}</td>
             <td style="padding:12px;text-align:center;">
+            <td style="padding:12px;color:var(--gray-300);font-size:12px;">${labelTipo[c.tipo] || '—'}</td>
                 <span style="background:${badgeStatus[c.status] || '#64748b'};color:#fff;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">
                     ${labelStatus[c.status] || c.status}
                 </span>
@@ -3225,8 +3227,8 @@ window.salvarCaminhao = async function() {
             doc_nome = arquivo.name;
         }
 
-        const payload = { placa, modelo, ano: ano ? parseInt(ano) : null, status, motorista_fixo: moto || null, doc_url, doc_nome, obs };
-
+const tipo    = document.getElementById('cadCamTipo').value;
+const payload = { placa, modelo, ano: ano ? parseInt(ano) : null, tipo, status, motorista_fixo: moto || null, doc_url, doc_nome, obs };
         let erro;
         if (id) {
             ({ error: erro } = await window.supabaseClient.from('caminhoes').update(payload).eq('id', id));
@@ -3253,6 +3255,8 @@ window.editarCaminhao = function(id) {
     document.getElementById('cadCamPlaca').value         = c.placa;
     document.getElementById('cadCamModelo').value        = c.modelo || '';
     document.getElementById('cadCamAno').value           = c.ano || '';
+    document.getElementById('cadCamTipo').value = 'poliguindaste';
+    document.getElementById('cadCamTipo').value          = c.tipo || 'poliguindaste';
     document.getElementById('cadCamStatus').value        = c.status || 'ativo';
     document.getElementById('cadCamObs').value           = c.obs || '';
     document.getElementById('labelFormCaminhao').textContent = 'Editar Caminhão';

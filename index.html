@@ -615,7 +615,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="6" class="text-center text-slate-400 font-medium py-8">
+                                    <td colspan="7" class="text-center text-slate-400 font-medium py-8">
                                         Clique em Atualizar para carregar a auditoria.
                                     </td>
                                 </tr>
@@ -832,7 +832,7 @@
                                 </tr>   
                             </thead>
                             <tbody id="tabelaCadastroMotoristas">
-                                <tr><td colspan="6" style="text-align:center; padding:32px; color:var(--gray-500);">Carregando...</td></tr>
+                                <tr><td colspan="7" style="text-align:center; padding:32px; color:var(--gray-500);">Carregando...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -931,7 +931,13 @@
                     <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Ano</label>
                     <input id="cadCamAno" type="number" placeholder="Ex: 2020" class="input-base" style="width:100%;" min="1990" max="2099">
                 </div>
-
+                <div>
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Tipo de Caminhão *</label>
+    <select id="cadCamTipo" class="input-base" style="width:100%;">
+        <option value="poliguindaste">🏗️ Poliguindaste</option>
+        <option value="cacamba">🚛 Caminhão Caçamba</option>
+    </select>
+</div>
                 <div>
                     <label style="display:block;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Status *</label>
                     <select id="cadCamStatus" class="input-base" style="width:100%;">
@@ -985,6 +991,7 @@
                         <tr style="border-bottom:1px solid var(--border-subtle);">
                             <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Placa</th>
                             <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Modelo / Ano</th>
+                            <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Tipo</th>
                             <th style="text-align:center;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Status</th>
                             <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Motorista Fixo</th>
                             <th style="text-align:center;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;">Doc</th>
@@ -992,7 +999,7 @@
                         </tr>
                     </thead>
                     <tbody id="tabelaCaminhoes">
-                        <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--gray-500);">Carregando...</td></tr>
+                        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--gray-500);">Carregando...</td></tr>
                     </tbody>
                 </table>
             </div>
