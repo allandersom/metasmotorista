@@ -76,16 +76,20 @@ function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, ba
         const dStr = formatarData(d);
         const lancDia = bancoDados[dStr]?.[motoristaNome];
 
-        if (lancDia && (!lancDia.status || lancDia.status === 'normal')) {
-            if (lancDia.isFeriado) {
-                qtdFeriadosSemana++;
-            } else {
-                const srv = isNaN(lancDia.servicos) ? 0 : lancDia.servicos;
-               const tipoVeiculoDia = lancDia.tipoVeiculo || 'poliguindaste';
-const fatorDia = tipoVeiculoDia === 'poliguindaste' ? 2 : 1;
-servicosFeitosSemana += srv * fatorDia;
-            }
+        // DEPOIS:
+if (lancDia && (!lancDia.status || lancDia.status === 'normal')) {
+    if (lancDia.isFeriado) {
+        qtdFeriadosSemana++;
+    } else {
+        const tipoVeiculoDia = lancDia.tipoVeiculo || 'poliguindaste';
+        // Só conta dias do mesmo tipo de veículo do sábado
+        if (tipoVeiculoDia === tipoVeiculo) {
+            const srv = isNaN(lancDia.servicos) ? 0 : lancDia.servicos;
+            const fatorDia = tipoVeiculoDia === 'poliguindaste' ? 2 : 1;
+            servicosFeitosSemana += srv * fatorDia;
         }
+    }
+}
     }
 
     const metaSemanalFisica = (5 - qtdFeriadosSemana) * getMetaFisicaDiariaSabado(motoristaNome, tipoVeiculo);
