@@ -95,23 +95,18 @@ servicosFeitosSemana += srv * fatorDia;
 
 let valorParaMeta, valorBonus;
 
-// DEPOIS (substituir pelo bloco abaixo):
 if (servicosBonus > 0) {
-    // Caçamba não tem R$50 base no sábado — só bônus por viagem extra
-    if (tipoVeiculo === 'cacamba') {
-        const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
-        const viagensBrutasBonus = Math.round(proporcaoBonus * (servicosBrutos || servicos));
-        valorParaMeta = viagensBrutasBonus * (config.valorExtraPorUnidade * 2);
-    } else {
-        const opcaoA = calcularValorDiaNormal(servicos, config);
+    // Opção A: valor usando a lógica de dia normal (bate meta diária = R$50 + excedentes normais)
+    const opcaoA = calcularValorDiaNormal(servicos, config);
 
-        const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
-        const caixasBrutasBonus = Math.round(proporcaoBonus * (servicosBrutos || servicos));
-        const opcaoB = caixasBrutasBonus * (config.valorExtraPorUnidade * 2);
+    // Opção B: só o bônus das caixas excedentes (sem base de R$50)
+    const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
+    const caixasBrutasBonus = Math.round(proporcaoBonus * (servicosBrutos || servicos));
+    const opcaoB = caixasBrutasBonus * (config.valorExtraPorUnidade * 2);
 
-        valorParaMeta = Math.max(opcaoA, opcaoB);
-    }
-    valorBonus = 0;
+    // Pega sempre o maior
+    valorParaMeta = Math.max(opcaoA, opcaoB);
+    valorBonus = 0; // já embutido no valorParaMeta
 } else {
     valorParaMeta = calcularValorDiaNormal(servicosParaMeta, config);
     const proporcaoBonus = servicos > 0 ? servicosBonus / servicos : 0;
