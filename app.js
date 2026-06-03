@@ -171,13 +171,20 @@ async function carregarDadosDoSupabase() {
         window.motoristasInativos = [];
 
         // 1. Lançamentos
-    // 1. Lançamentos
-        const { data: lancs, error: erroLancs } = await supabase
-            .from('lancamentos')
-            .select('*')
-            .is('cancelado_em', null)
-            .order('data', { ascending: false }) // Traz sempre os mais recentes
-            .limit(10000); // Garante que a trava do Supabase não corte nada
+    // Pega o mês selecionado no filtro global
+const mesAtivo = document.getElementById('dataGlobal')?.value || getAnoMesAtual();
+const [ano, mes] = mesAtivo.split('-').map(Number);
+const primeiroDia = `${mesAtivo}-01`;
+const ultimoDia = new Date(ano, mes, 0); // dia 0 do mês seguinte = último dia do mês
+const ultimoDiaStr = `${mesAtivo}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
+
+const { data: lancs, error: erroLancs } = await supabase
+    .from('lancamentos')
+    .select('*')
+    .is('cancelado_em', null)
+    .gte('data', primeiroDia)
+    .lte('data', ultimoDiaStr)
+    .order('data', { ascending: false });
 
         if (erroLancs) throw erroLancs;
         const { data: mots, error: erroMots } = await supabase
@@ -975,197 +982,212 @@ window.toggleCamposFerias = function() {
 // SALVAR LANÇAMENTO
 // =============================================================
 window.salvarLancamento = async function () {
-  if (window._salvandoLancamento) return;
-  window._salvandoLancamento = true;
-  if (!window.motoristaSelecionado) { window._salvandoLancamento = false; alert('Selecione um motorista primeiro!'); return; }
+    if (window._salvandoLancamento) return;
+    window._salvandoLancamento = true;
 
-  const statusInput = document.getElementById('statusServico').value;
-
-  // ===== NOVA LÓGICA DE FÉRIAS EM LOTE =====
-  if (statusInput === 'licenca') {
-    const inicio = document.getElementById('dataFeriasInicio').value;
-    const fim = document.getElementById('dataFeriasFim').value;
-    
-    if (!inicio || !fim) {
-      window._salvandoLancamento = false;
-      alert('Preencha a Data de Início e Término das férias.');
-      return;
-    }
-
-    const upsertArray = [];
-    let dataAtual = new Date(inicio + 'T00:00:00');
-    const dataLimite = new Date(fim + 'T00:00:00');
-
-    const btn = document.getElementById('btnSalvarL');
-    const btnHtmlAntigo = btn.innerHTML;
-    btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Lançando...';
-
-    while (dataAtual <= dataLimite) {
-      const dataStrLote = window.formatarDataParaBusca(dataAtual);
-      upsertArray.push({
-        data: dataStrLote,
-        motorista_nome: window.motoristaSelecionado,
-        status_servico: 'licenca',
-        tipo_veiculo: document.getElementById('tipoVeiculo').value,
-        quantidade_servicos: 0,
-        valor_faturamento: 0,
-        valor_extra: 0,
-        is_feriado: false,
-        ganhou_bonus_semana: false,
-        observacao: document.getElementById('observacao')?.value.trim() || 'Férias'
-      });
-      dataAtual.setDate(dataAtual.getDate() + 1);
-    }
-
-    const { error } = await supabase.from('lancamentos').upsert(upsertArray, { onConflict: 'data,motorista_nome' });
-
-    if (error) {
-      alert('Erro ao lançar férias: ' + error.message);
-    } else {
-      await window.carregarDadosDoSupabase();
-      document.getElementById('statusServico').value = 'normal';
-      window.toggleCamposFerias();
-      document.getElementById('dataFeriasInicio').value = '';
-      document.getElementById('dataFeriasFim').value = '';
-      document.getElementById('observacao').value = '';
-      if (window.lucide) window.lucide.createIcons();
-    }
-
-    btn.innerHTML = btnHtmlAntigo;
-    window._salvandoLancamento = false;
-    return;
-  }
-  // ===== FIM DA LÓGICA DE FÉRIAS =====
-
-  const elData = document.getElementById('dataLancamento');
-  const dataStr = elData ? elData.value : null;
-  if (!dataStr) { window._salvandoLancamento = false; alert('Preencha a data do serviço.'); return; }
-
-  const tipoVeiculoInput = document.getElementById('tipoVeiculo').value;
-    let servicosInput     = parseInt(document.getElementById('servicos').value) || 0;
-    let valorExtraInput   = parseFloat(document.getElementById('valorExtra').value.replace(',', '.')) || 0;
-    const isFeriadoInput  = document.getElementById('feriado')?.checked ?? false;
-    const observacaoInput = document.getElementById('observacao')?.value.trim() ?? '';
-
-    if (statusInput !== 'normal') { servicosInput = 0; valorExtraInput = 0; }
-
-    const bancoDados = window.bancoDadosCloud;
-    if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
-    const lancamentoExistente = bancoDados[dataStr][window.motoristaSelecionado];
-
-    let servicosFinais    = servicosInput;
-    let valorExtraFinal   = valorExtraInput;
-    let isFeriadoFinal    = isFeriadoInput;
-    let observacaoFinal   = observacaoInput;
-    let tipoVeiculoFinal  = tipoVeiculoInput;
-    let statusFinal       = statusInput;
-
-    if (lancamentoExistente) {
-        if (lancamentoExistente.status !== 'normal' && statusInput === 'normal') {
-            servicosFinais  = servicosInput;
-            valorExtraFinal = valorExtraInput;
-        } else {
-    servicosFinais  += (lancamentoExistente.servicos || 0);
-    valorExtraFinal += (lancamentoExistente.valorExtra || 0);
-    const pontosNovo = tipoVeiculoInput === 'poli_duplo' ? servicosInput * 0.5 : servicosInput;
-    const pontosExistente = lancamentoExistente.tipoVeiculo === 'poli_duplo' ? (lancamentoExistente.servicos || 0) * 0.5 : (lancamentoExistente.servicos || 0);
-    window._pontosFinaisMisto = pontosNovo + pontosExistente;
-}
-
-        isFeriadoFinal = isFeriadoInput || lancamentoExistente.isFeriado;
-
-        if (lancamentoExistente.observacao && observacaoInput) {
-            observacaoFinal = lancamentoExistente.observacao + ' | ' + observacaoInput;
-        } else if (lancamentoExistente.observacao) {
-            observacaoFinal = lancamentoExistente.observacao;
+    try {
+        if (!window.motoristaSelecionado) {
+            alert('Selecione um motorista primeiro!');
+            return;
         }
 
-        if (lancamentoExistente.tipoVeiculo && lancamentoExistente.tipoVeiculo !== tipoVeiculoInput && statusInput === 'normal') {
-            tipoVeiculoFinal = 'misto';
-            if (!observacaoFinal.includes('[MISTO]')) observacaoFinal = '[MISTO] ' + observacaoFinal;
-        } else {
+        const statusInput = document.getElementById('statusServico').value;
+
+        // ===== NOVA LÓGICA DE FÉRIAS EM LOTE =====
+        if (statusInput === 'licenca') {
+            const inicio = document.getElementById('dataFeriasInicio').value;
+            const fim = document.getElementById('dataFeriasFim').value;
+
+            if (!inicio || !fim) {
+                alert('Preencha a Data de Início e Término das férias.');
+                return;
+            }
+
+            const upsertArray = [];
+            let dataAtual = new Date(inicio + 'T00:00:00');
+            const dataLimite = new Date(fim + 'T00:00:00');
+
+            const btn = document.getElementById('btnSalvarL');
+            const btnHtmlAntigo = btn?.innerHTML || '';
+            if (btn) btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Lançando...';
+
+            while (dataAtual <= dataLimite) {
+                const dataStrLote = window.formatarDataParaBusca(dataAtual);
+                upsertArray.push({
+                    data: dataStrLote,
+                    motorista_nome: window.motoristaSelecionado.toUpperCase().trim(),
+                    status_servico: 'licenca',
+                    tipo_veiculo: document.getElementById('tipoVeiculo').value,
+                    quantidade_servicos: 0,
+                    valor_faturamento: 0,
+                    valor_extra: 0,
+                    is_feriado: false,
+                    ganhou_bonus_semana: false,
+                    observacao: document.getElementById('observacao')?.value.trim() || 'Férias'
+                });
+                dataAtual.setDate(dataAtual.getDate() + 1);
+            }
+
+            const { error } = await window.supabaseClient.from('lancamentos').upsert(upsertArray, { onConflict: 'data,motorista_nome' });
+
+            if (error) {
+                alert('Erro ao lançar férias: ' + error.message);
+            } else {
+                await window.carregarDadosDoSupabase();
+                document.getElementById('statusServico').value = 'normal';
+                if (typeof window.toggleCamposFerias === 'function') window.toggleCamposFerias();
+                document.getElementById('dataFeriasInicio').value = '';
+                document.getElementById('dataFeriasFim').value = '';
+                if (window.motoristaSelecionado) {
+                    window.carregarHistoricoMotorista();
+                    window.atualizarResumosDoMotorista();
+                }
+                document.getElementById('observacao').value = '';
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            if (btn) btn.innerHTML = btnHtmlAntigo;
+            return;
         }
-    }
+        // ===== FIM DA LÓGICA DE FÉRIAS =====
 
-    const { valorBase, bateuMetaSemana } = calcularValorDia({
-        motoristaNome: window.motoristaSelecionado,
-        dataStr,
-        servicos: tipoVeiculoFinal === 'misto' ? (window._pontosFinaisMisto || servicosFinais) : servicosFinais,
-        servicosBrutos: servicosFinais,
-        tipoVeiculo: tipoVeiculoFinal,
-        isFeriado: isFeriadoFinal,
-        status: statusFinal,
-        bancoDados: window.bancoDadosCloud,
-        formatarData: formatarDataParaBusca,
-    });
+        const elData = document.getElementById('dataLancamento');
+        const dataStr = elData ? elData.value : null;
+        if (!dataStr) { alert('Preencha a data do serviço.'); return; }
 
-    const valorFinal = valorBase + valorExtraFinal;
+        const tipoVeiculoInput = document.getElementById('tipoVeiculo').value;
+        let servicosInput     = parseInt(document.getElementById('servicos').value) || 0;
+        let valorExtraInput   = parseFloat(document.getElementById('valorExtra').value.replace(',', '.')) || 0;
+        const isFeriadoInput  = document.getElementById('feriado')?.checked ?? false;
+        const observacaoInput = document.getElementById('observacao')?.value.trim() ?? '';
 
-    // Upload de anexo
-    const arquivoAnexo = document.getElementById('anexoObs')?.files?.[0];
-    let dadosAnexo = null;
+        if (statusInput !== 'normal') { servicosInput = 0; valorExtraInput = 0; }
 
-    if (arquivoAnexo) {
-        const nomeSeguro = arquivoAnexo.name
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^\w.\-]+/g, '_');
+        const bancoDados = window.bancoDadosCloud;
+        if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
+        const lancamentoExistente = bancoDados[dataStr][window.motoristaSelecionado];
 
-        const motoristaSeguro = window.motoristaSelecionado
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^\w\-]+/g, '_');
+        let servicosFinais    = servicosInput;
+        let valorExtraFinal   = valorExtraInput;
+        let isFeriadoFinal    = isFeriadoInput;
+        let observacaoFinal   = observacaoInput;
+        let tipoVeiculoFinal  = tipoVeiculoInput;
+        let statusFinal       = statusInput;
 
-        const caminhoAnexo = `${dataStr}/${motoristaSeguro}/${Date.now()}_${nomeSeguro}`;
+        if (lancamentoExistente) {
+            if (lancamentoExistente.status !== 'normal' && statusInput === 'normal') {
+                servicosFinais  = servicosInput;
+                valorExtraFinal = valorExtraInput;
+            } else {
+                servicosFinais  += (lancamentoExistente.servicos || 0);
+                valorExtraFinal += (lancamentoExistente.valorExtra || 0);
+                const pontosNovo = tipoVeiculoInput === 'poli_duplo' ? servicosInput * 0.5 : servicosInput;
+                const pontosExistente = lancamentoExistente.tipoVeiculo === 'poli_duplo' ? (lancamentoExistente.servicos || 0) * 0.5 : (lancamentoExistente.servicos || 0);
+                window._pontosFinaisMisto = pontosNovo + pontosExistente;
+            }
 
-        const { error: erroUpload } = await supabase.storage
-            .from('lancamentos-anexos')
-            .upload(caminhoAnexo, arquivoAnexo, { upsert: true });
+            isFeriadoFinal = isFeriadoInput || lancamentoExistente.isFeriado;
 
-        if (erroUpload) { alert('Erro ao anexar arquivo: ' + erroUpload.message); return; }
+            if (lancamentoExistente.observacao && observacaoInput) {
+                observacaoFinal = lancamentoExistente.observacao + ' | ' + observacaoInput;
+            } else if (lancamentoExistente.observacao) {
+                observacaoFinal = lancamentoExistente.observacao;
+            }
 
-        const { data: urlData } = supabase.storage.from('lancamentos-anexos').getPublicUrl(caminhoAnexo);
-        dadosAnexo = {
-            nome: arquivoAnexo.name,
-            url:  urlData.publicUrl,
-            path: caminhoAnexo,
-            tipo: arquivoAnexo.type || '',
+            if (lancamentoExistente.tipoVeiculo && lancamentoExistente.tipoVeiculo !== tipoVeiculoInput && statusInput === 'normal') {
+                tipoVeiculoFinal = 'misto';
+                if (!observacaoFinal.includes('[MISTO]')) observacaoFinal = '[MISTO] ' + observacaoFinal;
+            }
+        }
+
+        const { valorBase, bateuMetaSemana } = window.calcularValorDia({
+            motoristaNome: window.motoristaSelecionado,
+            dataStr,
+            servicos: tipoVeiculoFinal === 'misto' ? (window._pontosFinaisMisto || servicosFinais) : servicosFinais,
+            servicosBrutos: servicosFinais,
+            tipoVeiculo: tipoVeiculoFinal,
+            isFeriado: isFeriadoFinal,
+            status: statusFinal,
+            bancoDados: window.bancoDadosCloud,
+            formatarData: window.formatarDataParaBusca,
+        });
+
+        const valorFinal = valorBase + valorExtraFinal;
+
+        // Upload de anexo
+        const arquivoAnexo = document.getElementById('anexoObs')?.files?.[0];
+        let dadosAnexo = null;
+
+        if (arquivoAnexo) {
+            const nomeSeguro = arquivoAnexo.name
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\w.\-]+/g, '_');
+
+            const motoristaSeguro = window.motoristaSelecionado
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\w\-]+/g, '_');
+
+            const caminhoAnexo = `${dataStr}/${motoristaSeguro}/${Date.now()}_${nomeSeguro}`;
+
+            const { error: erroUpload } = await window.supabaseClient.storage
+                .from('lancamentos-anexos')
+                .upload(caminhoAnexo, arquivoAnexo, { upsert: true });
+
+            if (erroUpload) { alert('Erro ao anexar arquivo: ' + erroUpload.message); return; }
+
+            const { data: urlData } = window.supabaseClient.storage.from('lancamentos-anexos').getPublicUrl(caminhoAnexo);
+            dadosAnexo = {
+                nome: arquivoAnexo.name,
+                url:  urlData.publicUrl,
+                path: caminhoAnexo,
+                tipo: arquivoAnexo.type || '',
+            };
+        }
+
+        bancoDados[dataStr][window.motoristaSelecionado] = {
+            anexoNome:         dadosAnexo?.nome  || lancamentoExistente?.anexoNome  || null,
+            anexoUrl:          dadosAnexo?.url   || lancamentoExistente?.anexoUrl   || null,
+            anexoPath:         dadosAnexo?.path  || lancamentoExistente?.anexoPath  || null,
+            anexoTipo:         dadosAnexo?.tipo  || lancamentoExistente?.anexoTipo  || null,
+            servicos:          servicosFinais,
+            valor:             valorFinal,
+            isFeriado:         isFeriadoFinal,
+            ganhouBonusSemana: bateuMetaSemana,
+            tipoVeiculo:       tipoVeiculoFinal,
+            valorExtra:        valorExtraFinal,
+            pontos:            window.calcularPontosMotorista(window.motoristaSelecionado, servicosFinais, tipoVeiculoFinal),
+            observacao:        observacaoFinal,
+            status:            statusFinal,
         };
+
+        await window.syncToSupabase(dataStr, window.motoristaSelecionado);
+        await window.carregarDadosDoSupabase();
+
+        // Limpar formulário
+        ['servicos', 'valorExtra', 'observacao'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        const elFeriado = document.getElementById('feriado');
+        if (elFeriado) elFeriado.checked = false;
+        const elStatus = document.getElementById('statusServico');
+        if (elStatus) elStatus.value = 'normal';
+        const elAnexo = document.getElementById('anexoObs');
+        if (elAnexo) elAnexo.value = '';
+        const elNomeAnexo = document.getElementById('nomeAnexo');
+        if (elNomeAnexo) elNomeAnexo.classList.add('hidden');
+        
+        
+
+    } catch (erro) {
+        console.error(erro);
+        alert('Atenção, o lançamento falhou. Motivo: ' + erro.message);
+    } finally {
+        // Isso aqui garante que o botão vai ser destravado mesmo se der um erro grave
+        window._salvandoLancamento = false;
     }
-
-    bancoDados[dataStr][window.motoristaSelecionado] = {
-        anexoNome:         dadosAnexo?.nome  || lancamentoExistente?.anexoNome  || null,
-        anexoUrl:          dadosAnexo?.url   || lancamentoExistente?.anexoUrl   || null,
-        anexoPath:         dadosAnexo?.path  || lancamentoExistente?.anexoPath  || null,
-        anexoTipo:         dadosAnexo?.tipo  || lancamentoExistente?.anexoTipo  || null,
-        servicos:          servicosFinais,
-        valor:             valorFinal,
-        isFeriado:         isFeriadoFinal,
-        ganhouBonusSemana: bateuMetaSemana,
-        tipoVeiculo:       tipoVeiculoFinal,
-        valorExtra:        valorExtraFinal,
-        pontos:            window.calcularPontosMotorista(window.motoristaSelecionado, servicosFinais, tipoVeiculoFinal),
-        observacao:        observacaoFinal,
-        status:            statusFinal,
-    };
-
-    await window.syncToSupabase(dataStr, window.motoristaSelecionado);
-    await window.carregarDadosDoSupabase();
-
-    // Limpar formulário
-    ['servicos', 'valorExtra', 'observacao'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-    const elFeriado = document.getElementById('feriado');
-    if (elFeriado) elFeriado.checked = false;
-    const elStatus = document.getElementById('statusServico');
-    if (elStatus) elStatus.value = 'normal';
-    const elAnexo = document.getElementById('anexoObs');
-       if (elAnexo) elAnexo.value = '';
-    const elNomeAnexo = document.getElementById('nomeAnexo');
-    if (elNomeAnexo) elNomeAnexo.classList.add('hidden');
-    window._salvandoLancamento = false;
 };
 
 // =============================================================
