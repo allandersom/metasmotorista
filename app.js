@@ -171,20 +171,12 @@ async function carregarDadosDoSupabase() {
         window.motoristasInativos = [];
 
         // 1. Lançamentos
-    // Pega o mês selecionado no filtro global
-const mesAtivo = document.getElementById('dataGlobal')?.value || getAnoMesAtual();
-const [ano, mes] = mesAtivo.split('-').map(Number);
-const primeiroDia = `${mesAtivo}-01`;
-const ultimoDia = new Date(ano, mes, 0); // dia 0 do mês seguinte = último dia do mês
-const ultimoDiaStr = `${mesAtivo}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
-const { data: lancs, error: erroLancs } = await supabase
-    .from('lancamentos')
-    .select('*')
-    .is('cancelado_em', null)
-    .gte('data', primeiroDia)
-    .lte('data', ultimoDiaStr)
-    .order('data', { ascending: false });
+        const { data: lancs, error: erroLancs } = await supabase
+            .from('lancamentos')
+            .select('*')
+            .is('cancelado_em', null)
+            .order('data', { ascending: false })
+            .limit(10000);
 
         if (erroLancs) throw erroLancs;
         const { data: mots, error: erroMots } = await supabase
@@ -1012,7 +1004,12 @@ window.salvarLancamento = async function () {
             if (btn) btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Lançando...';
 
             while (dataAtual <= dataLimite) {
-                const dataStrLote = window.formatarDataParaBusca(dataAtual);
+                // Monta a data na mão no formato exato do banco (YYYY-MM-DD) para não ter erro
+                const ano = dataAtual.getFullYear();
+                const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
+                const dia = String(dataAtual.getDate()).padStart(2, '0');
+                const dataStrLote = `${ano}-${mes}-${dia}`;
+                
                 upsertArray.push({
                     data: dataStrLote,
                     motorista_nome: window.motoristaSelecionado.toUpperCase().trim(),
@@ -1178,7 +1175,6 @@ window.salvarLancamento = async function () {
         if (elAnexo) elAnexo.value = '';
         const elNomeAnexo = document.getElementById('nomeAnexo');
         if (elNomeAnexo) elNomeAnexo.classList.add('hidden');
-        
         
 
     } catch (erro) {
