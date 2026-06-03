@@ -171,20 +171,12 @@ async function carregarDadosDoSupabase() {
         window.motoristasInativos = [];
 
         // 1. Lançamentos
-    // Pega o mês selecionado no filtro global
-const mesAtivo = document.getElementById('dataGlobal')?.value || getAnoMesAtual();
-const [ano, mes] = mesAtivo.split('-').map(Number);
-const primeiroDia = `${mesAtivo}-01`;
-const ultimoDia = new Date(ano, mes, 0); // dia 0 do mês seguinte = último dia do mês
-const ultimoDiaStr = `${mesAtivo}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
-const { data: lancs, error: erroLancs } = await supabase
-    .from('lancamentos')
-    .select('*')
-    .is('cancelado_em', null)
-    .gte('data', primeiroDia)
-    .lte('data', ultimoDiaStr)
-    .order('data', { ascending: false });
+        const { data: lancs, error: erroLancs } = await supabase
+            .from('lancamentos')
+            .select('*')
+            .is('cancelado_em', null)
+            .order('data', { ascending: false })
+            .limit(10000);
 
         if (erroLancs) throw erroLancs;
         const { data: mots, error: erroMots } = await supabase
@@ -1028,9 +1020,7 @@ window.salvarLancamento = async function () {
                     valor_extra: 0,
                     is_feriado: false,
                     ganhou_bonus_semana: false,
-                    observacao: document.getElementById('observacao')?.value.trim() || 'Férias',
-                    cancelado_em: null,           // <-- TIRA DA LIXEIRA
-                    motivo_cancelamento: null     // <-- TIRA DA LIXEIRA
+                    observacao: document.getElementById('observacao')?.value.trim() || 'Férias'
                 });
                 dataAtual.setDate(dataAtual.getDate() + 1);
             }
