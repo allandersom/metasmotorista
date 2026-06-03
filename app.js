@@ -171,10 +171,13 @@ async function carregarDadosDoSupabase() {
         window.motoristasInativos = [];
 
         // 1. Lançamentos
+    // 1. Lançamentos
         const { data: lancs, error: erroLancs } = await supabase
             .from('lancamentos')
             .select('*')
-            .is('cancelado_em', null);
+            .is('cancelado_em', null)
+            .order('data', { ascending: false }) // Traz sempre os mais recentes
+            .limit(10000); // Garante que a trava do Supabase não corte nada
 
         if (erroLancs) throw erroLancs;
         const { data: mots, error: erroMots } = await supabase
