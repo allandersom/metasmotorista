@@ -970,9 +970,6 @@ window.toggleCamposFerias = function() {
 };
 
 
-// =============================================================
-// SALVAR LANÇAMENTO
-// =============================================================
 window.salvarLancamento = async function () {
     if (window._salvandoLancamento) return;
     window._salvandoLancamento = true;
@@ -995,16 +992,20 @@ window.salvarLancamento = async function () {
                 return;
             }
 
-            const upsertArray = [];
-            let dataAtual = new Date(inicio + 'T00:00:00');
-            const dataLimite = new Date(fim + 'T00:00:00');
+            // Separa a data na mão para não ter problema de fuso horário
+            const [anoIni, mesIni, diaIni] = inicio.split('-').map(Number);
+            const [anoFim, mesFim, diaFim] = fim.split('-').map(Number);
+            
+            let dataAtual = new Date(anoIni, mesIni - 1, diaIni);
+            const dataLimite = new Date(anoFim, mesFim - 1, diaFim);
 
+            const upsertArray = [];
             const btn = document.getElementById('btnSalvarL');
             const btnHtmlAntigo = btn?.innerHTML || '';
             if (btn) btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Lançando...';
 
+            // Esse é o loop que salva as férias dia por dia
             while (dataAtual <= dataLimite) {
-                // Monta a data na mão no formato exato do banco (YYYY-MM-DD) para não ter erro
                 const ano = dataAtual.getFullYear();
                 const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
                 const dia = String(dataAtual.getDate()).padStart(2, '0');
@@ -1012,16 +1013,20 @@ window.salvarLancamento = async function () {
                 
                 upsertArray.push({
                     data: dataStrLote,
-                    motorista_nome: window.motoristaSelecionado.toUpperCase().trim(),
+                    motorista_nome: window.motoristaSelecionado,
                     status_servico: 'licenca',
-                    tipo_veiculo: document.getElementById('tipoVeiculo').value,
+                    tipo_veiculo: document.getElementById('tipoVeiculo')?.value || 'poliguindaste',
                     quantidade_servicos: 0,
                     valor_faturamento: 0,
                     valor_extra: 0,
                     is_feriado: false,
                     ganhou_bonus_semana: false,
-                    observacao: document.getElementById('observacao')?.value.trim() || 'Férias'
+                    observacao: document.getElementById('observacao')?.value.trim() || 'Férias',
+                    cancelado_em: null,           // <-- TIRA DA LIXEIRA DE CANCELADOS
+                    motivo_cancelamento: null     // <-- TIRA DA LIXEIRA DE CANCELADOS
                 });
+                
+                // ✅ A LINHA QUE EU TINHA ESQUECIDO E CAUSOU O LOOP INFINITO:
                 dataAtual.setDate(dataAtual.getDate() + 1);
             }
 
@@ -1031,15 +1036,21 @@ window.salvarLancamento = async function () {
                 alert('Erro ao lançar férias: ' + error.message);
             } else {
                 await window.carregarDadosDoSupabase();
-                document.getElementById('statusServico').value = 'normal';
+                const elStatus = document.getElementById('statusServico');
+                if (elStatus) elStatus.value = 'normal';
                 if (typeof window.toggleCamposFerias === 'function') window.toggleCamposFerias();
-                document.getElementById('dataFeriasInicio').value = '';
-                document.getElementById('dataFeriasFim').value = '';
+                
+                const inInicio = document.getElementById('dataFeriasInicio');
+                if (inInicio) inInicio.value = '';
+                const inFim = document.getElementById('dataFeriasFim');
+                if (inFim) inFim.value = '';
+                const inObs = document.getElementById('observacao');
+                if (inObs) inObs.value = '';
+                
                 if (window.motoristaSelecionado) {
                     window.carregarHistoricoMotorista();
                     window.atualizarResumosDoMotorista();
                 }
-                document.getElementById('observacao').value = '';
                 if (window.lucide) window.lucide.createIcons();
             }
 
@@ -1159,6 +1170,7 @@ window.salvarLancamento = async function () {
             status:            statusFinal,
         };
 
+        // AQUI ELE SINCRONIZA COM O BANCO SILENCIOSAMENTE!
         await window.syncToSupabase(dataStr, window.motoristaSelecionado);
         await window.carregarDadosDoSupabase();
 
@@ -1175,13 +1187,11 @@ window.salvarLancamento = async function () {
         if (elAnexo) elAnexo.value = '';
         const elNomeAnexo = document.getElementById('nomeAnexo');
         if (elNomeAnexo) elNomeAnexo.classList.add('hidden');
-        
 
     } catch (erro) {
         console.error(erro);
         alert('Atenção, o lançamento falhou. Motivo: ' + erro.message);
     } finally {
-        // Isso aqui garante que o botão vai ser destravado mesmo se der um erro grave
         window._salvandoLancamento = false;
     }
 };
@@ -3241,6 +3251,7 @@ const moto2 = document.getElementById('cadCamMotoristaFixo2').value;    const ob
         let doc_url  = id ? (window.caminhoesCache.find(c => c.id === id)?.doc_url || null) : null;
         let doc_nome = id ? (window.caminhoesCache.find(c => c.id === id)?.doc_nome || null) : null;
 
+        if (window._removerDocCaminhao) { doc_url = null; doc_nome = null; }
         // Upload do arquivo se houver
         if (arquivo) {
             const ext  = arquivo.name.split('.').pop();
@@ -3278,6 +3289,7 @@ const payload = { placa, modelo, ano: ano ? parseInt(ano) : null, tipo, status, 
 window.editarCaminhao = function(id) {
     const c = window.caminhoesCache.find(x => x.id === id);
     if (!c) return;
+    window._removerDocCaminhao = false; // 👇 ADICIONE ISTO AQUI 👇
     document.getElementById('cadCamId').value            = c.id;
     document.getElementById('cadCamPlaca').value         = c.placa;
     document.getElementById('cadCamModelo').value        = c.modelo || '';
@@ -3295,7 +3307,7 @@ window.editarCaminhao = function(id) {
 
     // Mostra doc atual
     const docDiv = document.getElementById('docAtualCaminhao');
-    docDiv.innerHTML = c.doc_url ? `Doc atual: <a href="${c.doc_url}" target="_blank" style="color:#0ea5e9;">${c.doc_nome || 'Ver'}</a>` : '';
+    docDiv.innerHTML = c.doc_url ? `Doc atual: <a href="${c.doc_url}" target="_blank" style="color:#0ea5e9; margin-right:8px;">${c.doc_nome || 'Ver'}</a> <button type="button" onclick="window._removerDocCaminhao = true; this.parentElement.innerHTML='<span style=\\'color:#dc2626; font-size:12px; font-weight:bold;\\'>⚠️ Será removido ao salvar...</span>';" style="color:#dc2626; font-size:11px; background:#fee2e2; border:1px solid #fca5a5; padding:2px 6px; border-radius:4px; cursor:pointer;">Excluir Anexo</button>` : '';
     if (window.lucide) window.lucide.createIcons();
     // Scroll pro form
     document.getElementById('cadCamPlaca').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -3309,6 +3321,7 @@ window.excluirCaminhao = async function(id) {
 };
 
 window.limparFormCaminhao = function() {
+    window._removerDocCaminhao = false; // 👇 ADICIONE ISTO AQUI 👇
     ['cadCamId','cadCamPlaca','cadCamModelo','cadCamAno','cadCamObs'].forEach(id => {
         document.getElementById(id).value = '';
     });
