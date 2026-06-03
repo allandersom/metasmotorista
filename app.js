@@ -99,6 +99,8 @@ _setInputVal('dataRotaDia',       hojeStr);
 // =============================================================
 window.calcularPontosMotorista = calcularPontos;
 window.getMetaDiaria = getMetaDiaria;
+window.calcularValorDia = calcularValorDia;
+
 
 // =============================================================
 // RESTRIÇÕES DE INTERFACE — definidas antes de carregar dados
@@ -2223,6 +2225,7 @@ window.htmlCardRota = function (rota) {
 };
 
 window.salvarServicoRota = async function () {
+        console.log('salvando...', document.getElementById('rotaMotorista')?.value);
     const dataRota   = document.getElementById('dataRotaDia')?.value || getHojeStr();
     const motorista  = document.getElementById('rotaMotorista')?.value;
     const descricao  = document.getElementById('rotaDescricao')?.value.trim();
@@ -3162,16 +3165,20 @@ window.renderizarTabelaCaminhoes = function(lista = []) {
     const labelTipo   = { poliguindaste: '🏗️ Poliguindaste', cacamba: '🚛 Caçamba' };
     tbody.innerHTML = lista.map(c => `
         <tr style="border-bottom:1px solid #e5e7eb;">
-            <td style="padding:12px;font-weight:600;color:var(--gray-100);">${c.placa}</td>
-            <td style="padding:12px;color:var(--gray-300);">${c.modelo || '—'} ${c.ano ? '(' + c.ano + ')' : ''}</td>
+<td style="padding:12px;">
+  <span style="background:#1e40af;color:#fff;padding:4px 10px;border-radius:6px;font-weight:700;font-size:13px;letter-spacing:1px;font-family:monospace;">${c.placa}</span>
+</td>            <td style="padding:12px;color:var(--gray-300);">${c.modelo || '—'} ${c.ano ? '(' + c.ano + ')' : ''}</td>
             <td style="padding:12px;text-align:center;">
             <td style="padding:12px;color:var(--gray-300);font-size:12px;">${labelTipo[c.tipo] || '—'}</td>
                 <span style="background:${badgeStatus[c.status] || '#64748b'};color:#fff;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">
                     ${labelStatus[c.status] || c.status}
                 </span>
             </td>
-            <td style="padding:12px;color:var(--gray-300);">${c.motorista_fixo || '—'}</td>
-            <td style="padding:12px;text-align:center;">
+<td style="padding:12px;color:var(--gray-300);">
+    ${c.motorista_fixo || ''}
+    ${c.motorista_fixo2 ? '<br><span style="font-size:11px;color:var(--gray-500);">' + c.motorista_fixo2 + '</span>' : ''}
+    ${!c.motorista_fixo && !c.motorista_fixo2 ? '—' : ''}
+</td>            <td style="padding:12px;text-align:center;">
                 ${c.doc_url
                     ? `<a href="${c.doc_url}" target="_blank" title="${c.doc_nome || 'Ver documento'}" style="color:#0ea5e9;font-size:18px;">📄</a>`
                     : '<span style="color:#64748b;font-size:12px;">—</span>'}
@@ -3185,12 +3192,13 @@ window.renderizarTabelaCaminhoes = function(lista = []) {
 };
 
 window.popularSelectMotoristaCaminhao = function() {
-    const sel = document.getElementById('cadCamMotoristaFixo');
-    if (!sel) return;
-    const atual = sel.value;
-    const ativos = (window.motoristasCache || []).filter(m => m.status === 'ativo');
-    sel.innerHTML = '<option value="">— Nenhum —</option>'
-        + ativos.map(m => `<option value="${m.nome}" ${m.nome === atual ? 'selected' : ''}>${m.nome}</option>`).join('');
+    [document.getElementById('cadCamMotoristaFixo'), document.getElementById('cadCamMotoristaFixo2')].forEach(sel => {
+        if (!sel) return;
+        const atual = sel.value;
+        const ativos = (window.motoristasCache || []).filter(m => m.status === 'ativo');
+        sel.innerHTML = '<option value="">— Nenhum —</option>'
+            + ativos.map(m => `<option value="${m.nome}" ${m.nome === atual ? 'selected' : ''}>${m.nome}</option>`).join('');
+    });
 };
 
 window.salvarCaminhao = async function() {
@@ -3201,8 +3209,8 @@ window.salvarCaminhao = async function() {
     const modelo  = document.getElementById('cadCamModelo').value.trim();
     const ano     = document.getElementById('cadCamAno').value || null;
     const status  = document.getElementById('cadCamStatus').value;
-    const moto    = document.getElementById('cadCamMotoristaFixo').value;
-    const obs     = document.getElementById('cadCamObs').value.trim();
+const moto  = document.getElementById('cadCamMotoristaFixo').value;
+const moto2 = document.getElementById('cadCamMotoristaFixo2').value;    const obs     = document.getElementById('cadCamObs').value.trim();
     const arquivo = document.getElementById('cadCamDoc').files[0];
     const btn     = document.getElementById('btnSalvarCaminhao');
     btn.disabled  = true;
@@ -3219,8 +3227,7 @@ window.salvarCaminhao = async function() {
             const { error: upErr } = await window.supabaseClient.storage
                 .from('caminhoes-docs')
                 .upload(path, arquivo, { upsert: true });
-            if (upErr) throw upErr;
-            const { data: urlData } = window.supabaseClient.storage
+if (upErr) throw new Error('Falha no upload do documento: ' + upErr.message + '. Verifique se o bucket "caminhoes-docs" existe no Supabase com acesso público.');            const { data: urlData } = window.supabaseClient.storage
                 .from('caminhoes-docs')
                 .getPublicUrl(path);
             doc_url  = urlData.publicUrl;
@@ -3228,8 +3235,7 @@ window.salvarCaminhao = async function() {
         }
 
 const tipo    = document.getElementById('cadCamTipo').value;
-const payload = { placa, modelo, ano: ano ? parseInt(ano) : null, tipo, status, motorista_fixo: moto || null, doc_url, doc_nome, obs };
-        let erro;
+const payload = { placa, modelo, ano: ano ? parseInt(ano) : null, tipo, status, motorista_fixo: moto || null, motorista_fixo2: moto2 || null, doc_url, doc_nome, obs };        let erro;
         if (id) {
             ({ error: erro } = await window.supabaseClient.from('caminhoes').update(payload).eq('id', id));
         } else {
@@ -3264,6 +3270,8 @@ window.editarCaminhao = function(id) {
     // Motorista fixo
     window.popularSelectMotoristaCaminhao();
     document.getElementById('cadCamMotoristaFixo').value = c.motorista_fixo || '';
+    document.getElementById('cadCamMotoristaFixo2').value = c.motorista_fixo2 || '';
+
     // Mostra doc atual
     const docDiv = document.getElementById('docAtualCaminhao');
     docDiv.innerHTML = c.doc_url ? `Doc atual: <a href="${c.doc_url}" target="_blank" style="color:#0ea5e9;">${c.doc_nome || 'Ver'}</a>` : '';
@@ -3285,6 +3293,7 @@ window.limparFormCaminhao = function() {
     });
     document.getElementById('cadCamStatus').value = 'ativo';
     document.getElementById('cadCamMotoristaFixo').value = '';
+    document.getElementById('cadCamMotoristaFixo2').value = '';
     document.getElementById('cadCamDoc').value = '';
     document.getElementById('docAtualCaminhao').innerHTML = '';
     document.getElementById('labelFormCaminhao').textContent = 'Novo Caminhão';
