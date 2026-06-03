@@ -1012,7 +1012,12 @@ window.salvarLancamento = async function () {
             if (btn) btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Lançando...';
 
             while (dataAtual <= dataLimite) {
-                const dataStrLote = window.formatarDataParaBusca(dataAtual);
+                // Monta a data na mão no formato exato do banco (YYYY-MM-DD) para não ter erro
+                const ano = dataAtual.getFullYear();
+                const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
+                const dia = String(dataAtual.getDate()).padStart(2, '0');
+                const dataStrLote = `${ano}-${mes}-${dia}`;
+                
                 upsertArray.push({
                     data: dataStrLote,
                     motorista_nome: window.motoristaSelecionado.toUpperCase().trim(),
@@ -1023,7 +1028,9 @@ window.salvarLancamento = async function () {
                     valor_extra: 0,
                     is_feriado: false,
                     ganhou_bonus_semana: false,
-                    observacao: document.getElementById('observacao')?.value.trim() || 'Férias'
+                    observacao: document.getElementById('observacao')?.value.trim() || 'Férias',
+                    cancelado_em: null,           // <-- TIRA DA LIXEIRA
+                    motivo_cancelamento: null     // <-- TIRA DA LIXEIRA
                 });
                 dataAtual.setDate(dataAtual.getDate() + 1);
             }
@@ -1178,7 +1185,6 @@ window.salvarLancamento = async function () {
         if (elAnexo) elAnexo.value = '';
         const elNomeAnexo = document.getElementById('nomeAnexo');
         if (elNomeAnexo) elNomeAnexo.classList.add('hidden');
-        
         
 
     } catch (erro) {
