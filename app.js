@@ -1345,7 +1345,12 @@ window.carregarHistoricoMotorista = function () {
         const dataEscaped = item.data.replace(/'/g, "\\'");
 
         tr.innerHTML = `
-            <td class="text-slate-800 font-bold">${formatarDataParaExibicao(item.data)}</td>
+            <td class="text-slate-800 font-bold">
+  ${formatarDataParaExibicao(item.data)}<br>
+  <span style="font-size:10px; font-weight:400; color:#94a3b8;">
+    ${new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long' })}
+  </span>
+</td>
             <td>${stringColuna2}</td>
             <td class="text-center font-black">${qtdText}</td>
             <td class="text-center text-blue-600 font-bold">${extraTxt}</td>
@@ -1907,7 +1912,7 @@ window.gerarRankingMensal = function () {
     });
 
     const elQtd = document.getElementById('totalQtdMensalLeaderboard');
-    if (elQtd) elQtd.innerText = formatarQuantidadeMista(somaCaixas, somaViagens, false);
+    if (elQtd) elQtd.innerText = `${somaCaixas} cx | ${somaViagens} vg`;
 
     const elFat = document.getElementById('totalFatMensalLeaderboard');
     if (elFat) elFat.innerText = formatarMoeda(totalFatMesFrota);
