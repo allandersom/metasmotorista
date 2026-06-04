@@ -52,7 +52,96 @@ window.formatarTelefone = function(input) {
 // CONEXÃO COM SUPABASE
 // =============================================================
 const supabase = window.supabaseClient;
+function mapearLancamentosParaBanco(lancs) {
+    const banco = {};
 
+    (lancs || []).forEach(l => {
+        const nomeMotorista = (l.motorista_nome || '').toUpperCase().trim();
+        if (!nomeMotorista || !l.data) return;
+
+        if (!banco[l.data]) banco[l.data] = {};
+
+        banco[l.data][nomeMotorista] = {
+            anexoNome: l.anexo_nome,
+            anexoUrl: l.anexo_url,
+            anexoPath: l.anexo_path,
+            anexoTipo: l.anexo_tipo,
+            servicos: l.quantidade_servicos,
+            valor: parseFloat(l.valor_faturamento) || 0,
+            isFeriado: l.is_feriado,
+            ganhouBonusSemana: l.ganhou_bonus_semana,
+            tipoVeiculo: l.tipo_veiculo,
+            valorExtra: parseFloat(l.valor_extra) || 0,
+            pontos: l.quantidade_servicos,
+            observacao: l.observacao,
+            status: l.status_servico,
+        };
+    });
+
+    return banco;
+}
+
+async function buscarLancamentosPorPeriodo(inicio, fim) {
+    const { data, error } = await supabase
+        .from('lancamentos')
+        .select('*')
+        .is('cancelado_em', null)
+        .gte('data', inicio)
+        .lte('data', fim)
+        .order('data', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+}
+
+async function carregarLancamentosDoMes(anoMes) {
+    const inicio = primeiroDiaDoMes(anoMes);
+    const fim = ultimoDiaDoMes(anoMes);
+    const lancs = await buscarLancamentosPorPeriodo(inicio, fim);
+    window.bancoDadosCloud = mapearLancamentosParaBanco(lancs);
+}
+window.todosMotoristasCloud = [];
+
+function motoristaPertenceAoMes(motorista, anoMes) {
+    const inicioMes = primeiroDiaDoMes(anoMes);
+    const fimMes = ultimoDiaDoMes(anoMes);
+
+    const admissao = motorista.data_admissao || null;
+    const demissao = motorista.data_demissao || null;
+
+    if (admissao && admissao > fimMes) return false;
+    if (demissao && demissao < inicioMes) return false;
+
+    return true;
+}
+
+function reconstruirMotoristasDoMes(anoMes) {
+    window.motoristas = [];
+    window.motRayanna = [];
+    window.motJulia = [];
+    window.motOutros = [];
+    window.motoristasInativos = [];
+
+    (window.todosMotoristasCloud || []).forEach(m => {
+        const nomeNorm = (m.nome || '').toUpperCase().trim();
+        if (!nomeNorm) return;
+
+        if (!motoristaPertenceAoMes(m, anoMes)) return;
+
+        if (m.status === 'inativo' && !m.data_demissao) {
+            window.motoristasInativos.push(nomeNorm);
+            return;
+        }
+
+        window.motoristas.push(nomeNorm);
+
+        if (m.turno === 'dia') window.motRayanna.push(nomeNorm);
+        else if (m.turno === 'noite') window.motJulia.push(nomeNorm);
+        else window.motOutros.push(nomeNorm);
+    });
+
+    window.motoristas.sort();
+}
 // =============================================================
 // ESTADO GLOBAL
 // =============================================================
@@ -171,61 +260,25 @@ async function carregarDadosDoSupabase() {
         window.motoristasInativos = [];
 
         // 1. Lançamentos
-        const { data: lancs, error: erroLancs } = await supabase
-            .from('lancamentos')
-            .select('*')
-            .is('cancelado_em', null)
-            .order('data', { ascending: false })
-            .limit(10000);
+        // 1. Lançamentos do mês selecionado
+const mesAtualTela =
+    document.getElementById('dataGlobal')?.value?.substring(0, 7) ||
+    document.getElementById('mesFiltro')?.value?.substring(0, 7) ||
+    getAnoMesAtual();
 
-        if (erroLancs) throw erroLancs;
-        const { data: mots, error: erroMots } = await supabase
-        .from('motoristas')
-        .select('*');
+await carregarLancamentosDoMes(mesAtualTela);
 
-        if (erroMots) throw erroMots;
-
-        window.bancoDadosCloud = {};
-
-        if (lancs) {
-            lancs.forEach(l => {
-                if (!window.bancoDadosCloud[l.data]) {
-                    window.bancoDadosCloud[l.data] = {};
-                }
-                window.bancoDadosCloud[l.data][l.motorista_nome.toUpperCase().trim()] = {
-                    anexoNome: l.anexo_nome,
-                    anexoUrl: l.anexo_url,
-                    anexoPath: l.anexo_path,
-                    anexoTipo: l.anexo_tipo,
-                    servicos: l.quantidade_servicos,
-                    valor: parseFloat(l.valor_faturamento) || 0,
-                    isFeriado: l.is_feriado,
-                    ganhouBonusSemana: l.ganhou_bonus_semana,
-                    tipoVeiculo: l.tipo_veiculo,
-                    valorExtra: parseFloat(l.valor_extra) || 0,
-                    pontos: l.quantidade_servicos,
-                    observacao: l.observacao,
-                    status: l.status_servico,
-                };
-            });
-        }
+        
 
         // 2. Motoristas
-        window.motoristasInativos = []; // lista dos inativos
-        if (mots) {
-          mots.forEach(m => {
-        const nomeNorm = m.nome.toUpperCase().trim();
-if (m.status === 'inativo') {
-    window.motoristasInativos.push(nomeNorm);
-    return;
-}
-window.motoristas.push(nomeNorm);
-if (m.turno === 'dia')        window.motRayanna.push(nomeNorm);
-else if (m.turno === 'noite') window.motJulia.push(nomeNorm);
-else                          window.motOutros.push(nomeNorm);
-    });
-}
-        window.motoristas.sort();
+
+        const { data: mots, error: erroMots } = await supabase
+    .from('motoristas')
+    .select('*');
+
+if (erroMots) throw erroMots;
+        window.todosMotoristasCloud = mots || [];
+reconstruirMotoristasDoMes(mesAtualTela);
 
         // 3. Dias Úteis
         const { data: configs } = await supabase.from('config_meses').select('*');
@@ -251,20 +304,20 @@ else                          window.motOutros.push(nomeNorm);
         }
 
         // Atualiza a tela
-        window.reconstruirListasMotoristas();
+       // Atualiza a tela
+window.carregarDiasUteis(mesAtualTela);
+window.renderizarSidebar();
+window.atualizarResumosGlobais();
 
-        if (window.motoristaSelecionado) {
-            window.carregarHistoricoMotorista();
-            window.atualizarResumosDoMotorista();
-            window.atualizarGraficosProjecao();
-            window.atualizarSlaInput();
-        }
+if (window.motoristaSelecionado) {
+    window.carregarHistoricoMotorista();
+    window.atualizarResumosDoMotorista();
+    window.atualizarGraficosProjecao();
+    window.atualizarSlaInput();
+}
 
-        window.sincronizarMesFiltro();
-        window.atualizarResumosGlobais();
-        window.gerarRankingPeriodo();
-        window.gerarRankingMensal();
-        window.gerarPainelFeriados();
+window.gerarRankingMensal();
+window.gerarPainelFeriados();
 
        // ✅ REGRAS DE PERMISSÃO — chamada uma única vez aqui
         window.aplicarRestricoesInterface();
@@ -774,7 +827,7 @@ window.salvarSlaMotorista = async function () {
     }
 };
 
-window.sincronizarMesData = function () {
+window.sincronizarMesData = async function () {
     const dtG = document.getElementById('dataGlobal');
     const msF = document.getElementById('mesFiltro');
     if (!dtG || !msF) return;
@@ -794,8 +847,13 @@ window.sincronizarMesData = function () {
         }
     }
 
-    window.carregarDiasUteis(dtG.value);
-    window.renderizarSidebar();
+   const mesSelecionado = dtG.value.substring(0, 7);
+
+await carregarLancamentosDoMes(mesSelecionado);
+reconstruirMotoristasDoMes(mesSelecionado);
+
+window.carregarDiasUteis(mesSelecionado);
+window.renderizarSidebar();
     window.atualizarResumosGlobais();
     if (window.motoristaSelecionado) {
         window.atualizarResumosDoMotorista();
@@ -804,11 +862,19 @@ window.sincronizarMesData = function () {
     }
 };
 
-window.sincronizarMesFiltro = function () {
-    const msF = document.getElementById('mesFiltro');
+window.sincronizarMesFiltro = async function () {
+         const msF = document.getElementById('mesFiltro');
     if (!msF) return;
-    window.carregarDiasUteis(msF.value);
-    window.renderizarSidebar();
+
+    const mesSelecionado = msF.value.substring(0, 7);
+
+await carregarLancamentosDoMes(mesSelecionado);
+reconstruirMotoristasDoMes(mesSelecionado);
+
+window.carregarDiasUteis(mesSelecionado);
+window.renderizarSidebar();
+    window.gerarRankingMensal();
+    window.atualizarGraficosProjecao();
 };
 
 window.calcularPrevisao = function (totalSoma, anoMesStr, diasUteisAlvo) {
@@ -2626,8 +2692,7 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
         title="${inativo ? 'Reativar' : 'Desativar'}">
         ${inativo ? '✅' : '🚫'}
       </button>
-      <button onclick="this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none'" style="background:none; border:none; cursor:pointer; font-size:16px; color:#6366f1;">+</button>
-    </td>
+      <button onclick="window.toggleDetalhesMotorista(this, '${m.nome}', 'anexos-${m.nome.replace(/[^A-Z0-9]/gi, '_')}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:#6366f1;">+</button>    </td>
   </tr>
   <tr style="display:none; background:#f8fafc;">
     <td colspan="5" style="padding:12px 20px;">
@@ -2639,6 +2704,12 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
         <div><b>Admissão:</b> ${m.data_admissao ? new Date(m.data_admissao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
         <div><b>Demissão:</b> ${m.data_demissao ? new Date(m.data_demissao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
         <div><b>Observação:</b> ${m.observacao || '—'}</div>
+        <div style="grid-column: span 3;">
+  <b>Anexos:</b>
+  <div id="anexos-${m.nome.replace(/[^A-Z0-9]/gi, '_')}" style="margin-top:6px;font-size:12px;color:#475569;">
+    Carregando anexos...
+  </div>
+</div>
       </div>
     </td>
   </tr>
@@ -2646,6 +2717,12 @@ window.renderizarTabelaMotoristasModal = function(motoristas = []) {
 }).join('');
   
   document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s)`;
+  motoristas.forEach(m => {
+  const anexosId = `anexos-${m.nome.replace(/[^A-Z0-9]/gi, '_')}`;
+  if (typeof window.carregarAnexosMotorista === 'function') {
+    window.carregarAnexosMotorista(m.nome, anexosId);
+  }
+});
 };
 
 // Salvar novo motorista
@@ -2741,7 +2818,129 @@ window.atualizarCardsCadastro = function() {
   if (elInativosPerc) elInativosPerc.innerText = `${percInativos}% da frota`;
 };
 
+async function carregarAnexosMotorista(nome, containerId = 'listaAnexosMotorista') {
+  const lista = document.getElementById(containerId);
+  if (!lista) return;
 
+  lista.innerHTML = 'Carregando anexos...';
+
+  const { data, error } = await window.supabaseClient
+    .from('motorista_anexos')
+    .select('*')
+    .eq('motorista_nome', nome)
+    .order('criado_em', { ascending: false });
+
+  if (error) {
+    lista.innerHTML = 'Erro ao carregar anexos: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    lista.innerHTML = 'Nenhum anexo cadastrado.';
+    return;
+  }
+
+  lista.innerHTML = data.map(a => `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #e5e7eb;">
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.arquivo_nome}</span>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button type="button" onclick="window.abrirAnexoMotorista('${a.arquivo_path}')" style="color:#2563eb;font-weight:600;background:none;border:none;cursor:pointer;">Abrir</button>
+        <button type="button" onclick="window.apagarAnexoMotorista('${a.id}', '${a.arquivo_path}', '${nome}', '${containerId}')" style="color:#dc2626;font-weight:600;background:none;border:none;cursor:pointer;">Apagar</button>
+      </div>
+    </div>
+  `).join('');
+}
+window.carregarAnexosMotorista = carregarAnexosMotorista;
+
+window.abrirAnexoMotorista = async function(path) {
+  const { data, error } = await window.supabaseClient.storage
+    .from('motoristas-anexos')
+    .createSignedUrl(path, 300);
+
+  if (error) {
+    alert('Erro ao abrir anexo: ' + error.message);
+    return;
+  }
+
+  window.open(data.signedUrl, '_blank');
+};
+
+window.toggleDetalhesMotorista = function(botao, nomeMotorista, anexosId) {
+  const detalhe = botao.closest('tr').nextElementSibling;
+  const vaiAbrir = detalhe.style.display === 'none' || detalhe.style.display === '';
+
+  detalhe.style.display = vaiAbrir ? 'table-row' : 'none';
+
+  if (vaiAbrir && typeof window.carregarAnexosMotorista === 'function') {
+    window.carregarAnexosMotorista(nomeMotorista, anexosId);
+  }
+};
+
+window.apagarAnexoMotorista = async function(id, path, nomeMotorista, containerId = 'listaAnexosMotorista') {
+  if (!confirm('Apagar este anexo?')) return;
+
+  const { error: storageError } = await window.supabaseClient.storage
+    .from('motoristas-anexos')
+    .remove([path]);
+
+  if (storageError) {
+    alert('Erro ao apagar arquivo: ' + storageError.message);
+    return;
+  }
+
+  const { error: dbError } = await window.supabaseClient
+    .from('motorista_anexos')
+    .delete()
+    .eq('id', id);
+
+  if (dbError) {
+    alert('Arquivo apagado, mas erro ao apagar registro: ' + dbError.message);
+    return;
+  }
+
+  await carregarAnexosMotorista(nomeMotorista, containerId);
+};
+
+async function salvarAnexoMotorista(nomeMotorista) {
+  const input = document.getElementById('editAnexoMotorista');
+  const arquivo = input?.files?.[0];
+  if (!arquivo) return;
+
+  const nomeSeguro = arquivo.name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w.\-]+/g, '_');
+
+  const motoristaSeguro = nomeMotorista
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\-]+/g, '_');
+
+  const path = `${motoristaSeguro}/${Date.now()}_${nomeSeguro}`;
+
+  const { error: uploadError } = await window.supabaseClient.storage
+    .from('motoristas-anexos')
+    .upload(path, arquivo, { upsert: false });
+
+  if (uploadError) throw uploadError;
+
+  const { data: userData } = await window.supabaseClient.auth.getUser();
+
+  const { error: insertError } = await window.supabaseClient
+    .from('motorista_anexos')
+    .insert({
+      motorista_nome: nomeMotorista,
+      arquivo_nome: arquivo.name,
+      arquivo_path: path,
+      arquivo_tipo: arquivo.type || null,
+      arquivo_tamanho: arquivo.size || null,
+      criado_por: userData?.user?.id || null,
+    });
+
+  if (insertError) throw insertError;
+
+  input.value = '';
+}
 // Abrir modal de edição
 window.abrirModalEditarMotorista = async function(nome) {
   const motorista = window.motoristasCache.find(m => m.nome === nome);
@@ -2769,6 +2968,7 @@ document.getElementById('editEpiBota').value   = (epiParts[1] || '').replace('Bo
 document.getElementById('editEpiCalca').value  = (epiParts[2] || '').replace('Calça:', '');
   document.getElementById('editObs').value = motorista.observacao || '';
 
+  await carregarAnexosMotorista(motorista.nome);
   document.getElementById('modalEditarMotorista').classList.remove('hidden');
 };
 
@@ -2816,9 +3016,18 @@ const epi = [
       })
       .eq('nome', nomeOriginal);
 
-    if (error) throw error;
+   if (error) throw error;
 
-    alert('✅ Motorista atualizado!');
+await salvarAnexoMotorista(novoNome);
+
+if (novoNome !== nomeOriginal) {
+  await window.supabaseClient
+    .from('motorista_anexos')
+    .update({ motorista_nome: novoNome })
+    .eq('motorista_nome', nomeOriginal);
+}
+
+alert('✅ Motorista atualizado!');
     window.fecharModalEditar();
     window.carregarMotoristas();
   } catch (err) {
