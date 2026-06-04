@@ -647,6 +647,30 @@ window.ciclartarTurno = function () {
     window.renderizarSidebar();
 };
 
+window._turnoLeaderboardIndex = 0;
+window.ciclarTurnoLeaderboard = function () {
+    window._turnoLeaderboardIndex = (window._turnoLeaderboardIndex + 1) % window._turnosCiclo.length;
+    const t = window._turnosCiclo[window._turnoLeaderboardIndex];
+
+    const input  = document.getElementById('filtroTurnoLeaderboardVal');
+    const toggle = document.getElementById('filtroTurnoLeaderboard');
+    const icone  = document.getElementById('filtroTurnoLeaderboardIcone');
+    const label  = document.getElementById('filtroTurnoLeaderboardLabel');
+
+    if (input)  input.value = t.value;
+    if (label)  label.textContent = t.label;
+    if (toggle) {
+        toggle.style.background  = t.bg;
+        toggle.style.borderColor = t.border;
+        toggle.style.color       = t.color;
+    }
+    if (icone) {
+        icone.style.transform = 'rotate(360deg) scale(1.3)';
+        setTimeout(() => { icone.textContent = t.icone; icone.style.transform = 'rotate(0deg) scale(1)'; }, 200);
+    }
+    window.gerarRankingMensal();
+};
+
 window.renderizarSidebar = function () {
     const ul = document.getElementById('listaMotoristas');
     const selectFiltro = document.getElementById('filtroTurno');
@@ -1889,12 +1913,23 @@ window.gerarRankingMensal = function () {
     renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal');
     renderizarMeta(feitasJulia,   ptsJulia,   'metaJuliaGlobal',   'faltaJuliaGlobal');
 
+    // MÁGICA DO FILTRO AQUI
+    const turnoLeader = document.getElementById('filtroTurnoLeaderboardVal')?.value || 'todos';
+
     const rankFinal = Object.keys(acumuladoMes).map(mot => {
         const info              = acumuladoMes[mot];
         const metaMensalPontos = getMetaCalculadaMotorista(mot);
         const percentualMeta  = metaMensalPontos > 0 ? (info.pontos / metaMensalPontos) * 100 : 0;
        return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos, inativo: window.motoristasInativos.includes(mot) };
-    }).filter(item => item.pontos > 0 || item.valor > 0).sort((a, b) => b.percentual - a.percentual);
+    })
+    .filter(item => item.pontos > 0 || item.valor > 0) // Oculta quem não trabalhou
+    .filter(item => { // Filtra a lista pelo botão clicado
+        if (turnoLeader === 'todos') return true;
+        if (turnoLeader === 'dia')      return window.motRayanna.includes(item.nome);
+        if (turnoLeader === 'noite')    return window.motJulia.includes(item.nome);
+        if (turnoLeader === 'especial') return window.motOutros.includes(item.nome);
+        return true;
+    }).sort((a, b) => b.percentual - a.percentual);
 
     // ========================================================
     // SOMA DO PAINEL VERDE (Com bloqueio < 80%)
@@ -1902,6 +1937,7 @@ window.gerarRankingMensal = function () {
     let totalLiberado = 0;
     let somaCaixas = 0;
     let somaViagens = 0;
+    let fatBrutoFiltrado = 0;
 
     rankFinal.forEach(mot => {
         if (mot.percentual >= 80) {
@@ -1909,13 +1945,14 @@ window.gerarRankingMensal = function () {
         }
         somaCaixas += mot.caixas || 0;
         somaViagens += mot.viagens || 0;
+        fatBrutoFiltrado += mot.valor; 
     });
 
     const elQtd = document.getElementById('totalQtdMensalLeaderboard');
-    if (elQtd) elQtd.innerText = `${somaCaixas} cx | ${somaViagens} vg`;
+    if (elQtd) elQtd.innerText = formatarQuantidadeMista(somaCaixas, somaViagens, false);
 
     const elFat = document.getElementById('totalFatMensalLeaderboard');
-    if (elFat) elFat.innerText = formatarMoeda(totalFatMesFrota);
+    if (elFat) elFat.innerText = formatarMoeda(fatBrutoFiltrado);
 
     const elPagar = document.getElementById('totalPagarMensalLeaderboard');
     if (elPagar) elPagar.innerText = formatarMoeda(totalLiberado);

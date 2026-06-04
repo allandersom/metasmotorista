@@ -1090,20 +1090,37 @@ tbody tr:hover { background: var(--gray-25); }
 
 /* Month input styling */
 input[type="month"] {
-  font-family: var(--font-ui); font-size: 13px;
-  font-weight: 600; color: var(--gray-800);
-  background: transparent; border: none; outline: none; cursor: pointer;
+  font-family: var(--font-ui); font-size: 12px;
+  font-weight: 700; color: var(--brand-600);
+  background: var(--brand-50); border: 1.5px solid var(--brand-200);
+  border-radius: 10px; padding: 6px 12px;
+  outline: none; cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.10);
 }
-
+input[type="month"]:hover  { border-color: var(--brand-400); background: white; box-shadow: 0 3px 12px rgba(99,102,241,0.18); }
+input[type="month"]:focus  { border-color: var(--brand-500); background: white; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
 /* Date range inputs (inline) */
 .inline-date {
-  background: var(--gray-50); border: var(--border);
-  border-radius: var(--r-md); padding: 6px 10px;
-  font-size: 12px; font-weight: 600; font-family: var(--font-ui);
-  color: var(--gray-700); outline: none; cursor: pointer;
-  transition: border-color var(--t-fast);
+  background: var(--brand-50);
+  border: 1.5px solid var(--brand-200);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px; font-weight: 700; font-family: var(--font-ui);
+  color: var(--brand-600); outline: none; cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.10);
 }
-.inline-date:focus { border-color: var(--brand-400); }
+.inline-date:hover {
+  border-color: var(--brand-400);
+  background: white;
+  box-shadow: 0 3px 12px rgba(99,102,241,0.18);
+}
+.inline-date:focus {
+  border-color: var(--brand-500);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
 
 /* Attachment label */
 .attach-label {
