@@ -92,7 +92,7 @@
     <input 
         type="month" 
         id="dataGlobal"
-        onchange="window.sincronizarMesData(); window.renderizarSidebar(); window.atualizarResumosGlobais(); window.atualizarResumosDoMotorista();"
+        onchange="window.sincronizarMesData();"
         style="border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:13px; font-weight:600; color:#1e293b; background:#fff; cursor:pointer;"
     >
 </div>
@@ -383,7 +383,7 @@
                         <div class="rank-card-header">
                             <h3>Leaderboard Mensal (Elo)</h3>
                             <input type="month" id="mesFiltro" class="inline-date"
-                                onchange="window.sincronizarMesFiltro(); window.gerarRankingMensal(); window.atualizarGraficosProjecao();">
+                                onchange="window.sincronizarMesFiltro();">
                         </div>
 
                         <div class="fat-total-badge mb-5" style="display: flex; flex-direction: column; gap: 8px; background: var(--gray-50);">
@@ -793,7 +793,7 @@
   </div>
 </div>
                         </div>
-
+                            
                         <button id="btnCadastrarMotorista" onclick="window.salvarCadastroMotorista()" class="btn-primary"
   style="height:44px; font-size:14px; width:100%; border-radius:10px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
   <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
@@ -1216,11 +1216,18 @@
             </div>
                 </div>
 
-                <!-- Observação (full-width) -->
-                <div class="form-group" style="grid-column: span 2;">
-                    <label class="form-label">Observação</label>
-                    <textarea id="editObs" rows="3" class="input-base"></textarea>
-                </div>
+                   <!-- Observação (full-width) -->
+<div class="form-group" style="grid-column: span 2;">
+    <label class="form-label">Observação</label>
+    <textarea id="editObs" rows="3" class="input-base"></textarea>
+</div>
+
+<!-- Anexos do motorista -->
+<div class="form-group" style="grid-column: span 2;">
+    <label class="form-label">Anexos do Motorista</label>
+    <input id="editAnexoMotorista" type="file" class="input-base">
+    <div id="listaAnexosMotorista" style="font-size:12px;margin-top:8px;color:#475569;"></div>
+</div>
             </div>
         </div>
 
