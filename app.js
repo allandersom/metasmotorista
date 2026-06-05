@@ -647,29 +647,177 @@ window.ciclartarTurno = function () {
 };
 
 window._turnoLeaderboardIndex = 0;
-window.ciclarTurnoLeaderboard = function () {
-    window._turnoLeaderboardIndex = (window._turnoLeaderboardIndex + 1) % window._turnosCiclo.length;
-    console.log('ciclar index:', window._turnoLeaderboardIndex, 'valor:', window._turnosCiclo[window._turnoLeaderboardIndex].value);
+window._turnoLeaderboardAtual = 'todos'; // Memória global blindada
 
-    const t = window._turnosCiclo[window._turnoLeaderboardIndex];
+window.gerarRankingMensal = function () {
+    const elFiltro = document.getElementById('mesFiltro');
+    const mesFiltro = elFiltro?.value || window.anoMesAtual || new Date().toISOString().substring(0, 7);
 
-    const input  = document.getElementById('filtroTurnoLeaderboardVal');
-    const toggle = document.getElementById('filtroTurnoLeaderboard');
-    const icone  = document.getElementById('filtroTurnoLeaderboardIcone');
-    const label  = document.getElementById('filtroTurnoLeaderboardLabel');
+    const diasUteisGlobais = window.carregarDiasUteis(mesFiltro);
+    const bancoDados = window.bancoDadosCloud;
+    let acumuladoMes = {};
+    let totalCaixasFrota = 0, totalViagensFrota = 0, totalFatMesFrota = 0;
 
-    if (input)  input.value = t.value;
-    if (label)  label.textContent = t.label;
-    if (toggle) {
-        toggle.style.background  = t.bg;
-        toggle.style.borderColor = t.border;
-        toggle.style.color       = t.color;
+    window.motoristas.forEach(m => { acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0, pontos: 0 }; });
+    window.motoristasInativos.forEach(m => { acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0, pontos: 0 }; });
+
+    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        if (dataEstaNoMes(dataStr, mesFiltro)) {
+            for (const [mot, dados] of Object.entries(dadosDia)) {
+                if (!acumuladoMes[mot]) continue;
+                const statusMot = (dados.status || 'normal').toLowerCase();
+                if (statusMot === 'normal') {
+                    const srv = dados.servicos || 0;
+                    if (dados.tipoVeiculo === 'cacamba') {
+                        acumuladoMes[mot].viagens += srv;
+                        totalViagensFrota += srv;
+                    } else if (dados.tipoVeiculo === 'poli_duplo') {
+                        acumuladoMes[mot].caixas += srv * 2;
+                        totalCaixasFrota += srv * 2;
+                    } else {
+                        acumuladoMes[mot].caixas += srv;
+                        totalCaixasFrota += srv;
+                    }
+                    acumuladoMes[mot].pontos += window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
+                    acumuladoMes[mot].valor += dados.valor;
+                    totalFatMesFrota += dados.valor;
+                }
+            }
+        }
     }
-    if (icone) {
-        icone.style.transform = 'rotate(360deg) scale(1.3)';
-        setTimeout(() => { icone.textContent = t.icone; icone.style.transform = 'rotate(0deg) scale(1)'; }, 200);
+
+    function getMetaCalculadaMotorista(mot) {
+        const slaMotorista    = window.calcularSlaMotorista(mot, mesFiltro);
+        const metaDiaria      = window.getMetaDiaria(mot);
+        const metaCheiaDoMes  = metaDiaria * diasUteisGlobais;
+        if (diasUteisGlobais === 0) return 0;
+        return metaCheiaDoMes * (slaMotorista / diasUteisGlobais);
     }
-    window.gerarRankingMensal();
+
+    let ptsRayanna = 0, feitasRayanna = 0;
+    window.motRayanna.forEach(mot => {
+        ptsRayanna   += getMetaCalculadaMotorista(mot);
+        feitasRayanna += acumuladoMes[mot]?.pontos ?? 0;
+    });
+
+    let ptsJulia = 0, feitasJulia = 0;
+    window.motJulia.forEach(mot => {
+        ptsJulia   += getMetaCalculadaMotorista(mot);
+        feitasJulia += acumuladoMes[mot]?.pontos ?? 0;
+    });
+
+    const ptsGeral    = ptsRayanna + ptsJulia;
+    const feitasGeral = feitasRayanna + feitasJulia;
+
+    function renderizarMeta(feitas, meta, elValor, elFalta) {
+        const perc            = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0;
+        const faltam          = Math.max(0, meta - feitas);
+        const metaFormatada   = formatarNumeroInteligente(meta);
+        const faltamFormatado = formatarNumeroInteligente(faltam);
+        const elV = document.getElementById(elValor);
+        const elF = document.getElementById(elFalta);
+        if (elV) elV.innerText = `${Math.round(feitas)} / ${metaFormatada} cx`;
+        if (elF) elF.innerText = `${perc}% | Faltam ${faltamFormatado} cx`;
+    }
+
+    renderizarMeta(feitasGeral,   ptsGeral,   'metaGeralGlobal',   'faltaGeralGlobal');
+    renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal');
+    renderizarMeta(feitasJulia,   ptsJulia,   'metaJuliaGlobal',   'faltaJuliaGlobal');
+
+    // Cria o ranking sem nenhum filtro de botão
+    const rankFinal = Object.keys(acumuladoMes).map(mot => {
+        const info = acumuladoMes[mot];
+        const metaMensalPontos = getMetaCalculadaMotorista(mot);
+        const percentualMeta  = metaMensalPontos > 0 ? (info.pontos / metaMensalPontos) * 100 : 0;
+        return { 
+            nome: mot, 
+            caixas: info.caixas, 
+            viagens: info.viagens, 
+            valor: info.valor, 
+            pontos: info.pontos, 
+            percentual: percentualMeta, 
+            metaExata: metaMensalPontos, 
+            inativo: window.motoristasInativos.includes(mot) 
+        };
+    })
+    .filter(item => item.pontos > 0 || item.valor > 0) // Remove apenas quem está zerado
+    .sort((a, b) => b.percentual - a.percentual); // Ordena do maior pro menor
+
+    let totalLiberado = 0;
+    let somaCaixas = 0;
+    let somaViagens = 0;
+    let fatBrutoFiltrado = 0;
+
+    rankFinal.forEach(mot => {
+        if (mot.percentual >= 80) {
+            totalLiberado += mot.valor; 
+        }
+        somaCaixas += mot.caixas || 0;
+        somaViagens += mot.viagens || 0;
+        fatBrutoFiltrado += mot.valor; 
+    });
+
+    const elQtd = document.getElementById('totalQtdMensalLeaderboard');
+    if (elQtd) elQtd.innerText = formatarQuantidadeMista(somaCaixas, somaViagens, false);
+
+    const elFat = document.getElementById('totalFatMensalLeaderboard');
+    if (elFat) elFat.innerText = formatarMoeda(fatBrutoFiltrado);
+
+    const elPagar = document.getElementById('totalPagarMensalLeaderboard');
+    if (elPagar) elPagar.innerText = formatarMoeda(totalLiberado);
+
+    const divLista = document.getElementById('listaLeaderboard');
+    if (!divLista) return;
+    divLista.innerHTML = '';
+
+    if (rankFinal.length === 0) {
+        divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Sem registros válidos.</div>';
+        return;
+    }
+
+    rankFinal.forEach((mot, index) => {
+        const eloInfo       = window.obterRankElo(mot.percentual);
+        const percentualStr = formatarPercentual(mot.percentual);
+
+        let corPercent, bgPercent, borderPercent;
+        if (mot.percentual >= 100)     { corPercent = '#10b981'; bgPercent = '#d1fae5'; borderPercent = '#a7f3d0'; }
+        else if (mot.percentual >= 80) { corPercent = '#d97706'; bgPercent = '#fef3c7'; borderPercent = '#fde68a'; }
+        else                           { corPercent = '#ef4444'; bgPercent = '#fee2e2'; borderPercent = '#fca5a5'; }
+
+        const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
+        const faltam   = mot.metaExata - mot.pontos;
+        let htmlFaltam = '';
+
+        if (faltam > 0) {
+            const calcVisual = window.motOutros.includes(mot.nome) ? faltam / 2 : faltam;
+            const txtFaltam  = window.motOutros.includes(mot.nome)
+                ? `Faltam ${formatarNumeroInteligente(calcVisual)} vg`
+                : `Faltam ${formatarNumeroInteligente(calcVisual)} cx`;
+            htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
+        } else {
+            htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta OK!</span>`;
+        }
+
+        const corFaturamento = mot.percentual >= 80 ? 'color: var(--gray-400);' : 'color: #ef4444; font-weight: 700;';
+        const avisoBloqueio = mot.percentual >= 80 ? '' : ' <span style="font-size:9px; color:#ef4444; margin-left:4px;">(Bloqueado)</span>';
+
+        const linha = document.createElement('div');
+        linha.className = 'elo-row';
+        linha.innerHTML = `
+            <div class="posicao">#${index + 1}</div>
+            <div class="nome-motorista-rank" ${mot.inativo ? 'style="color:#ef4444;"' : ''}>
+                ${mot.nome}
+                <span class="valor-sub" style="${corFaturamento}">Fat: ${formatarMoeda(mot.valor)}${avisoBloqueio}</span>
+            </div>
+            <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
+            <div class="valor-destaque text-blue-500 flex items-center">
+                ${textoQtd}
+                <span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};">${percentualStr}</span>
+                ${htmlFaltam}
+            </div>
+        `;
+        divLista.appendChild(linha);
+    });
 };
 
 window.renderizarSidebar = function () {
@@ -1850,182 +1998,7 @@ window.obterRankElo = function (percentual) {
     return { nome: 'Bronze', classe: 'elo-bronze' };
 };
 
-window.gerarRankingMensal = function () {
- console.log('gerarRankingMensal chamado, mesFiltro:', document.getElementById('mesFiltro')?.value);
 
-    const elFiltro = document.getElementById('mesFiltro');
-    if (!elFiltro) return;
-    const mesFiltro = elFiltro.value || window.anoMesAtual || new Date().toISOString().substring(0, 7);
-
-    const diasUteisGlobais = window.carregarDiasUteis(mesFiltro);
-    const bancoDados = window.bancoDadosCloud;
-    let acumuladoMes = {};
-    let totalCaixasFrota = 0, totalViagensFrota = 0, totalFatMesFrota = 0;
-
-    window.motoristas.forEach(m => { acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0, pontos: 0 }; });
-    window.motoristasInativos.forEach(m => { acumuladoMes[m] = { caixas: 0, viagens: 0, valor: 0, pontos: 0 }; });
-
-    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-        if (dataEstaNoMes(dataStr, mesFiltro)) {
-            for (const [mot, dados] of Object.entries(dadosDia)) {
-                if (!acumuladoMes[mot]) continue;
-                const statusMot = (dados.status || 'normal').toLowerCase();
-                if (statusMot === 'normal') {
-                    const srv = dados.servicos || 0;
-                    if (dados.tipoVeiculo === 'cacamba') {
-                        acumuladoMes[mot].viagens += srv;
-                        totalViagensFrota += srv;
-                    } else if (dados.tipoVeiculo === 'poli_duplo') {
-                        acumuladoMes[mot].caixas += srv * 2;
-                        totalCaixasFrota += srv * 2;
-                    } else {
-                        acumuladoMes[mot].caixas += srv;
-                        totalCaixasFrota += srv;
-                    }
-                    acumuladoMes[mot].pontos += window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
-                    acumuladoMes[mot].valor += dados.valor;
-                    totalFatMesFrota += dados.valor;
-                }
-            }
-        }
-    }
-
-    function getMetaCalculadaMotorista(mot) {
-        const slaMotorista    = window.calcularSlaMotorista(mot, mesFiltro);
-        const metaDiaria      = window.getMetaDiaria(mot);
-        const metaCheiaDoMes  = metaDiaria * diasUteisGlobais;
-        if (diasUteisGlobais === 0) return 0;
-        return metaCheiaDoMes * (slaMotorista / diasUteisGlobais);
-    }
-
-    let ptsRayanna = 0, feitasRayanna = 0;
-    window.motRayanna.forEach(mot => {
-        ptsRayanna   += getMetaCalculadaMotorista(mot);
-        feitasRayanna += acumuladoMes[mot]?.pontos ?? 0;
-    });
-
-    let ptsJulia = 0, feitasJulia = 0;
-    window.motJulia.forEach(mot => {
-        ptsJulia   += getMetaCalculadaMotorista(mot);
-        feitasJulia += acumuladoMes[mot]?.pontos ?? 0;
-    });
-
-    const ptsGeral    = ptsRayanna + ptsJulia;
-    const feitasGeral = feitasRayanna + feitasJulia;
-
-    function renderizarMeta(feitas, meta, elValor, elFalta) {
-        const perc           = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0;
-        const faltam         = Math.max(0, meta - feitas);
-        const metaFormatada  = formatarNumeroInteligente(meta);
-        const faltamFormatado = formatarNumeroInteligente(faltam);
-        const elV = document.getElementById(elValor);
-        const elF = document.getElementById(elFalta);
-        if (elV) elV.innerText = `${Math.round(feitas)} / ${metaFormatada} cx`;
-        if (elF) elF.innerText = `${perc}% | Faltam ${faltamFormatado} cx`;
-    }
-
-    renderizarMeta(feitasGeral,   ptsGeral,   'metaGeralGlobal',   'faltaGeralGlobal');
-    renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal');
-    renderizarMeta(feitasJulia,   ptsJulia,   'metaJuliaGlobal',   'faltaJuliaGlobal');
-
-    // MÁGICA DO FILTRO AQUI
-    const turnoLeader = document.getElementById('filtroTurnoLeaderboardVal')?.value || 'todos';
-
-    const rankFinal = Object.keys(acumuladoMes).map(mot => {
-        const info              = acumuladoMes[mot];
-        const metaMensalPontos = getMetaCalculadaMotorista(mot);
-        const percentualMeta  = metaMensalPontos > 0 ? (info.pontos / metaMensalPontos) * 100 : 0;
-       return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos, inativo: window.motoristasInativos.includes(mot) };
-    })
-    .filter(item => item.pontos > 0 || item.valor > 0) // Oculta quem não trabalhou
-    .filter(item => { // Filtra a lista pelo botão clicado
-        if (turnoLeader === 'todos') return true;
-        if (turnoLeader === 'dia')      return window.motRayanna.includes(item.nome);
-        if (turnoLeader === 'noite')    return window.motJulia.includes(item.nome);
-        if (turnoLeader === 'especial') return window.motOutros.includes(item.nome);
-        return true;
-    }).sort((a, b) => b.percentual - a.percentual);
-
-    // ========================================================
-    // SOMA DO PAINEL VERDE (Com bloqueio < 80%)
-    // ========================================================
-    let totalLiberado = 0;
-    let somaCaixas = 0;
-    let somaViagens = 0;
-    let fatBrutoFiltrado = 0;
-
-    rankFinal.forEach(mot => {
-        if (mot.percentual >= 80) {
-            totalLiberado += mot.valor; 
-        }
-        somaCaixas += mot.caixas || 0;
-        somaViagens += mot.viagens || 0;
-        fatBrutoFiltrado += mot.valor; 
-    });
-
-    const elQtd = document.getElementById('totalQtdMensalLeaderboard');
-    if (elQtd) elQtd.innerText = formatarQuantidadeMista(somaCaixas, somaViagens, false);
-
-    const elFat = document.getElementById('totalFatMensalLeaderboard');
-    if (elFat) elFat.innerText = formatarMoeda(fatBrutoFiltrado);
-
-    const elPagar = document.getElementById('totalPagarMensalLeaderboard');
-    if (elPagar) elPagar.innerText = formatarMoeda(totalLiberado);
-
-    const divLista = document.getElementById('listaLeaderboard');
-    if (!divLista) return;
-    divLista.innerHTML = '';
-
-    if (rankFinal.length === 0) {
-        divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Sem registros válidos.</div>';
-        return;
-    }
-
-    rankFinal.forEach((mot, index) => {
-        const eloInfo       = window.obterRankElo(mot.percentual);
-        const percentualStr = formatarPercentual(mot.percentual);
-
-        let corPercent, bgPercent, borderPercent;
-        if (mot.percentual >= 100)     { corPercent = '#10b981'; bgPercent = '#d1fae5'; borderPercent = '#a7f3d0'; }
-        else if (mot.percentual >= 80) { corPercent = '#d97706'; bgPercent = '#fef3c7'; borderPercent = '#fde68a'; }
-        else                           { corPercent = '#ef4444'; bgPercent = '#fee2e2'; borderPercent = '#fca5a5'; }
-
-        const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
-        const faltam   = mot.metaExata - mot.pontos;
-        let htmlFaltam = '';
-
-        if (faltam > 0) {
-            const calcVisual = window.motOutros.includes(mot.nome) ? faltam / 2 : faltam;
-            const txtFaltam  = window.motOutros.includes(mot.nome)
-                ? `Faltam ${formatarNumeroInteligente(calcVisual)} vg`
-                : `Faltam ${formatarNumeroInteligente(calcVisual)} cx`;
-            htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
-        } else {
-            htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta OK!</span>`;
-        }
-
-        // --- BLOQUEIO VISUAL (Vermelho e aviso) ---
-        const corFaturamento = mot.percentual >= 80 ? 'color: var(--gray-400);' : 'color: #ef4444; font-weight: 700;';
-        const avisoBloqueio = mot.percentual >= 80 ? '' : ' <span style="font-size:9px; color:#ef4444; margin-left:4px;">(Bloqueado)</span>';
-
-        const linha = document.createElement('div');
-        linha.className = 'elo-row';
-        linha.innerHTML = `
-            <div class="posicao">#${index + 1}</div>
-            <div class="nome-motorista-rank" ${mot.inativo ? 'style="color:#ef4444;"' : ''}>
-                ${mot.nome}
-                <span class="valor-sub" style="${corFaturamento}">Fat: ${formatarMoeda(mot.valor)}${avisoBloqueio}</span>
-            </div>
-            <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
-            <div class="valor-destaque text-blue-500 flex items-center">
-                ${textoQtd}
-                <span class="badge-percent text-[11px]" style="background:${bgPercent}; color:${corPercent}; border-color:${borderPercent};">${percentualStr}</span>
-                ${htmlFaltam}
-            </div>
-        `;
-        divLista.appendChild(linha);
-    });
-};
 
 // =============================================================
 // PAINEL DOMINGOS E FERIADOS

@@ -381,22 +381,11 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="rank-card">
                             <div class="rank-card-header">
-        <h3>Leaderboard Mensal (Elo)</h3>
-        <div style="display:flex; align-items:center; gap:8px;">
-            <div id="filtroTurnoLeaderboard" onclick="window.ciclarTurnoLeaderboard()" style="
-                cursor:pointer; display:flex; align-items:center; gap:6px;
-                padding:5px 12px; border-radius:999px; font-size:12px;
-                font-weight:600; user-select:none; transition:all 0.3s ease;
-                background:#f1f5f9; border:1.5px solid #e2e8f0; color:#475569;"
-                title="Clique para mudar o turno">
-                <span id="filtroTurnoLeaderboardIcone" style="font-size:15px; transition:transform 0.4s ease;">👥</span>
-                <span id="filtroTurnoLeaderboardLabel">Todos</span>
-            </div>
-            <input type="hidden" id="filtroTurnoLeaderboardVal" value="todos">
-            <input type="month" id="mesFiltro" class="inline-date"
-                onchange="window.sincronizarMesFiltro();">
-        </div>
-    </div>  
+                                <h3>Leaderboard Mensal (Elo)</h3>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="month" id="mesFiltro" class="inline-date" onchange="window.sincronizarMesFiltro();">
+                                </div>
+                            </div>
 
                             <div class="fat-total-badge mb-5" style="display: flex; flex-direction: column; gap: 8px; background: var(--gray-50);">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
