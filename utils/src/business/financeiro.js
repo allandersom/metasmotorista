@@ -61,7 +61,7 @@ export function getConfigVeiculo(tipoVeiculo) {
  * Retorna a meta diária de pontos de um motorista.
  */
 export function getMetaDiaria(nome) {
-    return nome === 'ROBERTO CARLOS' ? 4 : 8;
+    return nome === 'ROBERTO CARLOS PESSOA' ? 4 : 8;
 }
 
 /**
@@ -110,10 +110,10 @@ function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, ba
         const dStr = formatarData(d);
         const lancDia = bancoDados[dStr]?.[motoristaNome];
 
-        if (lancDia && (!lancDia.status || lancDia.status === 'normal')) {
-            if (lancDia.isFeriado) {
-                qtdFeriadosSemana++;
-            } else {
+        if (lancDia) {
+    if (lancDia.isFeriado) {
+        qtdFeriadosSemana++;
+    } else if (!lancDia.status || lancDia.status === 'normal') {
                 const srv = isNaN(lancDia.servicos) ? 0 : lancDia.servicos;
                 pontosFeitosSemana += calcularPontos(motoristaNome, srv, lancDia.tipoVeiculo);
             }
