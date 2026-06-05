@@ -37,7 +37,7 @@ export function getConfigVeiculo(tipoVeiculo) {
 }
 
 export function getMetaDiaria(nome) {
-    return nome === 'ROBERTO CARLOS' ? 4 : 8;
+    return nome === 'ROBERTO CARLOS PESSOA' ? 4 : 8;
 }
 
 export function calcularPontos(nome, servicos, tipoVeiculo) {
