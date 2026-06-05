@@ -76,11 +76,10 @@ function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, ba
         const dStr = formatarData(d);
         const lancDia = bancoDados[dStr]?.[motoristaNome];
 
-        // DEPOIS:
-if (lancDia && (!lancDia.status || lancDia.status === 'normal')) {
+    if (lancDia) {
     if (lancDia.isFeriado) {
         qtdFeriadosSemana++;
-    } else {
+    } else if (!lancDia.status || lancDia.status === 'normal') {
         const tipoVeiculoDia = lancDia.tipoVeiculo || 'poliguindaste';
         // Só conta dias do mesmo tipo de veículo do sábado
         if (tipoVeiculoDia === tipoVeiculo) {

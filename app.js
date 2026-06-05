@@ -316,7 +316,6 @@ if (window.motoristaSelecionado) {
     window.atualizarSlaInput();
 }
 
-window.gerarRankingMensal();
 window.gerarPainelFeriados();
 
        // ✅ REGRAS DE PERMISSÃO — chamada uma única vez aqui
@@ -650,6 +649,8 @@ window.ciclartarTurno = function () {
 window._turnoLeaderboardIndex = 0;
 window.ciclarTurnoLeaderboard = function () {
     window._turnoLeaderboardIndex = (window._turnoLeaderboardIndex + 1) % window._turnosCiclo.length;
+    console.log('ciclar index:', window._turnoLeaderboardIndex, 'valor:', window._turnosCiclo[window._turnoLeaderboardIndex].value);
+
     const t = window._turnosCiclo[window._turnoLeaderboardIndex];
 
     const input  = document.getElementById('filtroTurnoLeaderboardVal');
@@ -1565,7 +1566,7 @@ window.toggleApenasUteis = function () {
     window.gerarRankingPeriodo();
 };
 
-window.gerarRankingPeriodo = function () {
+window.gerarRankingPeriodo = async function () {
     const elInicio = document.getElementById('dataRankingInicio');
     const elFim    = document.getElementById('dataRankingFim');
     if (!elInicio || !elFim) return;
@@ -1573,7 +1574,20 @@ window.gerarRankingPeriodo = function () {
     const fim    = elFim.value;
     if (!inicio || !fim) return;
 
-    const bancoDados = window.bancoDadosCloud;
+    // Aviso visual para você saber que tá buscando no banco
+    const elQtd = document.getElementById('totalQtdPeriodo');
+    if (elQtd) elQtd.innerText = "Carregando...";
+
+    // A MÁGICA AQUI: Busca o período exato direto do Supabase, ignorando o mês da tela!
+    let bancoDados = {};
+    try {
+        const lancamentosIntervalo = await buscarLancamentosPorPeriodo(inicio, fim);
+        bancoDados = mapearLancamentosParaBanco(lancamentosIntervalo);
+    } catch (err) {
+        console.error("Erro ao buscar período:", err);
+        return;
+    }
+
     let rankPeriodo  = {};
     
     let totalFatGeral = 0;
@@ -1586,11 +1600,11 @@ window.gerarRankingPeriodo = function () {
             const diaDaSemana = dataObj.getDay();
 
             // Pula domingos
-if (window._apenasUteis && diaDaSemana === 0) continue;
+            if (window._apenasUteis && diaDaSemana === 0) continue;
 
             for (const [mot, dados] of Object.entries(dadosDia)) {
                 // Pula feriados
-if (window._apenasUteis && dados.isFeriado) continue;
+                if (window._apenasUteis && dados.isFeriado) continue;
                 if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
                 
                 rankPeriodo[mot].valor += dados.valor;
@@ -1614,17 +1628,17 @@ if (window._apenasUteis && dados.isFeriado) continue;
                     rankPeriodo[mot].pontos += dados.pontos !== undefined
                         ? dados.pontos
                         : window.calcularPontosMotorista(mot, srv, dados.tipoVeiculo);
-                   if (window._apenasUteis) {
-                 if (diaDaSemana !== 0 && !dados.isFeriado) rankPeriodo[mot].diasTrab++;
-            } else {
-        rankPeriodo[mot].diasTrab++;
-}
+                    
+                    if (window._apenasUteis) {
+                        if (diaDaSemana !== 0 && !dados.isFeriado) rankPeriodo[mot].diasTrab++;
+                    } else {
+                        rankPeriodo[mot].diasTrab++;
+                    }
                 }
             }
         }
     }
 
-    const elQtd = document.getElementById('totalQtdPeriodo');
     if (elQtd) elQtd.innerText = `${totalCaixasGeral} cx | ${totalViagensGeral} vg`;
     
     const elFat = document.getElementById('totalFatPeriodo');
@@ -1837,10 +1851,11 @@ window.obterRankElo = function (percentual) {
 };
 
 window.gerarRankingMensal = function () {
+ console.log('gerarRankingMensal chamado, mesFiltro:', document.getElementById('mesFiltro')?.value);
+
     const elFiltro = document.getElementById('mesFiltro');
     if (!elFiltro) return;
-    const mesFiltro = elFiltro.value;
-    if (!mesFiltro) return;
+    const mesFiltro = elFiltro.value || window.anoMesAtual || new Date().toISOString().substring(0, 7);
 
     const diasUteisGlobais = window.carregarDiasUteis(mesFiltro);
     const bancoDados = window.bancoDadosCloud;
