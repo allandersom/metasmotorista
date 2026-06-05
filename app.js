@@ -172,7 +172,7 @@ const _setInputVal = (id, val) => {
 
 _setInputVal('dataGlobal',        anoMesAtual);
 _setInputVal('dataLancamento',    hojeStr);
-_setInputVal('dataRankingInicio', hojeStr);
+_setInputVal('dataRankingInicio', startStr);
 _setInputVal('dataRankingFim',    hojeStr);
 _setInputVal('mesFiltro',         anoMesAtual);
 _setInputVal('dataDomInicio',     startStr);
@@ -1021,6 +1021,15 @@ window.sincronizarMesData = async function () {
     }
 
    const mesSelecionado = dtG.value.substring(0, 7);
+   const elRankInicio = document.getElementById('dataRankingInicio');
+const elRankFim    = document.getElementById('dataRankingFim');
+if (elRankInicio && elRankFim) {
+    elRankInicio.value = primeiroDiaDoMes(mesSelecionado);
+    const [anoSel, mesSel] = mesSelecionado.split('-').map(Number);
+    const hojeSync = new Date();
+    const isMesAtual = anoSel === hojeSync.getFullYear() && mesSel === (hojeSync.getMonth() + 1);
+    elRankFim.value = isMesAtual ? getHojeStr() : ultimoDiaDoMes(mesSelecionado);
+}
 
 await carregarLancamentosDoMes(mesSelecionado);
 reconstruirMotoristasDoMes(mesSelecionado);
@@ -1040,6 +1049,15 @@ window.sincronizarMesFiltro = async function () {
     if (!msF) return;
 
     const mesSelecionado = msF.value.substring(0, 7);
+    const elRankInicioF = document.getElementById('dataRankingInicio');
+const elRankFimF    = document.getElementById('dataRankingFim');
+if (elRankInicioF && elRankFimF) {
+    elRankInicioF.value = primeiroDiaDoMes(mesSelecionado);
+    const [anoSelF, mesSelF] = mesSelecionado.split('-').map(Number);
+    const hojeSyncF = new Date();
+    const isMesAtualF = anoSelF === hojeSyncF.getFullYear() && mesSelF === (hojeSyncF.getMonth() + 1);
+    elRankFimF.value = isMesAtualF ? getHojeStr() : ultimoDiaDoMes(mesSelecionado);
+}
 
 await carregarLancamentosDoMes(mesSelecionado);
 reconstruirMotoristasDoMes(mesSelecionado);
@@ -1111,8 +1129,8 @@ window.mudarAba = function (aba) {
     if (viewEl) viewEl.style.display = 'block';
 
     // Abas que usam o seletor de Mês de Referência
-    const abasComMes = ['lancamentos', 'rankings', 'domferiados', 'projecao', 'rotas', 'faltas'];
-    const containerMes = document.getElementById('dataGlobal')?.closest('div');
+// Abas que usam o seletor de Mês de Referência
+const abasComMes = ['lancamentos', 'domferiados', 'projecao', 'rotas', 'faltas'];    const containerMes = document.getElementById('dataGlobal')?.closest('div');
     if (containerMes) containerMes.style.display = abasComMes.includes(aba) ? 'flex' : 'none';
 
     // Ações específicas por aba
@@ -1721,7 +1739,6 @@ window.gerarRankingPeriodo = async function () {
     const inicio = elInicio.value;
     const fim    = elFim.value;
     if (!inicio || !fim) return;
-
     // Aviso visual para você saber que tá buscando no banco
     const elQtd = document.getElementById('totalQtdPeriodo');
     if (elQtd) elQtd.innerText = "Carregando...";
@@ -1818,8 +1835,7 @@ window.gerarRankingPeriodo = async function () {
             : '';
         const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
 
-        const cadastro = (window.motoristasCache || []).find(m => m.nome === mot.nome);
-        const pixHtml = cadastro?.chave_pix
+const cadastro = (window.todosMotoristasCloud || []).find(m => m.nome === mot.nome);        const pixHtml = cadastro?.chave_pix
             ? `<span style="font-size:11px; color:var(--gray-400); display:flex; align-items:center; gap:4px; margin-top:2px;">
                    <i data-lucide="diamond" style="width:11px; height:11px; color:#16a34a;"></i>
                    ${cadastro.chave_pix}
@@ -1879,10 +1895,13 @@ window.exportarRankingPeriodoPDF = function() {
         const corBarra = classeBar === 'meta-batida' ? '#22c55e' : classeBar === 'meta-excedida' ? '#f59e0b' : '#ef4444';
 
         // Busca o nome puro para encontrar o PIX no cache
-        const nomeMotorista = nomeTexto.replace(/#\d+\s*-\s*/, '').replace(/\(.*\)/, '').trim();
-        const cadastro = (window.motoristasCache || []).find(m =>
-            nomeMotorista && m.nome.toLowerCase() === nomeMotorista.toLowerCase()
-        );
+       // Remove o "#1 - " do início e corta tudo a partir do primeiro parêntese com segurança
+const nomeMotorista = nomeTexto.replace(/#\d+\s*-\s*/, '').split('(')[0].trim();
+
+// Busca direto da variável global preenchida na inicialização do sistema
+const cadastro = (window.todosMotoristasCloud || []).find(m =>
+    nomeMotorista && m.nome.toLowerCase() === nomeMotorista.toLowerCase()
+);  
         const pixHtml = cadastro?.chave_pix
             ? `<div style="font-size:10px;color:#6b7280;margin-top:3px;">PIX: ${cadastro.chave_pix}</div>`
             : '';
