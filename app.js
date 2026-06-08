@@ -241,8 +241,8 @@ window.aplicarRestricoesInterface = function () {
     };
 
     console.log(`🔐 Perfil "${funcao}" ativado. Abas liberadas: ${abasPermitidas.join(', ')}`);
-    window.mudarAba(abaInicial[funcao] || abasPermitidas[0]);
-
+const abaJaAtiva = document.querySelector('.nav-tab.active');
+if (!abaJaAtiva) window.mudarAba(abaInicial[funcao] || abasPermitidas[0]);
     if (funcao === 'admin') {
         console.log('🔓 Modo Admin ativado. Acesso total.');
     }
@@ -758,8 +758,21 @@ window.gerarRankingMensal = function () {
     });
 
     const elQtd = document.getElementById('totalQtdMensalLeaderboard');
-    if (elQtd) elQtd.innerText = formatarQuantidadeMista(somaCaixas, somaViagens, false);
-
+    if (elQtd) elQtd.innerText = `${somaCaixas} cx | ${somaViagens} vg`;
+    // Recontagem direta do banco
+let _cx = 0, _vg = 0;
+const _mes = document.getElementById('mesFiltro')?.value || window.anoMesAtual || new Date().toISOString().substring(0,7);
+for (const [data, dia] of Object.entries(window.bancoDadosCloud)) {
+    if (data.startsWith(_mes)) {
+        for (const mot of Object.values(dia)) {
+            if ((mot.status || 'normal') === 'normal') {
+                if (mot.tipoVeiculo === 'cacamba') _vg += mot.servicos || 0;
+                else _cx += mot.servicos || 0;
+            }
+        }
+    }
+}
+if (elQtd) elQtd.innerText = `${_cx} cx | ${_vg} vg`;
     const elFat = document.getElementById('totalFatMensalLeaderboard');
     if (elFat) elFat.innerText = formatarMoeda(fatBrutoFiltrado);
 
@@ -891,13 +904,13 @@ window.toggleTravaGlobais = function () {
     if (window.diasUteisTravado) {
         inLanc.setAttribute('readonly', 'true');
         inRank.setAttribute('readonly', 'true');
-        if (btnLanc) btnLanc.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>';
-        if (btnRank) btnRank.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>';
+       if (btnLanc) { btnLanc.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>'; btnLanc.classList.remove('unlocked'); }
+        if (btnRank) { btnRank.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>'; btnRank.classList.remove('unlocked'); }
     } else {
         inLanc.removeAttribute('readonly');
         inRank.removeAttribute('readonly');
-        if (btnLanc) btnLanc.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i>';
-        if (btnRank) btnRank.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i>';
+       if (btnLanc) { btnLanc.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i>'; btnLanc.classList.add('unlocked'); }
+if (btnRank) { btnRank.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i>'; btnRank.classList.add('unlocked'); }
         const viewLanc = document.getElementById('viewLancamentos');
         if (viewLanc && viewLanc.style.display !== 'none') inLanc.focus();
         else inRank.focus();
@@ -975,11 +988,13 @@ window.atualizarSlaInput = function () {
         inSla.value = slaAtivo;
         if (customSla !== undefined) {
             inSla.setAttribute('readonly', 'true');
+            btnSla.classList.remove('unlocked');
             btnSla.innerHTML   = '<i data-lucide="lock" class="w-4 h-4"></i>';
             btnSla.className   = 'bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg shadow-sm border border-red-200 transition-colors shrink-0';
         } else {
             inSla.removeAttribute('readonly');
-            btnSla.innerHTML   = '<i data-lucide="unlock" class="w-4 h-4"></i>';
+            btnSla.innerHTML = '<i data-lucide="unlock" class="w-4 h-4"></i>';
+btnSla.classList.add('unlocked');
             btnSla.className   = 'text-amber-500 hover:text-amber-700 bg-white p-2 rounded-lg shadow-sm border border-amber-100 transition-colors shrink-0';
         }
     }
@@ -1322,11 +1337,13 @@ window.salvarLancamento = async function () {
 
         const tipoVeiculoInput = document.getElementById('tipoVeiculo').value;
         let servicosInput     = parseInt(document.getElementById('servicos').value) || 0;
-        let valorExtraInput   = parseFloat(document.getElementById('valorExtra').value.replace(',', '.')) || 0;
+        const caixasExtraChk  = document.getElementById('caixasExtra')?.checked ? (servicosInput * 20) : 0;
+let valorExtraInput   = (parseFloat(document.getElementById('valorExtra').value.replace(',', '.')) || 0) + caixasExtraChk;
         const isFeriadoInput  = document.getElementById('feriado')?.checked ?? false;
         const observacaoInput = document.getElementById('observacao')?.value.trim() ?? '';
 
-        if (statusInput !== 'normal') { servicosInput = 0; valorExtraInput = 0; }
+        if (statusInput !== 'normal') { servicosInput = 0; }
+if (statusInput !== 'normal' && statusInput !== 'polioff') { valorExtraInput = 0; }
 
         const bancoDados = window.bancoDadosCloud;
         if (!bancoDados[dataStr]) bancoDados[dataStr] = {};
@@ -1433,9 +1450,11 @@ window.salvarLancamento = async function () {
 
         // Limpar formulário
         ['servicos', 'valorExtra', 'observacao'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+});
+const elCxExtra = document.getElementById('caixasExtra');
+if (elCxExtra) elCxExtra.checked = false;
         const elFeriado = document.getElementById('feriado');
         if (elFeriado) elFeriado.checked = false;
         const elStatus = document.getElementById('statusServico');
