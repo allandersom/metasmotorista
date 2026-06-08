@@ -397,7 +397,12 @@ main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: 
   transition: all var(--t-fast);
 }
 .lock-btn:hover { background: #fef3c7; }
+.lock-btn.unlocked { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+.lock-btn.unlocked:hover { background: #fecaca; }
 .lock-btn svg, .lock-btn .lucide { width: 14px; height: 14px; }
+
+
+
 
 /* ── DRIVER LIST PANEL ──────────────────────────────────── */
 .driver-panel {
@@ -571,6 +576,8 @@ main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: 
   transition: all var(--t-fast);
 }
 #btnTravaSla:hover { background: var(--warning-50); }
+#btnTravaSla.unlocked { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+#btnTravaSla.unlocked:hover { background: #fecaca; }
 #btnTravaSla svg, #btnTravaSla .lucide { width: 14px; height: 14px; display: block; }
 
 /* Motorista mini-stats */
@@ -879,7 +886,7 @@ tbody tr:hover { background: var(--gray-25); }
 
 .meta-card-label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.12em; line-height: 1; margin-bottom: 6px; white-space: nowrap; }
 .meta-card-value { font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: white; letter-spacing: -0.02em; white-space: nowrap; }
-.meta-card-sub   { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); margin-top: 5px; white-space: nowrap; }
+.meta-card-sub   { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.95); margin-top: 5px; white-space: nowrap; }
 
 /* ── DOM & FERIADOS ─────────────────────────────────────── */
 .total-global-badge {
