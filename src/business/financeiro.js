@@ -209,7 +209,7 @@ function aplicarCorrecaoRankings() {
                     tipoVeiculo: l.tipo_veiculo,
                     valorExtra: parseFloat(l.valor_extra) || 0,
                     status: l.status_servico,
-                    pontos: l.quantidade_servicos
+                    pontos: l.tipo_veiculo === 'cacamba' ? l.quantidade_servicos * 2 : l.quantidade_servicos
                 };
             });
         } catch (err) {
@@ -278,18 +278,32 @@ function aplicarCorrecaoRankings() {
         }
 
         rankArray.forEach((mot, index) => {
-            const porcentagemStr = formatarPercentual(mot.porcentagem);
-            const classeBarra = mot.porcentagem >= 100 ? 'meta-batida' : (mot.porcentagem >= 80 ? 'meta-excedida' : 'meta-ruim');
-            const larguraBarra = Math.min(mot.porcentagem, 100);
             const extraBadge = mot.extra > 0 ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded ml-2">+ Extra ${formatarMoeda(mot.extra)}</span>` : '';
-            const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
+            
+            // Força o formatador a exibir como caixas passando "false" no final
+            const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, false);
+
+            const cadastro = (window.todosMotoristasCloud || []).find(m => m.nome === mot.nome);
+            const pixHtml = cadastro?.chave_pix
+                ? `<span style="font-size:11px; color:var(--gray-400); display:flex; align-items:center; gap:4px; margin-top:2px;">
+                       <i data-lucide="diamond" style="width:11px; height:11px; color:#16a34a;"></i>
+                       ${cadastro.chave_pix}
+                   </span>`
+                : '';
 
             const linha = document.createElement('div');
             linha.className = 'diario-row';
+            // Toda a div "progress-wrapper" (a barra e o % visual) foi removida do HTML abaixo!
             linha.innerHTML = `
-                <div class="diario-top"><span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span><span class="diario-faturamento">${formatarMoeda(mot.valor)}</span></div>
-                <div class="progress-wrapper"><div class="progress-bar-bg"><div class="progress-bar-fill ${classeBarra}" style="width: ${larguraBarra}%;"></div></div><span class="progress-text" title="Domingos e feriados não entram na meta normal; sábado conta como produção extra da semana.">${porcentagemStr}</span></div>
+                <div class="diario-top" style="margin-bottom: 0;">
+                    <div style="display:flex; flex-direction:column;">
+                        <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
+                        ${pixHtml}
+                    </div>
+                    <span class="diario-faturamento">${formatarMoeda(mot.valor)}</span>
+                </div>
             `;
+            if (window.lucide) window.lucide.createIcons({ nodes: [linha] });
             divLista.appendChild(linha);
         });
     };
@@ -314,9 +328,23 @@ function aplicarCorrecaoRankings() {
                         const statusMot = (dados.status || 'normal').toLowerCase();
                         const diaEspecial = ehDiaEspecialRanking(dataStr, dados);
                         if (statusMot === 'normal' && !diaEspecial) {
-                            if (dados.tipoVeiculo === 'cacamba') { acumuladoMes[mot].viagens += (dados.servicos || 0); totalViagensFrota += (dados.servicos || 0); }
-                            else { acumuladoMes[mot].caixas += (dados.servicos || 0); totalCaixasFrota += (dados.servicos || 0); }
-                            acumuladoMes[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
+                            const srv = dados.servicos || 0;
+                            
+                            // CONTAGEM ORIGINAL MANTIDA (Sem multiplicar caçamba por 2)
+                            if (dados.tipoVeiculo === 'cacamba') { 
+                                acumuladoMes[mot].viagens += srv; 
+                                totalViagensFrota += srv; 
+                            }
+                               else if (dados.tipoVeiculo === 'poli_duplo') {
+    acumuladoMes[mot].caixas += srv;
+    totalCaixasFrota += srv;
+}
+                            else { 
+                                acumuladoMes[mot].caixas += srv; 
+                                totalCaixasFrota += srv; 
+                            }
+                            
+                            acumuladoMes[mot].pontos += dados.tipoVeiculo === 'cacamba' ? srv * 2 : (dados.pontos !== undefined ? dados.pontos : window.calcularPontosMotorista(mot, srv, dados.tipoVeiculo));
                         }
                         acumuladoMes[mot].valor += dados.valor;
                         totalFatMesFrota += dados.valor;
@@ -342,6 +370,10 @@ function aplicarCorrecaoRankings() {
         const ptsGeral = ptsRayanna + ptsJulia;
         const feitasGeral = feitasRayanna + feitasJulia;
 
+        // SOLUÇÃO DO SEU PEDIDO: Atualiza o card de quantidade acumulada do mês no topo da tela
+        const elQtd = document.getElementById('totalQtdMensalLeaderboard');
+        if (elQtd) elQtd.innerText = `${totalCaixasFrota} cx | ${totalViagensFrota} vg`;
+
         if (document.getElementById('totalViagensMesGlobal')) document.getElementById('totalViagensMesGlobal').innerText = `${totalViagensFrota} vg`;
         if (document.getElementById('totalFatMensalLeaderboard')) document.getElementById('totalFatMensalLeaderboard').innerText = formatarMoeda(totalFatMesFrota);
 
@@ -365,19 +397,18 @@ function aplicarCorrecaoRankings() {
             return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos };
         }).filter(item => item.pontos > 0 || item.valor > 0).sort((a, b) => b.percentual - a.percentual);
 
-        // Calcula o total liberado (≥ 80%)
-let totalLiberado = 0;
-rankFinal.forEach(mot => {
-    if (mot.percentual >= 80) {
-        totalLiberado += mot.valor;
-    }
-});
-const elPagar = document.getElementById('totalPagarMensalLeaderboard');
-if (elPagar) elPagar.innerText = formatarMoeda(totalLiberado);
+        let totalLiberado = 0;
+        rankFinal.forEach(mot => {
+            if (mot.percentual >= 80) {
+                totalLiberado += mot.valor;
+            }
+        });
+        const elPagar = document.getElementById('totalPagarMensalLeaderboard');
+        if (elPagar) elPagar.innerText = formatarMoeda(totalLiberado);
 
-const divLista = document.getElementById('listaLeaderboard');
-if (!divLista) return;
-divLista.innerHTML = '';
+        const divLista = document.getElementById('listaLeaderboard');
+        if (!divLista) return;
+        divLista.innerHTML = '';
 
         if (rankFinal.length === 0) {
             divLista.innerHTML = '<div class="text-center text-slate-400 py-8 font-medium">Sem registros válidos.</div>';
