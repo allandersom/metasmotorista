@@ -42,7 +42,7 @@ export function getMetaDiaria(nome) {
 
 export function calcularPontos(nome, servicos, tipoVeiculo) {
     const meta = getMetaDiaria(nome);
-    if (tipoVeiculo === 'cacamba')    return servicos * (meta / 4);
+    if (tipoVeiculo === 'cacamba')    return servicos * 2; // CADA VG VALE 2 CXS AQUI
     if (tipoVeiculo === 'poli_duplo') return servicos / 2;
     if (tipoVeiculo === 'misto')      return servicos * (meta / 6);
     return servicos;
@@ -175,7 +175,7 @@ function ehDiaEspecialRanking(dataStr, dados) {
 function aplicarCorrecaoRankings() {
     if (typeof window === 'undefined') return;
 
-    window.gerarRankingPeriodo = function() {
+   window.gerarRankingPeriodo = async function() {
         const elInicio = document.getElementById('dataRankingInicio');
         const elFim = document.getElementById('dataRankingFim');
         if (!elInicio || !elFim) return;
@@ -183,22 +183,62 @@ function aplicarCorrecaoRankings() {
         const fim = elFim.value;
         if (!inicio || !fim) return;
 
-        const bancoDados = window.bancoDadosCloud;
+        const elTotalQtd = document.getElementById('totalQtdPeriodo');
+        if (elTotalQtd) elTotalQtd.innerText = "Carregando...";
+
+        // MÁGICA AQUI: Busca o período exato direto na nuvem bypassando o mês da tela
+        let bancoDados = {};
+        try {
+            const { data: lancs, error } = await window.supabaseClient
+                .from('lancamentos')
+                .select('*')
+                .is('cancelado_em', null)
+                .gte('data', inicio)
+                .lte('data', fim);
+
+            if (error) throw error;
+
+            (lancs || []).forEach(l => {
+                const nomeMotorista = (l.motorista_nome || '').toUpperCase().trim();
+                if (!nomeMotorista || !l.data) return;
+                if (!bancoDados[l.data]) bancoDados[l.data] = {};
+                bancoDados[l.data][nomeMotorista] = {
+                    servicos: l.quantidade_servicos,
+                    valor: parseFloat(l.valor_faturamento) || 0,
+                    isFeriado: l.is_feriado,
+                    tipoVeiculo: l.tipo_veiculo,
+                    valorExtra: parseFloat(l.valor_extra) || 0,
+                    status: l.status_servico,
+                    pontos: l.quantidade_servicos
+                };
+            });
+        } catch (err) {
+            console.error("Erro ao buscar período no banco:", err);
+            return;
+        }
+
         let rankPeriodo = {};
         let totalCaixasPeriodo = 0, totalViagensPeriodo = 0, totalFatPeriodo = 0;
 
-        for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+       for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
             if (dataEstaNoIntervalo(dataStr, inicio, fim)) {
                 const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
+                
+                // SE O BOTÃO "APENAS DIAS ÚTEIS" ESTIVER LIGADO, IGNORA DOMINGOS
+                if (window._apenasUteis && diaDaSemana === 0) continue;
+
                 for (const [mot, dados] of Object.entries(dadosDia)) {
+                    // SE O BOTÃO "APENAS DIAS ÚTEIS" ESTIVER LIGADO, IGNORA FERIADOS
+                    if (window._apenasUteis && dados.isFeriado === true) continue;
+
                     if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
                     rankPeriodo[mot].valor += dados.valor;
                     rankPeriodo[mot].extra += dados.valorExtra || 0;
                     totalFatPeriodo += dados.valor || 0;
 
                     const statusNormal = !dados.status || dados.status === 'normal';
-                    const diaEspecial = ehDiaEspecialRanking(dataStr, dados);
-                    if (statusNormal && !diaEspecial) {
+                    
+                    if (statusNormal) {
                         if (dados.tipoVeiculo === 'cacamba') {
                             rankPeriodo[mot].viagens += (dados.servicos || 0);
                             totalViagensPeriodo += (dados.servicos || 0);
@@ -207,13 +247,16 @@ function aplicarCorrecaoRankings() {
                             totalCaixasPeriodo += (dados.servicos || 0);
                         }
                         rankPeriodo[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
-                        if (diaDaSemana !== 6) rankPeriodo[mot].diasTrab += 1;
+                        
+                        // Conta dias de trabalho para a meta (segunda a sexta, sem ser feriado)
+                        if (diaDaSemana !== 6 && diaDaSemana !== 0 && !dados.isFeriado) {
+                            rankPeriodo[mot].diasTrab += 1;
+                        }
                     }
                 }
             }
         }
 
-        const elTotalQtd = document.getElementById('totalQtdPeriodo');
         const elTotalFat = document.getElementById('totalFatPeriodo');
         if (elTotalQtd) elTotalQtd.innerText = `${totalCaixasPeriodo} cx | ${totalViagensPeriodo} vg`;
         if (elTotalFat) elTotalFat.innerText = formatarMoeda(totalFatPeriodo);

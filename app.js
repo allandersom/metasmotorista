@@ -668,10 +668,16 @@ window.gerarRankingMensal = function () {
                 const statusMot = (dados.status || 'normal').toLowerCase();
                 if (statusMot === 'normal') {
                     const srv = dados.servicos || 0;
-                    if (dados.tipoVeiculo === 'cacamba') {
+                if (dados.tipoVeiculo === 'cacamba') {
+                    if (!window.motOutros.includes(mot)) { 
+                        // Se for operador, converte as VGs em 2x Caixas visualmente
+                        acumuladoMes[mot].caixas += srv * 2;
+                        totalCaixasFrota += srv * 2;
+                    } else {
                         acumuladoMes[mot].viagens += srv;
                         totalViagensFrota += srv;
-                    } else if (dados.tipoVeiculo === 'poli_duplo') {
+                    }
+                } else if (dados.tipoVeiculo === 'poli_duplo') {
                         acumuladoMes[mot].caixas += srv * 2;
                         totalCaixasFrota += srv * 2;
                     } else {
@@ -760,14 +766,21 @@ window.gerarRankingMensal = function () {
     const elQtd = document.getElementById('totalQtdMensalLeaderboard');
     if (elQtd) elQtd.innerText = `${somaCaixas} cx | ${somaViagens} vg`;
     // Recontagem direta do banco
+// Recontagem direta do banco
 let _cx = 0, _vg = 0;
 const _mes = document.getElementById('mesFiltro')?.value || window.anoMesAtual || new Date().toISOString().substring(0,7);
 for (const [data, dia] of Object.entries(window.bancoDadosCloud)) {
     if (data.startsWith(_mes)) {
-        for (const mot of Object.values(dia)) {
+        for (const [nomeMot, mot] of Object.entries(dia)) {
             if ((mot.status || 'normal') === 'normal') {
-                if (mot.tipoVeiculo === 'cacamba') _vg += mot.servicos || 0;
-                else _cx += mot.servicos || 0;
+                if (mot.tipoVeiculo === 'cacamba') {
+                    if (!window.motOutros.includes(nomeMot)) _cx += (mot.servicos || 0) * 2;
+                    else _vg += mot.servicos || 0;
+                } else if (mot.tipoVeiculo === 'poli_duplo') {
+                    _cx += (mot.servicos || 0) * 2;
+                } else {
+                    _cx += mot.servicos || 0;
+                }
             }
         }
     }
@@ -1363,8 +1376,8 @@ if (statusInput !== 'normal' && statusInput !== 'polioff') { valorExtraInput = 0
             } else {
                 servicosFinais  += (lancamentoExistente.servicos || 0);
                 valorExtraFinal += (lancamentoExistente.valorExtra || 0);
-                const pontosNovo = tipoVeiculoInput === 'poli_duplo' ? servicosInput * 0.5 : servicosInput;
-                const pontosExistente = lancamentoExistente.tipoVeiculo === 'poli_duplo' ? (lancamentoExistente.servicos || 0) * 0.5 : (lancamentoExistente.servicos || 0);
+                const pontosNovo = tipoVeiculoInput === 'poli_duplo' ? servicosInput * 0.5 : (tipoVeiculoInput === 'cacamba' ? servicosInput * 2 : servicosInput);
+const pontosExistente = lancamentoExistente.tipoVeiculo === 'poli_duplo' ? (lancamentoExistente.servicos || 0) * 0.5 : (lancamentoExistente.tipoVeiculo === 'cacamba' ? (lancamentoExistente.servicos || 0) * 2 : (lancamentoExistente.servicos || 0));
                 window._pontosFinaisMisto = pontosNovo + pontosExistente;
             }
 
@@ -1687,48 +1700,53 @@ window.atualizarResumosGlobais = function () {
     const elLanc = document.getElementById('dataLancamento');
     const dataRefStr = elLanc ? elLanc.value : null;
     const elGlobal = document.getElementById('dataGlobal');
-    const mesGlobalStr = elGlobal
-        ? elGlobal.value.substring(0, 7)
-        : (dataRefStr ? dataRefStr.substring(0, 7) : null);
+    const mesGlobalStr = elGlobal ? elGlobal.value.substring(0, 7) : (dataRefStr ? dataRefStr.substring(0, 7) : null);
     if (!mesGlobalStr) return;
 
     const bancoDados = window.bancoDadosCloud;
-    // Criei as variáveis para viagens aqui:
     let totalDiaGlobal = 0, caixasDiaGlobal = 0, viagensDiaGlobal = 0;
     let totalMesGlobal = 0, caixasMesGlobal = 0, viagensMesGlobal = 0;
 
-    // Soma do Dia
-    if (dataRefStr && bancoDados[dataRefStr]) {
-        for (const mot in bancoDados[dataRefStr]) {
-            const d = bancoDados[dataRefStr][mot];
-            totalDiaGlobal += d.valor;
-            if (!d.status || d.status === 'normal') {
-                if (d.tipoVeiculo === 'cacamba') viagensDiaGlobal += (d.servicos || 0);
-                else caixasDiaGlobal += (d.servicos || 0);
-            }
-        }
-    }
-
-    // Soma do Mês
+    // --- RECALCULO TOTAL ---
     for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-        if (dataEstaNoMes(dataStr, mesGlobalStr)) {
-            for (const mot in dadosDia) {
-                const d = dadosDia[mot];
-                totalMesGlobal += d.valor;
-                if (!d.status || d.status === 'normal') {
-                    if (d.tipoVeiculo === 'cacamba') viagensMesGlobal += (d.servicos || 0);
-                    else caixasMesGlobal += (d.servicos || 0);
+        const ehMes = dataStr.substring(0, 7) === mesGlobalStr;
+        const ehDia = dataStr === dataRefStr;
+
+        for (const [mot, d] of Object.entries(dadosDia)) {
+            // Valor financeiro soma igual para todos
+            if (ehDia) totalDiaGlobal += d.valor;
+            if (ehMes) totalMesGlobal += d.valor;
+
+            if (!d.status || d.status === 'normal') {
+                const qtd = d.servicos || 0;
+                const isCacamba = d.tipoVeiculo === 'cacamba';
+                const isOperador = !window.motOutros.includes(mot);
+
+                // Lógica de contagem
+                if (isCacamba && isOperador) {
+                    if (ehDia) caixasDiaGlobal += qtd * 2;
+                    if (ehMes) caixasMesGlobal += qtd * 2;
+                } else if (isCacamba) {
+                    if (ehDia) viagensDiaGlobal += qtd;
+                    if (ehMes) viagensMesGlobal += qtd;
+                } else if (d.tipoVeiculo === 'poli_duplo') {
+                    if (ehDia) caixasDiaGlobal += qtd * 2;
+                    if (ehMes) caixasMesGlobal += qtd * 2;
+                } else {
+                    if (ehDia) caixasDiaGlobal += qtd;
+                    if (ehMes) caixasMesGlobal += qtd;
                 }
             }
         }
     }
 
+    // --- ATUALIZAÇÃO DA TELA ---
     const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
     
     _set('totalDiaGlobal',     formatarMoeda(totalDiaGlobal));
     _set('totalSemanaGlobal',  formatarMoeda(totalMesGlobal));
     
-    // Agora os textos usam sua função e vão aparecer "X cx + Y vg"
+    // Usa a sua função que formata perfeitamente (ex: 2 cx + 4 vg)
     _set('caixasDiaGlobal',    formatarQuantidadeMista(caixasDiaGlobal, viagensDiaGlobal, false));
     _set('caixasSemanaGlobal', formatarQuantidadeMista(caixasMesGlobal, viagensMesGlobal, false));
 };
@@ -1798,10 +1816,15 @@ window.gerarRankingPeriodo = async function () {
 
                 if (!dados.status || dados.status === 'normal') {
                     const srv = dados.servicos || 0;
-                    if (dados.tipoVeiculo === 'cacamba') {
+                   if (dados.tipoVeiculo === 'cacamba') {
+                    if (!window.motOutros.includes(mot)) {
+                        rankPeriodo[mot].caixas += srv * 2;
+                        totalCaixasGeral += srv * 2;
+                    } else {
                         rankPeriodo[mot].viagens += srv;
                         totalViagensGeral += srv;
-                    } else if (dados.tipoVeiculo === 'poli_duplo') {
+                    }
+                } else if (dados.tipoVeiculo === 'poli_duplo') {
                         // 1 serviço poli duplo = 2 caixas equivalentes para exibição/meta
                         rankPeriodo[mot].caixas  += srv * 2;
                         totalCaixasGeral += srv * 2;
@@ -3374,22 +3397,42 @@ window.exportarPdfFaltasAtestados = function (tipo) {
     if (registros.length === 0) {
         linhas = '<tr><td colspan="5" style="padding:16px;text-align:center;color:#94a3b8;font-style:italic;">Nenhum registro encontrado.</td></tr>';
     } else {
-        let nomePrev = '';
+        const porMot = {};
         registros.forEach(function(r) {
-            const isNovo = r.mot !== nomePrev;
-            if (isNovo) nomePrev = r.mot;
-            const label = statusLabel[r.dados.status] || r.dados.status;
-            const cor   = statusColor[r.dados.status] || '#475569';
-            const obs   = r.dados.observacao || '—';
-            const anexoTxt = r.dados.anexoUrl
-                ? `<a href="${r.dados.anexoUrl}" style="color:#2563eb;">Ver anexo</a>`
-                : '<span style="color:#94a3b8;font-style:italic;">Não anexado</span>';
-            linhas += '<tr style="background:' + (isNovo ? '#f8fafc' : '#fff') + ';">'
-                + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isNovo?'700':'400') + ';">' + (isNovo ? r.mot : '') + '</td>'
-                + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtD(r.dataStr) + '</td>'
-                + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;"><span style="background:' + cor + ';color:#fff;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;">' + label + '</span></td>'
-                + '<td style="padding:6px 10px;border:1px solid #ddd;font-size:12px;color:#475569;">' + obs + '</td>'
-                + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + anexoTxt + '</td>'
+            if (!porMot[r.mot]) porMot[r.mot] = [];
+            porMot[r.mot].push(r);
+        });
+
+        Object.entries(porMot).forEach(function([motorista, listaRegistros]) {
+            const contagemStatus = {};
+
+            listaRegistros.forEach(function(r, i) {
+                const isNovo = i === 0;
+                const label = statusLabel[r.dados.status] || r.dados.status;
+                const cor   = statusColor[r.dados.status] || '#475569';
+                const obs   = r.dados.observacao || '—';
+                const anexoTxt = r.dados.anexoUrl
+                    ? `<a href="${r.dados.anexoUrl}" target="_blank" style="color:#2563eb;">Ver anexo</a>`
+                    : '<span style="color:#94a3b8;font-style:italic;">Não anexado</span>';
+
+                contagemStatus[label] = (contagemStatus[label] || 0) + 1;
+
+                linhas += '<tr style="background:' + (isNovo ? '#f8fafc' : '#fff') + ';">'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isNovo ? '700' : '400') + ';color:' + (isNovo ? '#1e293b' : '#475569') + ';">' + (isNovo ? motorista : '') + '</td>'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtD(r.dataStr) + '</td>'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;"><span style="background:' + cor + ';color:#fff;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;">' + label + '</span></td>'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;font-size:12px;color:#475569;max-width:240px;word-wrap:break-word;">' + obs + '</td>'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + anexoTxt + '</td>'
+                    + '</tr>';
+            });
+
+            const resumoSubtotal = Object.entries(contagemStatus)
+                .map(([lbl, qtd]) => `${qtd} ${lbl}(s)`)
+                .join(' &middot; ');
+
+            linhas += '<tr style="background:#fef9c3;">'
+                + '<td colspan="3" style="padding:6px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#92400e;font-size:12px;">Subtotal ' + motorista + ':</td>'
+                + '<td colspan="2" style="padding:6px 10px;border:1px solid #ddd;text-align:left;font-weight:700;color:#92400e;font-size:12px;letter-spacing:0.02em;">' + resumoSubtotal + '</td>'
                 + '</tr>';
         });
     }
