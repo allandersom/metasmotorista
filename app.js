@@ -605,6 +605,8 @@ window.reconstruirListasMotoristas = function () {
     }
 };
 
+
+
 window.motoristaTemLancamentoNoMes = function (nome, mes) {
     for (const data in window.bancoDadosCloud) {
         if (dataEstaNoMes(data, mes) && window.bancoDadosCloud[data][nome]) return true;
@@ -668,22 +670,17 @@ window.gerarRankingMensal = function () {
                 const statusMot = (dados.status || 'normal').toLowerCase();
                 if (statusMot === 'normal') {
                     const srv = dados.servicos || 0;
-                if (dados.tipoVeiculo === 'cacamba') {
-                    if (!window.motOutros.includes(mot)) { 
-                        // Se for operador, converte as VGs em 2x Caixas visualmente
-                        acumuladoMes[mot].caixas += srv * 2;
-                        totalCaixasFrota += srv * 2;
-                    } else {
+                    
+                    // EXATAMENTE COMO FOI LANÇADO: Nada de multiplicar por 2!
+                    if (dados.tipoVeiculo === 'cacamba') {
                         acumuladoMes[mot].viagens += srv;
                         totalViagensFrota += srv;
-                    }
-                } else if (dados.tipoVeiculo === 'poli_duplo') {
-                        acumuladoMes[mot].caixas += srv * 2;
-                        totalCaixasFrota += srv * 2;
                     } else {
+                        // Poli duplo, poliguindaste e misto vão para caixas puras
                         acumuladoMes[mot].caixas += srv;
                         totalCaixasFrota += srv;
                     }
+                    
                     acumuladoMes[mot].pontos += window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
                     acumuladoMes[mot].valor += dados.valor;
                     totalFatMesFrota += dados.valor;
@@ -730,7 +727,6 @@ window.gerarRankingMensal = function () {
     renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal');
     renderizarMeta(feitasJulia,   ptsJulia,   'metaJuliaGlobal',   'faltaJuliaGlobal');
 
-    // Cria o ranking sem nenhum filtro de botão
     const rankFinal = Object.keys(acumuladoMes).map(mot => {
         const info = acumuladoMes[mot];
         const metaMensalPontos = getMetaCalculadaMotorista(mot);
@@ -746,46 +742,22 @@ window.gerarRankingMensal = function () {
             inativo: window.motoristasInativos.includes(mot) 
         };
     })
-    .filter(item => item.pontos > 0 || item.valor > 0) // Remove apenas quem está zerado
-    .sort((a, b) => b.percentual - a.percentual); // Ordena do maior pro menor
+    .filter(item => item.pontos > 0 || item.valor > 0)
+    .sort((a, b) => b.percentual - a.percentual);
 
     let totalLiberado = 0;
-    let somaCaixas = 0;
-    let somaViagens = 0;
     let fatBrutoFiltrado = 0;
 
     rankFinal.forEach(mot => {
         if (mot.percentual >= 80) {
             totalLiberado += mot.valor; 
         }
-        somaCaixas += mot.caixas || 0;
-        somaViagens += mot.viagens || 0;
         fatBrutoFiltrado += mot.valor; 
     });
 
     const elQtd = document.getElementById('totalQtdMensalLeaderboard');
-    if (elQtd) elQtd.innerText = `${somaCaixas} cx | ${somaViagens} vg`;
-    // Recontagem direta do banco
-// Recontagem direta do banco
-let _cx = 0, _vg = 0;
-const _mes = document.getElementById('mesFiltro')?.value || window.anoMesAtual || new Date().toISOString().substring(0,7);
-for (const [data, dia] of Object.entries(window.bancoDadosCloud)) {
-    if (data.startsWith(_mes)) {
-        for (const [nomeMot, mot] of Object.entries(dia)) {
-            if ((mot.status || 'normal') === 'normal') {
-                if (mot.tipoVeiculo === 'cacamba') {
-                    if (!window.motOutros.includes(nomeMot)) _cx += (mot.servicos || 0) * 2;
-                    else _vg += mot.servicos || 0;
-                } else if (mot.tipoVeiculo === 'poli_duplo') {
-                    _cx += (mot.servicos || 0) * 2;
-                } else {
-                    _cx += mot.servicos || 0;
-                }
-            }
-        }
-    }
-}
-if (elQtd) elQtd.innerText = `${_cx} cx | ${_vg} vg`;
+    if (elQtd) elQtd.innerText = formatarQuantidadeMista(totalCaixasFrota, totalViagensFrota, false);
+    
     const elFat = document.getElementById('totalFatMensalLeaderboard');
     if (elFat) elFat.innerText = formatarMoeda(fatBrutoFiltrado);
 
@@ -1168,8 +1140,20 @@ const abasComMes = ['lancamentos', 'domferiados', 'projecao', 'rotas', 'faltas']
     } else if (aba === 'domferiados') {
         window.gerarPainelFeriados();
     } else if (aba === 'projecao') {
-        window.atualizarGraficosProjecao();
-    } else if (aba === 'auditoria') {
+    const selProjMot = document.getElementById('filtroProjMot');
+    if (selProjMot) {
+        const atual = selProjMot.value;
+        selProjMot.innerHTML = '<option value="">Selecione...</option>';
+        window.motoristas.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            selProjMot.appendChild(opt);
+        });
+        if (atual) selProjMot.value = atual;
+    }
+    window.atualizarGraficosProjecao();
+} else if (aba === 'auditoria') {
         window.carregarAuditoriaLancamentos();
     } else if (aba === 'rotas') {
         window.carregarRotasDia();
@@ -2064,12 +2048,52 @@ window.obterRankElo = function (percentual) {
 // =============================================================
 // PAINEL DOMINGOS E FERIADOS
 // =============================================================
-window.gerarPainelFeriados = function () {
+window.gerarPainelFeriados = async function () {
     const domInicio = document.getElementById('dataDomInicio')?.value;
     const domFim    = document.getElementById('dataDomFim')?.value;
     const ferInicio = document.getElementById('dataFerInicio')?.value;
     const ferFim    = document.getElementById('dataFerFim')?.value;
-    const bancoDados = window.bancoDadosCloud;
+
+    // Pega o menor e o maior valor de data dos dois calendários para buscar de uma vez no banco
+    let datas = [domInicio, domFim, ferInicio, ferFim].filter(Boolean).sort();
+    if (datas.length === 0) return;
+    const inicioGeral = datas[0];
+    const fimGeral = datas[datas.length - 1];
+
+    const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+    _set('totalFatDom', 'Carregando...');
+    _set('totalFatFer', 'Carregando...');
+
+    // Busca assíncrona conectada direto no Supabase (bypassando o mês da tela)
+    let bancoDados = {};
+    try {
+        const { data: lancs, error } = await window.supabaseClient
+            .from('lancamentos')
+            .select('*')
+            .is('cancelado_em', null)
+            .gte('data', inicioGeral)
+            .lte('data', fimGeral);
+
+        if (error) throw error;
+
+        (lancs || []).forEach(l => {
+            const nomeMotorista = (l.motorista_nome || '').toUpperCase().trim();
+            if (!nomeMotorista || !l.data) return;
+            if (!bancoDados[l.data]) bancoDados[l.data] = {};
+            bancoDados[l.data][nomeMotorista] = {
+                servicos: l.quantidade_servicos,
+                valor: parseFloat(l.valor_faturamento) || 0,
+                isFeriado: l.is_feriado,
+                tipoVeiculo: l.tipo_veiculo,
+                valorExtra: parseFloat(l.valor_extra) || 0,
+                status: l.status_servico,
+            };
+        });
+    } catch (err) {
+        console.error("Erro ao buscar domingos e feriados no banco:", err);
+        return;
+    }
+
     let registrosDom = [], registrosFer = [];
     let fatTotalDom = 0, fatTotalFer = 0;
 
@@ -2079,30 +2103,31 @@ window.gerarPainelFeriados = function () {
 
         for (const [mot, dados] of Object.entries(dadosDia)) {
             if (!(dados.servicos > 0) && (!dados.status || dados.status === 'normal')) continue;
+            
             const obj = {
                 dataStr,
                 nome:    mot,
-                caixas:  dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0,
-                viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0,
-                valor:   dados.valor,
+                caixas:  dados.tipoVeiculo !== 'cacamba' ? (dados.servicos || 0) : 0,
+                viagens: dados.tipoVeiculo === 'cacamba' ? (dados.servicos || 0) : 0,
+                valor:   dados.valor || 0,
                 status:  dados.status,
             };
+            
             if (isDomingo && !dados.isFeriado) {
                 if (!domInicio || !domFim || dataEstaNoIntervalo(dataStr, domInicio, domFim)) {
                     registrosDom.push(obj);
-                    fatTotalDom += dados.valor;
+                    fatTotalDom += (dados.valor || 0);
                 }
             }
             if (dados.isFeriado) {
                 if (!ferInicio || !ferFim || dataEstaNoIntervalo(dataStr, ferInicio, ferFim)) {
                     registrosFer.push(obj);
-                    fatTotalFer += dados.valor;
+                    fatTotalFer += (dados.valor || 0);
                 }
             }
         }
     }
 
-    const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
     _set('totalFatDom',      formatarMoeda(fatTotalDom));
     _set('totalFatFer',      formatarMoeda(fatTotalFer));
     _set('totalGeralDomFer', formatarMoeda(fatTotalDom + fatTotalFer));
