@@ -260,11 +260,12 @@ async function carregarDadosDoSupabase() {
         window.motoristasInativos = [];
 
         // 1. Lançamentos
-        // 1. Lançamentos do mês selecionado
-const mesAtualTela =
-    document.getElementById('dataGlobal')?.value?.substring(0, 7) ||
-    document.getElementById('mesFiltro')?.value?.substring(0, 7) ||
-    getAnoMesAtual();
+const viewRankings = document.getElementById('viewRankings');
+const isRankingAtivo = viewRankings && viewRankings.style.display === 'block';
+
+const mesGlobal = document.getElementById('dataGlobal')?.value?.substring(0, 7) || getAnoMesAtual();
+const mesRanking = document.getElementById('mesFiltro')?.value?.substring(0, 7) || mesGlobal;
+const mesAtualTela = isRankingAtivo ? mesRanking : mesGlobal;
 
 await carregarLancamentosDoMes(mesAtualTela);
 
@@ -278,7 +279,7 @@ await carregarLancamentosDoMes(mesAtualTela);
 
 if (erroMots) throw erroMots;
         window.todosMotoristasCloud = mots || [];
-reconstruirMotoristasDoMes(mesAtualTela);
+reconstruirMotoristasDoMes(mesGlobal);
 
         // 3. Dias Úteis
         const { data: configs } = await supabase.from('config_meses').select('*');
@@ -305,7 +306,7 @@ reconstruirMotoristasDoMes(mesAtualTela);
 
         // Atualiza a tela
        // Atualiza a tela
-window.carregarDiasUteis(mesAtualTela);
+window.carregarDiasUteis(mesGlobal);
 window.renderizarSidebar();
 window.atualizarResumosGlobais();
 
@@ -915,9 +916,9 @@ window.salvarDiasUteis = async function (origem) {
     const dias = parseInt(document.getElementById(elId)?.value) || 22;
     if (dias < 1 || dias > 31) return;
 
-    const elGlobal = document.getElementById('dataGlobal');
-    const elFiltro = document.getElementById('mesFiltro');
-    const mesRef = elGlobal?.value || elFiltro?.value;
+    const mesRef = origem === 'lanc' 
+        ? document.getElementById('dataGlobal')?.value 
+        : document.getElementById('mesFiltro')?.value;  
     if (!mesRef) return;
 
     const anoMes = mesRef.substring(0, 7);
@@ -1153,7 +1154,7 @@ const abasComMes = ['lancamentos', 'domferiados', 'projecao', 'rotas', 'faltas']
         if (atual) selProjMot.value = atual;
     }
     window.atualizarGraficosProjecao();
-} else if (aba === 'auditoria') {
+    } else if (aba === 'auditoria') {
         window.carregarAuditoriaLancamentos();
     } else if (aba === 'rotas') {
         window.carregarRotasDia();
@@ -1836,10 +1837,22 @@ window.gerarRankingPeriodo = async function () {
     if (elFat) elFat.innerText = formatarMoeda(totalFatGeral);
 
     const rankArray = Object.keys(rankPeriodo).map(mot => {
-        const metaTotalPeriodo = window.getMetaDiaria(mot) * rankPeriodo[mot].diasTrab;
-        const porcentagem = metaTotalPeriodo > 0 ? (rankPeriodo[mot].pontos / metaTotalPeriodo) * 100 : 0;
-        return { nome: mot, ...rankPeriodo[mot], porcentagem };
-    }).filter(item => item.pontos > 0 || item.valor > 0);
+            const slaMotorista = window.calcularSlaMotorista(mot, mesRef);
+            const metaMensalMotorista = slaMotorista * window.getMetaDiaria(mot);
+            
+            // Fator do período: (ex: se o mês tem 22 dias e o período 11, o fator é 0.5)
+            const fatorPeriodo = diasUteisGlobaisMes > 0 ? (diasUteisNoPeriodo / diasUteisGlobaisMes) : 0;
+            const metaDoPeriodo = metaMensalMotorista * fatorPeriodo;
+            
+            let porcentagem = 0;
+            if (metaDoPeriodo > 0) {
+                porcentagem = (rankPeriodo[mot].pontos / metaDoPeriodo) * 100;
+            } else if (rankPeriodo[mot].pontos > 0) {
+                porcentagem = 100; // Se filtrou só o sábado e ele trabalhou, a % é 100% garantida
+            }
+
+            return { nome: mot, ...rankPeriodo[mot], porcentagem };
+        }).filter(item => item.pontos > 0 || item.valor > 0);
 
     rankArray.sort((a, b) => b.porcentagem - a.porcentagem);
 
@@ -1897,50 +1910,52 @@ window.exportarRankingPeriodoPDF = function() {
     const fim    = document.getElementById('dataRankingFim')?.value;
     if (!inicio || !fim) return alert('Selecione o período antes de exportar.');
 
-    // Formata datas para exibição: 2026-05-01 → 01/05/2026
     const fmt = d => d.split('-').reverse().join('/');
     const periodoLabel = `${fmt(inicio)} até ${fmt(fim)}`;
     const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e feriados)' : '';
 
-    // Pega as linhas já renderizadas e reconstrói com PIX
     const linhasOriginais = document.querySelectorAll('#listaRankingDiario .diario-row');
     let linhasHtml = '';
+    
     linhasOriginais.forEach((linha) => {
         const nomeEl  = linha.querySelector('.diario-nome');
         const fatEl   = linha.querySelector('.diario-faturamento');
-        const barraEl = linha.querySelector('.progress-bar-fill');
-        const percEl  = linha.querySelector('.progress-text');
 
-        // Usa innerText para evitar SVGs/ícones Lucide no HTML
         const nomeTexto = nomeEl ? nomeEl.innerText : '';
         const fatTexto  = fatEl  ? fatEl.innerText  : '';
-        const largura   = barraEl ? barraEl.style.width : '0%';
-        const classeBar = barraEl ? barraEl.className.replace('progress-bar-fill','').trim() : '';
-        const percTexto = percEl  ? percEl.innerText : '';
 
-        const corBarra = classeBar === 'meta-batida' ? '#22c55e' : classeBar === 'meta-excedida' ? '#f59e0b' : '#ef4444';
+        const nomeMotorista = nomeTexto.replace(/#\d+\s*-\s*/, '').split('(')[0].trim();
 
-        // Busca o nome puro para encontrar o PIX no cache
-       // Remove o "#1 - " do início e corta tudo a partir do primeiro parêntese com segurança
-const nomeMotorista = nomeTexto.replace(/#\d+\s*-\s*/, '').split('(')[0].trim();
-
-// Busca direto da variável global preenchida na inicialização do sistema
-const cadastro = (window.todosMotoristasCloud || []).find(m =>
-    nomeMotorista && m.nome.toLowerCase() === nomeMotorista.toLowerCase()
-);  
+        const cadastro = (window.todosMotoristasCloud || []).find(m =>
+            nomeMotorista && m.nome.toLowerCase() === nomeMotorista.toLowerCase()
+        );  
         const pixHtml = cadastro?.chave_pix
             ? `<div style="font-size:10px;color:#6b7280;margin-top:3px;">PIX: ${cadastro.chave_pix}</div>`
             : '';
 
-        linhasHtml += `
-            <div style="padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;page-break-inside:avoid;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-                    <div>
-                        <div style="font-size:13px;font-weight:600;color:#111827;">${nomeTexto}</div>
-                        ${pixHtml}
-                    </div>
-                    <div style="font-family:monospace;font-weight:600;color:#059669;font-size:15px;">${fatTexto}</div>
-                </div>
+        // A MÁGICA FINAL: Pesca a % invisível do 'data-perc' (ignora erro visual)
+        const porcentagemRaw = parseFloat(linha.getAttribute('data-perc')) || 0;
+        const percTexto = window.formatarPercentual ? window.formatarPercentual(porcentagemRaw) : porcentagemRaw.toFixed(1) + '%';
+        const largura = Math.min(porcentagemRaw, 100) + '%';
+        
+        let corBarra = '#ef4444'; // vermelho
+        if (porcentagemRaw >= 100) corBarra = '#22c55e'; // verde
+        else if (porcentagemRaw >= 80) corBarra = '#f59e0b'; // amarelo
+
+        const percBloqueado = porcentagemRaw < 80;
+const estileFat = percBloqueado
+    ? 'font-family:monospace;font-weight:600;color:#ef4444;font-size:15px;text-decoration:line-through;'
+    : 'font-family:monospace;font-weight:600;color:#059669;font-size:15px;';
+
+linhasHtml += `
+    <div style="padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;page-break-inside:avoid;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div>
+                <div style="font-size:13px;font-weight:600;color:#111827;">${nomeTexto}</div>
+                ${pixHtml}
+            </div>
+            <div style="${estileFat}">${fatTexto}${percBloqueado ? ' <span style="font-size:10px;background:#fee2e2;color:#ef4444;padding:2px 6px;border-radius:4px;font-weight:700;">BLOQUEADO</span>' : ''}</div>
+        </div>
                 <div style="display:flex;align-items:center;gap:10px;">
                     <div style="flex:1;background:#f3f4f6;height:6px;border-radius:999px;overflow:hidden;">
                         <div style="height:100%;border-radius:999px;width:${largura};background:${corBarra};"></div>
@@ -1950,90 +1965,96 @@ const cadastro = (window.todosMotoristasCloud || []).find(m =>
             </div>`;
     });
 
-    const totalQtd = document.getElementById('totalQtdPeriodo')?.innerText || '—';
-    const totalFat = document.getElementById('totalFatPeriodo')?.innerText  || '—';
-    // Monta seção de status (motoristas sem serviço no período)
-const statusLabels = {
-    licenca: 'Férias', folga: 'Folga', falta: 'Falta',
-    polioff: 'Poli OFF', desligado: 'Desligado', atestado: 'Atestado',
-};
-let statusHtml = '';
-const bancoDados = window.bancoDadosCloud;
-const statusPorMot = {};
+   const totalQtd = document.getElementById('totalQtdPeriodo')?.innerText || '—';
 
-for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-    if (dataStr < inicio || dataStr > fim) continue;
-    for (const [mot, dados] of Object.entries(dadosDia)) {
-        if (dados.status && dados.status !== 'normal' && (!dados.servicos || dados.servicos === 0)) {
-            if (!statusPorMot[mot]) statusPorMot[mot] = [];
-            const d = dataStr.split('-').reverse().join('/');
-            const label = statusLabels[dados.status] || dados.status;
-            statusPorMot[mot].push(`${d}: ${label}`);
+// Soma apenas motoristas com 80%+
+let totalFatLiberado = 0;
+linhasOriginais.forEach((linha) => {
+    const perc = parseFloat(linha.getAttribute('data-perc')) || 0;
+    const fatEl = linha.querySelector('.diario-faturamento');
+    if (perc >= 80 && fatEl) {
+        const valorLimpo = fatEl.innerText.replace(/[R$\s.]/g, '').replace(',', '.');
+        totalFatLiberado += parseFloat(valorLimpo) || 0;
+    }
+});
+const totalFat = totalFatLiberado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    
+    const statusLabels = {
+        licenca: 'Férias', folga: 'Folga', falta: 'Falta',
+        polioff: 'Poli OFF', desligado: 'Desligado', atestado: 'Atestado',
+    };
+    let statusHtml = '';
+    const bancoDados = window.bancoDadosCloud;
+    const statusPorMot = {};
+
+    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        if (dataStr < inicio || dataStr > fim) continue;
+        for (const [mot, dados] of Object.entries(dadosDia)) {
+            if (dados.status && dados.status !== 'normal' && (!dados.servicos || dados.servicos === 0)) {
+                if (!statusPorMot[mot]) statusPorMot[mot] = [];
+                const d = dataStr.split('-').reverse().join('/');
+                const label = statusLabels[dados.status] || dados.status;
+                statusPorMot[mot].push(`${d}: ${label}`);
+            }
         }
     }
-}
 
-if (Object.keys(statusPorMot).length > 0) {
-    statusHtml = `
-        <div style="margin-top:20px;border-top:1px solid #e5e7eb;padding-top:16px;">
-            <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">📋 Status por Motorista</div>
-            ${Object.entries(statusPorMot).map(([mot, dias]) => `
-                <div style="margin-bottom:8px;padding:10px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
-                    <div style="font-size:12px;font-weight:600;color:#111827;">${mot}</div>
-                    <div style="font-size:11px;color:#6b7280;margin-top:3px;">${dias.join(' · ')}</div>
-                </div>`).join('')}
-        </div>`;
-}
+    if (Object.keys(statusPorMot).length > 0) {
+        statusHtml = `
+            <div style="margin-top:20px;border-top:1px solid #e5e7eb;padding-top:16px;">
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">📋 Status por Motorista</div>
+                ${Object.entries(statusPorMot).map(([mot, dias]) => `
+                    <div style="margin-bottom:8px;padding:10px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+                        <div style="font-size:12px;font-weight:600;color:#111827;">${mot}</div>
+                        <div style="font-size:11px;color:#6b7280;margin-top:3px;">${dias.join(' · ')}</div>
+                    </div>`).join('')}
+            </div>`;
+    }
 
-    // Abre janela de impressão com o conteúdo — solução 100% confiável, sem html2canvas
     const janelaImpressao = window.open('', '_blank', 'width=800,height=900');
     janelaImpressao.document.write(`<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Ranking por Período - ${periodoLabel}</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; padding: 28px; background: #fff; color: #111827; }
-        @media print {
-            body { padding: 16px; }
-            @page { margin: 10mm; size: A4 portrait; }
-        }
-    </style>
-</head>
-<body>
-    <!-- Cabeçalho -->
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-        <div style="background:#dcfce7;border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;">📊</div>
-        <div>
-            <div style="font-size:17px;font-weight:700;color:#111827;">Ranking por Período</div>
-            <div style="font-size:12px;color:#9ca3af;">Total de serviços e faturamento</div>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <title>Ranking por Período - ${periodoLabel}</title>
+        <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: Arial, sans-serif; padding: 28px; background: #fff; color: #111827; }
+            @media print {
+                body { padding: 16px; }
+                @page { margin: 10mm; size: A4 portrait; }
+            }
+        </style>
+    </head>
+    <body>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+            <div style="background:#dcfce7;border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;">📊</div>
+            <div>
+                <div style="font-size:17px;font-weight:700;color:#111827;">Ranking por Período</div>
+                <div style="font-size:12px;color:#9ca3af;">Total de serviços e faturamento</div>
+            </div>
         </div>
-    </div>
-    <!-- Período -->
-    <div style="font-size:11px;color:#6b7280;margin-bottom:16px;padding-left:52px;">📅 ${periodoLabel}${uteisSufixo}</div>
-    <!-- Badge de totais -->
-    <div style="display:flex;justify-content:space-between;background:#f9fafb;border:1px solid #d1fae5;border-radius:10px;padding:12px 16px;margin-bottom:20px;">
-        <div>
-            <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Total de Serviços no Período</div>
-            <div style="font-size:15px;font-weight:700;color:#16a34a;">${totalQtd}</div>
+        <div style="font-size:11px;color:#6b7280;margin-bottom:16px;padding-left:52px;">📅 ${periodoLabel}${uteisSufixo}</div>
+        <div style="display:flex;justify-content:space-between;background:#f9fafb;border:1px solid #d1fae5;border-radius:10px;padding:12px 16px;margin-bottom:20px;">
+            <div>
+                <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Total de Serviços no Período</div>
+                <div style="font-size:15px;font-weight:700;color:#16a34a;">${totalQtd}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Faturamento no Período</div>
+                <div style="font-size:15px;font-weight:700;color:#059669;">${totalFat}</div>
+            </div>
         </div>
-        <div style="text-align:right;">
-            <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Faturamento no Período</div>
-            <div style="font-size:15px;font-weight:700;color:#059669;">${totalFat}</div>
-        </div>
-    </div>
-    <!-- Lista de motoristas -->
-    ${linhasHtml}
-    ${statusHtml} 
-    <script>
-        window.onload = function() {
-            window.print();
-            window.onafterprint = function() { window.close(); };
-        };
-    <\/script>
-</body>
-</html>`);
+        ${linhasHtml}
+        ${statusHtml} 
+        <script>
+            window.onload = function() {
+                window.print();
+                window.onafterprint = function() { window.close(); };
+            };
+        <\/script>
+    </body>
+    </html>`);
     janelaImpressao.document.close();
 };
 

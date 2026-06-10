@@ -175,7 +175,7 @@ function ehDiaEspecialRanking(dataStr, dados) {
 function aplicarCorrecaoRankings() {
     if (typeof window === 'undefined') return;
 
-   window.gerarRankingPeriodo = async function() {
+  window.gerarRankingPeriodo = async function() {
         const elInicio = document.getElementById('dataRankingInicio');
         const elFim = document.getElementById('dataRankingFim');
         if (!elInicio || !elFim) return;
@@ -186,7 +186,6 @@ function aplicarCorrecaoRankings() {
         const elTotalQtd = document.getElementById('totalQtdPeriodo');
         if (elTotalQtd) elTotalQtd.innerText = "Carregando...";
 
-        // MÁGICA AQUI: Busca o período exato direto na nuvem bypassando o mês da tela
         let bancoDados = {};
         try {
             const { data: lancs, error } = await window.supabaseClient
@@ -220,18 +219,15 @@ function aplicarCorrecaoRankings() {
         let rankPeriodo = {};
         let totalCaixasPeriodo = 0, totalViagensPeriodo = 0, totalFatPeriodo = 0;
 
-       for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
             if (dataEstaNoIntervalo(dataStr, inicio, fim)) {
                 const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
-                
-                // SE O BOTÃO "APENAS DIAS ÚTEIS" ESTIVER LIGADO, IGNORA DOMINGOS
                 if (window._apenasUteis && diaDaSemana === 0) continue;
 
                 for (const [mot, dados] of Object.entries(dadosDia)) {
-                    // SE O BOTÃO "APENAS DIAS ÚTEIS" ESTIVER LIGADO, IGNORA FERIADOS
                     if (window._apenasUteis && dados.isFeriado === true) continue;
 
-                    if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, diasTrab: 0, pontos: 0 };
+                    if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, pontos: 0 };
                     rankPeriodo[mot].valor += dados.valor;
                     rankPeriodo[mot].extra += dados.valorExtra || 0;
                     totalFatPeriodo += dados.valor || 0;
@@ -247,11 +243,6 @@ function aplicarCorrecaoRankings() {
                             totalCaixasPeriodo += (dados.servicos || 0);
                         }
                         rankPeriodo[mot].pontos += (dados.pontos !== undefined) ? dados.pontos : window.calcularPontosMotorista(mot, (dados.servicos || 0), dados.tipoVeiculo);
-                        
-                        // Conta dias de trabalho para a meta (segunda a sexta, sem ser feriado)
-                        if (diaDaSemana !== 6 && diaDaSemana !== 0 && !dados.isFeriado) {
-                            rankPeriodo[mot].diasTrab += 1;
-                        }
                     }
                 }
             }
@@ -261,13 +252,53 @@ function aplicarCorrecaoRankings() {
         if (elTotalQtd) elTotalQtd.innerText = `${totalCaixasPeriodo} cx | ${totalViagensPeriodo} vg`;
         if (elTotalFat) elTotalFat.innerText = formatarMoeda(totalFatPeriodo);
 
+        // Nenhuma variável duplicada a partir daqui
+        const mesRef = inicio.substring(0, 7);
+        const diasUteisGlobaisMes = window.carregarDiasUteis(mesRef) || 22;
+
+        let diasUteisNoPeriodo = 0;
+        let dAtual = new Date(inicio + 'T00:00:00');
+        const dLimite = new Date(fim + 'T00:00:00');
+        
+        while (dAtual <= dLimite) {
+            const ano = dAtual.getFullYear();
+            const mes = String(dAtual.getMonth() + 1).padStart(2, '0');
+            const dia = String(dAtual.getDate()).padStart(2, '0');
+            const dStr = `${ano}-${mes}-${dia}`;
+            
+            const dw = dAtual.getDay();
+            let isFeriado = false;
+            if (window.bancoDadosCloud[dStr]) {
+                const firstMot = Object.keys(window.bancoDadosCloud[dStr])[0];
+                if (firstMot && window.bancoDadosCloud[dStr][firstMot].isFeriado) isFeriado = true;
+            }
+            
+            // Conta apenas Seg a Sex para a meta
+            if (dw !== 0 && dw !== 6 && !isFeriado) diasUteisNoPeriodo++;
+            dAtual.setDate(dAtual.getDate() + 1);
+        }
+
         const rankArray = Object.keys(rankPeriodo).map(mot => {
-            const metaTotalPeriodo = window.getMetaDiaria(mot) * rankPeriodo[mot].diasTrab;
-            const porcentagem = metaTotalPeriodo > 0 ? (rankPeriodo[mot].pontos / metaTotalPeriodo) * 100 : 0;
+            const slaMotorista = window.calcularSlaMotorista(mot, mesRef);
+            const metaMensalMotorista = slaMotorista * window.getMetaDiaria(mot);
+            
+            // Fator do período
+            const fatorPeriodo = diasUteisGlobaisMes > 0 ? (diasUteisNoPeriodo / diasUteisGlobaisMes) : 0;
+            const metaDoPeriodo = metaMensalMotorista * fatorPeriodo;
+            
+            let porcentagem = 0;
+            if (metaDoPeriodo > 0) {
+                porcentagem = (rankPeriodo[mot].pontos / metaDoPeriodo) * 100;
+            } else if (rankPeriodo[mot].pontos > 0) {
+                porcentagem = 100;
+            }
+
             return { nome: mot, ...rankPeriodo[mot], porcentagem };
         }).filter(item => item.pontos > 0 || item.valor > 0);
 
+        // O RANKING AGORA ORDENA PELA PORCENTAGEM (SLA PROPORCIONAL)
         rankArray.sort((a, b) => b.porcentagem - a.porcentagem);
+        
         const divLista = document.getElementById('listaRankingDiario');
         if (!divLista) return;
         divLista.innerHTML = '';
@@ -279,8 +310,6 @@ function aplicarCorrecaoRankings() {
 
         rankArray.forEach((mot, index) => {
             const extraBadge = mot.extra > 0 ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded ml-2">+ Extra ${formatarMoeda(mot.extra)}</span>` : '';
-            
-            // Força o formatador a exibir como caixas passando "false" no final
             const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, false);
 
             const cadastro = (window.todosMotoristasCloud || []).find(m => m.nome === mot.nome);
@@ -293,7 +322,10 @@ function aplicarCorrecaoRankings() {
 
             const linha = document.createElement('div');
             linha.className = 'diario-row';
-            // Toda a div "progress-wrapper" (a barra e o % visual) foi removida do HTML abaixo!
+            
+            // INVISÍVEL: Guarda a porcentagem calculada pro PDF pescar!
+            linha.setAttribute('data-perc', mot.porcentagem);
+
             linha.innerHTML = `
                 <div class="diario-top" style="margin-bottom: 0;">
                     <div style="display:flex; flex-direction:column;">
@@ -346,8 +378,11 @@ function aplicarCorrecaoRankings() {
                             
                             acumuladoMes[mot].pontos += dados.tipoVeiculo === 'cacamba' ? srv * 2 : (dados.pontos !== undefined ? dados.pontos : window.calcularPontosMotorista(mot, srv, dados.tipoVeiculo));
                         }
-                        acumuladoMes[mot].valor += dados.valor;
-                        totalFatMesFrota += dados.valor;
+                            // DEPOIS:
+if (!diaEspecial) {
+    acumuladoMes[mot].valor += dados.valor;
+    totalFatMesFrota += dados.valor;
+}
                     }
                 }
             }
