@@ -861,8 +861,14 @@ window.renderizarSidebar = function () {
             // Se foi desligado em mês anterior ao exibido, não renderiza
             if (mesDesligamento && mesDesligamento < mesAtualFiltro) return;
 
+            // Consulta o SLA atual do motorista para o mês
+            const slaAtual = window.calcularSlaMotorista(mot, mesAtualFiltro);
+
             if (isDesligadoNesteMes) {
                 li.innerHTML = `<span class="text-red-500 w-full block font-black leading-tight">${mot} <span class="text-[9px] opacity-90 ml-1 bg-red-100 text-red-700 px-1 rounded border border-red-200">(Deslig. no Mês)</span></span>`;
+            } else if (slaAtual === 0) {
+                // Se o SLA estiver zerado, pinta de laranja com badge
+                li.innerHTML = `<span class="text-orange-500 w-full block font-bold">${mot} <span class="text-[9px] opacity-90 ml-1 bg-orange-100 text-orange-700 px-1 rounded border border-orange-200">(SLA 0)</span></span>`;
             } else {
                 li.textContent = mot;
             }
@@ -1335,8 +1341,7 @@ window.salvarLancamento = async function () {
 
         const tipoVeiculoInput = document.getElementById('tipoVeiculo').value;
         let servicosInput     = parseInt(document.getElementById('servicos').value) || 0;
-        const caixasExtraChk  = document.getElementById('caixasExtra')?.checked ? (servicosInput * 20) : 0;
-let valorExtraInput   = (parseFloat(document.getElementById('valorExtra').value.replace(',', '.')) || 0) + caixasExtraChk;
+        let valorExtraInput   = parseFloat(document.getElementById('valorExtra').value.replace(',', '.')) || 0;
         const isFeriadoInput  = document.getElementById('feriado')?.checked ?? false;
         const observacaoInput = document.getElementById('observacao')?.value.trim() ?? '';
 
@@ -1451,8 +1456,6 @@ const pontosExistente = lancamentoExistente.tipoVeiculo === 'poli_duplo' ? (lanc
     const el = document.getElementById(id);
     if (el) el.value = '';
 });
-const elCxExtra = document.getElementById('caixasExtra');
-if (elCxExtra) elCxExtra.checked = false;
         const elFeriado = document.getElementById('feriado');
         if (elFeriado) elFeriado.checked = false;
         const elStatus = document.getElementById('statusServico');
@@ -1500,12 +1503,13 @@ window.carregarHistoricoMotorista = function () {
     falta:   'bg-red-500 text-white',
     folga:   'bg-slate-500 text-white',
     atestado: 'bg-yellow-400 text-slate-800',
+    suspensao: 'bg-black text-white', // NOVA BADGE PRETA
     polioff:  'bg-orange-500 text-white',
     licenca:  'bg-red-600 text-white shadow-sm',
     desligado:  'bg-red-900 text-white shadow-sm',
   };
     const statusLabel = {
-        falta: 'Falta', folga: 'Folga', atestado: 'Atestado',
+        falta: 'Falta', folga: 'Folga', atestado: 'Atestado', suspensao: 'Suspensão',
         polioff: 'Poli OFF', licenca: 'Férias', desligado: 'Desligado',
     };
 
@@ -1981,7 +1985,7 @@ const totalFat = totalFatLiberado.toLocaleString('pt-BR', { style: 'currency', c
     
     const statusLabels = {
         licenca: 'Férias', folga: 'Folga', falta: 'Falta',
-        polioff: 'Poli OFF', desligado: 'Desligado', atestado: 'Atestado',
+        polioff: 'Poli OFF', desligado: 'Desligado', atestado: 'Atestado', suspensao: 'Suspensão',
     };
     let statusHtml = '';
     const bancoDados = window.bancoDadosCloud;
@@ -3346,9 +3350,9 @@ window.renderizarRelatorioFaltas = function () {
     if (!cont) return;
 
     const fmtD = s => { const [y,m,d] = s.split('-'); return d+'/'+m+'/'+y; };
-    const statusLabel = { falta:'Falta', atestado:'Atestado', folga:'Folga',
+    const statusLabel = { falta:'Falta', atestado:'Atestado', folga:'Folga', suspensao:'Suspensão',
         polioff:'Poli OFF', licenca:'Férias', desligado:'Desligado' };
-    const statusColor = { falta:'#dc2626', atestado:'#d97706', folga:'#64748b',
+    const statusColor = { falta:'#dc2626', atestado:'#d97706', folga:'#64748b', suspensao:'#000000',
         polioff:'#ea580c', licenca:'#7c3aed', desligado:'#991b1b' };
 
     // Coleta registros com falta ou atestado (dias úteis — seg a sáb)
@@ -3412,12 +3416,12 @@ window.exportarPdfFaltasAtestados = function (tipo) {
 
     const fmtD = s => { const [y,m,d] = s.split('-'); return d+'/'+m+'/'+y; };
     const fmt  = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-    const statusLabel = { falta:'Falta', atestado:'Atestado', folga:'Folga',
+    const statusLabel = { falta:'Falta', atestado:'Atestado', folga:'Folga', suspensao:'Suspensão',
         polioff:'Poli OFF', ferias:'Férias', desligado:'Desligado' };
-    const statusColor = { falta:'#dc2626', atestado:'#d97706', folga:'#64748b',
+    const statusColor = { falta:'#dc2626', atestado:'#d97706', folga:'#64748b', suspensao:'#000000',
         polioff:'#ea580c', ferias:'#7c3aed', desligado:'#991b1b' };
 
-    const tiposFiltro = tipo === 'todos' ? ['falta','atestado','folga','polioff','ferias','desligado']
+    const tiposFiltro = tipo === 'todos' ? ['falta','atestado','folga','polioff','ferias','desligado','suspensao']
         : tipo === 'falta'    ? ['falta']
         : ['atestado'];
 

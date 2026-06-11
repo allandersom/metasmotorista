@@ -74,21 +74,27 @@ function calcularValorSabado({ motoristaNome, dataObj, servicos, tipoVeiculo, ba
         const d = new Date(dataObj);
         d.setDate(dataObj.getDate() - (6 - i));
         const dStr = formatarData(d);
-        const lancDia = bancoDados[dStr]?.[motoristaNome];
-
-    if (lancDia) {
-    if (lancDia.isFeriado) {
-        qtdFeriadosSemana++;
-    } else if (!lancDia.status || lancDia.status === 'normal') {
-        const tipoVeiculoDia = lancDia.tipoVeiculo || 'poliguindaste';
-        // Só conta dias do mesmo tipo de veículo do sábado
-        if (tipoVeiculoDia === tipoVeiculo) {
-            const srv = isNaN(lancDia.servicos) ? 0 : lancDia.servicos;
-            const fatorDia = tipoVeiculoDia === 'poliguindaste' ? 2 : 1;
-            servicosFeitosSemana += srv * fatorDia;
+        
+        // Verifica de forma GLOBAL se o dia foi marcado como feriado para QUALQUER motorista
+        let diaEhFeriado = false;
+        if (bancoDados[dStr]) {
+            diaEhFeriado = Object.values(bancoDados[dStr]).some(mot => mot.isFeriado);
         }
-    }
-}
+
+        if (diaEhFeriado) {
+            qtdFeriadosSemana++;
+        } else {
+            const lancDia = bancoDados[dStr]?.[motoristaNome];
+            if (lancDia && (!lancDia.status || lancDia.status === 'normal')) {
+                const tipoVeiculoDia = lancDia.tipoVeiculo || 'poliguindaste';
+                // Só conta dias do mesmo tipo de veículo do sábado
+                if (tipoVeiculoDia === tipoVeiculo) {
+                    const srv = isNaN(lancDia.servicos) ? 0 : lancDia.servicos;
+                    const fatorDia = tipoVeiculoDia === 'poliguindaste' ? 2 : 1;
+                    servicosFeitosSemana += srv * fatorDia;
+                }
+            }
+        }
     }
 
     const metaSemanalFisica = (5 - qtdFeriadosSemana) * getMetaFisicaDiariaSabado(motoristaNome, tipoVeiculo);
@@ -414,11 +420,25 @@ if (!diaEspecial) {
 
         function renderizarMeta(feitas, meta, elValor, elFalta) {
             const perc = meta > 0 ? ((feitas / meta) * 100).toFixed(1) : 0;
-            const faltam = Math.max(0, meta - feitas);
+            const faltam100 = Math.max(0, meta - feitas);
+            const faltam80 = Math.max(0, (meta * 0.8) - feitas);
+            
             const metaFormatada = formatarNumeroInteligente(meta);
-            const faltamFormatado = formatarNumeroInteligente(faltam);
+            const txtFalta100 = formatarNumeroInteligente(faltam100);
+            const txtFalta80 = formatarNumeroInteligente(faltam80);
+            
             if (document.getElementById(elValor)) document.getElementById(elValor).innerText = `${Math.round(feitas)} / ${metaFormatada} cx`;
-            if (document.getElementById(elFalta)) document.getElementById(elFalta).innerText = `${perc}% | Faltam ${faltamFormatado} cx`;
+            
+            let textoFalta = `${perc}% | `;
+            if (faltam80 > 0) {
+                textoFalta += `Faltam ${txtFalta80} p/ 80% • Faltam ${txtFalta100} p/ 100%`;
+            } else if (faltam100 > 0) {
+                textoFalta += `80% Batido! 🎉 • Faltam ${txtFalta100} p/ 100%`;
+            } else {
+                textoFalta += `100% Alcançado! 🏆`;
+            }
+            
+            if (document.getElementById(elFalta)) document.getElementById(elFalta).innerText = textoFalta;
         }
 
         renderizarMeta(feitasGeral, ptsGeral, 'metaGeralGlobal', 'faltaGeralGlobal');
@@ -459,14 +479,37 @@ if (!diaEspecial) {
             else                           { corPercent = '#ef4444'; bgPercent = '#fee2e2'; borderPercent = '#fca5a5'; }
 
             const textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
-            const faltam = mot.metaExata - mot.pontos;
+            
+            // Novos cálculos de faltas
+            const faltam100 = mot.metaExata - mot.pontos;
+            const faltam80 = (mot.metaExata * 0.8) - mot.pontos;
+            
             let htmlFaltam = '';
-            if (faltam > 0) {
-                const calcVisual = window.motOutros.includes(mot.nome) ? faltam / 2 : faltam;
-                const txtFaltam = window.motOutros.includes(mot.nome) ? `Faltam ${formatarNumeroInteligente(calcVisual)} vg` : `Faltam ${formatarNumeroInteligente(calcVisual)} cx`;
-                htmlFaltam = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2 font-bold">${txtFaltam}</span>`;
+            if (faltam100 > 0) {
+                const calcVisual100 = window.motOutros.includes(mot.nome) ? faltam100 / 2 : faltam100;
+                const txt100 = window.motOutros.includes(mot.nome) ? `${formatarNumeroInteligente(calcVisual100)} vg` : `${formatarNumeroInteligente(calcVisual100)} cx`;
+                
+                if (faltam80 > 0) {
+                    // Ainda não bateu nem 80%
+                    const calcVisual80 = window.motOutros.includes(mot.nome) ? faltam80 / 2 : faltam80;
+                    const txt80 = window.motOutros.includes(mot.nome) ? `${formatarNumeroInteligente(calcVisual80)} vg` : `${formatarNumeroInteligente(calcVisual80)} cx`;
+                    
+                    htmlFaltam = `
+                        <div style="display:flex; flex-direction:column; gap:4px; margin-left:14px; align-items:flex-end;">
+                            <span class="text-[9.5px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold leading-none whitespace-nowrap">Falta ${txt80} p/ 80%</span>
+                            <span class="text-[9.5px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold leading-none whitespace-nowrap">Falta ${txt100} p/ 100%</span>
+                        </div>`;
+                } else {
+                    // Já passou dos 80%, falta só o 100%
+                    htmlFaltam = `
+                        <div style="display:flex; flex-direction:column; gap:4px; margin-left:14px; align-items:flex-end;">
+                            <span class="text-[9.5px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold leading-none whitespace-nowrap">80% Atingido! 🚀</span>
+                            <span class="text-[9.5px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold leading-none whitespace-nowrap">Falta ${txt100} p/ 100%</span>
+                        </div>`;
+                }
             } else {
-                htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded ml-2 font-bold">Meta OK!</span>`;
+                // Passou dos 100%
+                htmlFaltam = `<span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-1 rounded ml-4 font-bold whitespace-nowrap border border-emerald-200">100% Batido! 🏆</span>`;
             }
 
             const linha = document.createElement('div');
