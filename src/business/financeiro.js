@@ -175,7 +175,15 @@ export function calcularValorDia({
 
 function ehDiaEspecialRanking(dataStr, dados) {
     const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
-    return diaDaSemana === 0 || dados.isFeriado === true;
+    if (diaDaSemana === 0 || dados.isFeriado === true) return true;
+    
+    // Dia exclusivamente extra = não conta pra meta, igual domingo/feriado
+    const isExtra = dados.observacao &&
+        (dados.observacao.includes('[EXTRA R$ 20]') ||
+         dados.observacao.includes('[EXTRA R$20]'));
+    if (isExtra && dados.pontos === 0) return true;
+    
+    return false;
 }
 
 function aplicarCorrecaoRankings() {
@@ -230,17 +238,23 @@ function aplicarCorrecaoRankings() {
                 const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
                 if (window._apenasUteis && diaDaSemana === 0) continue;
 
-                for (const [mot, dados] of Object.entries(dadosDia)) {
-                    if (window._apenasUteis && dados.isFeriado === true) continue;
+               for (const [mot, dados] of Object.entries(dadosDia)) {
+                    const isExtra = dados.observacao && (dados.observacao.includes('[EXTRA R$ 20]') || dados.observacao.includes('[EXTRA R$20]'));
+
+                    // Se "Dias Úteis" estiver ativado, o Extra some completamente do ranking
+                    if (window._apenasUteis && (dados.isFeriado || isExtra)) continue;
 
                     if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, pontos: 0 };
-                    rankPeriodo[mot].valor += dados.valor;
+
+                    // O dinheiro continua entrando para o ranking geral (se não foi bloqueado pelos Dias Úteis)
+                    rankPeriodo[mot].valor += dados.valor || 0;
                     rankPeriodo[mot].extra += dados.valorExtra || 0;
                     totalFatPeriodo += dados.valor || 0;
 
-                    const statusNormal = !dados.status || dados.status === 'normal';
-                    
-                    if (statusNormal) {
+                    const statusNormal = (!dados.status || dados.status === 'normal');
+
+                    // Caixas e pontos só vão para o Ranking se NÃO for Extra
+                    if (statusNormal && !isExtra) {
                         if (dados.tipoVeiculo === 'cacamba') {
                             rankPeriodo[mot].viagens += (dados.servicos || 0);
                             totalViagensPeriodo += (dados.servicos || 0);
@@ -521,3 +535,5 @@ if (!diaEspecial) {
 }
 
 queueMicrotask(aplicarCorrecaoRankings);
+
+
