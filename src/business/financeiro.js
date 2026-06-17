@@ -222,7 +222,8 @@ function aplicarCorrecaoRankings() {
                     tipoVeiculo: l.tipo_veiculo,
                     valorExtra: parseFloat(l.valor_extra) || 0,
                     status: l.status_servico,
-                    pontos: l.tipo_veiculo === 'cacamba' ? l.quantidade_servicos * 2 : l.quantidade_servicos
+                    pontos: l.tipo_veiculo === 'cacamba' ? l.quantidade_servicos * 2 : l.quantidade_servicos,
+                    observacao: l.observacao // <--- É SÓ ADICIONAR ESTA LINHA AQUI
                 };
             });
         } catch (err) {
