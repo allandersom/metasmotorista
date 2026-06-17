@@ -1418,7 +1418,7 @@
     let pontosFinais = window.calcularPontosMotorista(window.motoristaSelecionado, servicosFinais, tipoVeiculoFinal);
 
     if (isExtraInput) {
-        valorFinal = valorExtraFinal + (servicosInput * 20); // Paga exatos R$ 20 por caixa
+        valorFinal = valorExtraFinal;// 
         pontosFinais = 0; // Zera os pontos para não contar nas metas
         observacaoFinal = "[EXTRA R$ 20] " + observacaoFinal; // Etiqueta pro sistema lembrar
     }
@@ -2171,7 +2171,7 @@
                     if (!(dados.servicos > 0) && (!dados.status || dados.status === 'normal')) continue;
                     
                     const obj = {
-                        dataStr,
+                        dataStr,    
                         nome:    mot,
                         caixas:  dados.tipoVeiculo !== 'cacamba' ? (dados.servicos || 0) : 0,
                         viagens: dados.tipoVeiculo === 'cacamba' ? (dados.servicos || 0) : 0,
