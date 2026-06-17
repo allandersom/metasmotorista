@@ -2115,126 +2115,135 @@
         // PAINEL DOMINGOS E FERIADOS
         // =============================================================
         window.gerarPainelFeriados = async function () {
-            const domInicio = document.getElementById('dataDomInicio')?.value;
-            const domFim    = document.getElementById('dataDomFim')?.value;
-            const ferInicio = document.getElementById('dataFerInicio')?.value;
-            const ferFim    = document.getElementById('dataFerFim')?.value;
+    // Pega a data da caixinha unificada (com fallback para garantir que não dê bug)
+    const dataInicio = document.getElementById('dataInicio')?.value || document.getElementById('dataDomInicio')?.value;
+    const dataFim    = document.getElementById('dataFim')?.value || document.getElementById('dataDomFim')?.value;
 
-            // Pega o menor e o maior valor de data dos dois calendários para buscar de uma vez no banco
-            let datas = [domInicio, domFim, ferInicio, ferFim].filter(Boolean).sort();
-            if (datas.length === 0) return;
-            const inicioGeral = datas[0];
-            const fimGeral = datas[datas.length - 1];
+    if (!dataInicio || !dataFim) return;
 
-            const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
-            _set('totalFatDom', 'Carregando...');
-            _set('totalFatFer', 'Carregando...');
+    const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+    _set('totalFatDom', 'Carregando...');
+    _set('totalFatFer', 'Carregando...');
 
-            // Busca assíncrona conectada direto no Supabase (bypassando o mês da tela)
-            let bancoDados = {};
-            try {
-                const { data: lancs, error } = await window.supabaseClient
-                    .from('lancamentos')
-                    .select('*')
-                    .is('cancelado_em', null)
-                    .gte('data', inicioGeral)
-                    .lte('data', fimGeral);
+    let bancoDados = {};
+    let extraTotalDiasUteis = 0;
 
-                if (error) throw error;
+    try {
+        const { data: lancs, error } = await window.supabaseClient
+            .from('lancamentos')
+            .select('*')
+            .is('cancelado_em', null)
+            .gte('data', dataInicio)
+            .lte('data', dataFim);
 
-                (lancs || []).forEach(l => {
-                    const nomeMotorista = (l.motorista_nome || '').toUpperCase().trim();
-                    if (!nomeMotorista || !l.data) return;
-                    if (!bancoDados[l.data]) bancoDados[l.data] = {};
+        if (error) throw error;
+
+        (lancs || []).forEach(l => {
+            const nomeMotorista = (l.motorista_nome || '').toUpperCase().trim();
+            if (!nomeMotorista || !l.data) return;
+
+            const isFeriado = l.is_feriado;
+            const dataObj  = new Date(l.data + 'T00:00:00');
+            const isDomingo = dataObj.getDay() === 0;
+            const extraVal = parseFloat(l.valor_extra) || 0;
+
+            // Pega apenas extras de Dias Úteis
+            if (!isDomingo && !isFeriado && extraVal > 0) {
+                extraTotalDiasUteis += extraVal;
+            }
+
+            // Agrupa para montar as listas de Domingos e Feriados
+            if (isDomingo || isFeriado) {
+                if (!bancoDados[l.data]) bancoDados[l.data] = {};
+                if (!bancoDados[l.data][nomeMotorista]) {
                     bancoDados[l.data][nomeMotorista] = {
-                        servicos: l.quantidade_servicos,
-                        valor: parseFloat(l.valor_faturamento) || 0,
-                        isFeriado: l.is_feriado,
-                        tipoVeiculo: l.tipo_veiculo,
-                        valorExtra: parseFloat(l.valor_extra) || 0,
-                        status: l.status_servico,
+                        servicos: 0, valor: 0, isFeriado: l.is_feriado,
+                        tipoVeiculo: l.tipo_veiculo, status: l.status_servico
                     };
-                });
-            } catch (err) {
-                console.error("Erro ao buscar domingos e feriados no banco:", err);
-                return;
-            }
-
-            let registrosDom = [], registrosFer = [];
-            let fatTotalDom = 0, fatTotalFer = 0;
-
-            for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-                const dataObj  = new Date(dataStr + 'T00:00:00');
-                const isDomingo = dataObj.getDay() === 0;
-
-                for (const [mot, dados] of Object.entries(dadosDia)) {
-                    if (!(dados.servicos > 0) && (!dados.status || dados.status === 'normal')) continue;
-                    
-                    const obj = {
-                        dataStr,    
-                        nome:    mot,
-                        caixas:  dados.tipoVeiculo !== 'cacamba' ? (dados.servicos || 0) : 0,
-                        viagens: dados.tipoVeiculo === 'cacamba' ? (dados.servicos || 0) : 0,
-                        valor:   dados.valor || 0,
-                        status:  dados.status,
-                    };
-                    
-                    if (isDomingo && !dados.isFeriado) {
-                        if (!domInicio || !domFim || dataEstaNoIntervalo(dataStr, domInicio, domFim)) {
-                            registrosDom.push(obj);
-                            fatTotalDom += (dados.valor || 0);
-                        }
-                    }
-                    if (dados.isFeriado) {
-                        if (!ferInicio || !ferFim || dataEstaNoIntervalo(dataStr, ferInicio, ferFim)) {
-                            registrosFer.push(obj);
-                            fatTotalFer += (dados.valor || 0);
-                        }
-                    }
+                }
+                bancoDados[l.data][nomeMotorista].servicos += (l.quantidade_servicos || 0);
+                bancoDados[l.data][nomeMotorista].valor += (parseFloat(l.valor_faturamento) || 0);
+                if (l.status_servico && l.status_servico !== 'normal') {
+                    bancoDados[l.data][nomeMotorista].status = l.status_servico;
                 }
             }
+        });
+    } catch (err) {
+        console.error("Erro ao buscar domingos e feriados no banco:", err);
+        return;
+    }
 
-            _set('totalFatDom',      formatarMoeda(fatTotalDom));
-            _set('totalFatFer',      formatarMoeda(fatTotalFer));
-            _set('totalGeralDomFer', formatarMoeda(fatTotalDom + fatTotalFer));
+    let registrosDom = [], registrosFer = [];
+    let fatTotalDom = 0, fatTotalFer = 0;
 
-            function renderizarLista(listaRegistros, idElemento, msgVazia) {
-                listaRegistros.sort((a, b) => new Date(b.dataStr) - new Date(a.dataStr) || b.valor - a.valor);
-                const divLista = document.getElementById(idElemento);
-                if (!divLista) return;
-                divLista.innerHTML = '';
+    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        const dataObj  = new Date(dataStr + 'T00:00:00');
+        const isDomingo = dataObj.getDay() === 0;
 
-                if (listaRegistros.length === 0) {
-                    divLista.innerHTML = `<div class="text-center text-slate-400 py-8 font-medium">${msgVazia}</div>`;
-                    return;
+        for (const [mot, dados] of Object.entries(dadosDia)) {
+            if (!(dados.servicos > 0) && (!dados.status || dados.status === 'normal')) continue;
+            
+            const obj = {
+                dataStr, nome: mot,
+                caixas: dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0,
+                viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0,
+                valor: dados.valor, status: dados.status,
+            };
+            
+            if (isDomingo && !dados.isFeriado) {
+                if (dataEstaNoIntervalo(dataStr, dataInicio, dataFim)) {
+                    registrosDom.push(obj);
+                    fatTotalDom += obj.valor;
                 }
-
-                listaRegistros.forEach(mot => {
-                    let textoQtd = '';
-                    if (mot.status && mot.status !== 'normal') {
-                        textoQtd = `<span class="bg-red-500 text-white px-2 py-0.5 rounded text-[10px] uppercase font-bold">${mot.status}</span>`;
-                    } else {
-                        textoQtd = formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
-                    }
-
-                    const linha = document.createElement('div');
-                    linha.className = 'diario-row';
-                    linha.innerHTML = `
-                        <div class="diario-top" style="margin:0;">
-                            <span class="diario-nome" style="display:flex; align-items:center; gap:8px;">
-                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-black">${formatarDataParaExibicao(mot.dataStr)}</span>
-                                ${mot.nome} <span class="text-blue-500">(${textoQtd})</span>
-                            </span>
-                            <span class="diario-faturamento text-red-500">${formatarMoeda(mot.valor)}</span>
-                        </div>
-                    `;
-                    divLista.appendChild(linha);
-                });
             }
+            if (dados.isFeriado) {
+                if (dataEstaNoIntervalo(dataStr, dataInicio, dataFim)) {
+                    registrosFer.push(obj);
+                    fatTotalFer += obj.valor;
+                }
+            }
+        }
+    }
 
-            renderizarLista(registrosDom, 'listaDomingos', 'Nenhum serviço em domingos no período selecionado. 😴');
-            renderizarLista(registrosFer, 'listaFeriados', 'Nenhum serviço em feriados no período selecionado. 😴');
-        };
+    _set('totalFatDom', formatarMoeda(fatTotalDom));
+    _set('totalFatFer', formatarMoeda(fatTotalFer));
+    _set('totalGeralDomFer', formatarMoeda(fatTotalDom + fatTotalFer));
+    _set('totalExtraDiasUteis', formatarMoeda(extraTotalDiasUteis));
+
+    function renderizarLista(listaRegistros, idElemento, msgVazia) {
+        listaRegistros.sort((a, b) => new Date(b.dataStr) - new Date(a.dataStr) || b.valor - a.valor);
+        const divLista = document.getElementById(idElemento);
+        if (!divLista) return;
+        divLista.innerHTML = '';
+
+        if (listaRegistros.length === 0) {
+            divLista.innerHTML = `<div class="text-center text-slate-400 py-8 font-medium">${msgVazia}</div>`;
+            return;
+        }
+
+        listaRegistros.forEach(mot => {
+            let textoQtd = mot.status && mot.status !== 'normal' 
+                ? `<span class="bg-red-500 text-white px-2 py-0.5 rounded text-[10px] uppercase font-bold">${mot.status}</span>` 
+                : formatarQuantidadeMista(mot.caixas, mot.viagens, window.motOutros.includes(mot.nome));
+
+            const linha = document.createElement('div');
+            linha.className = 'diario-row';
+            linha.innerHTML = `
+                <div class="diario-top" style="margin:0;">
+                    <span class="diario-nome" style="display:flex; align-items:center; gap:8px;">
+                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-black">${formatarDataParaExibicao(mot.dataStr)}</span>
+                        ${mot.nome} <span class="text-blue-500">(${textoQtd})</span>
+                    </span>
+                    <span class="diario-faturamento text-red-500">${formatarMoeda(mot.valor)}</span>
+                </div>
+            `;
+            divLista.appendChild(linha);
+        });
+    }
+
+    renderizarLista(registrosDom, 'listaDomingos', 'Nenhum serviço em domingos.');
+    renderizarLista(registrosFer, 'listaFeriados', 'Nenhum serviço em feriados.');
+};
 
         // =============================================================
         // GRÁFICOS DE PROJEÇÃO
@@ -3307,128 +3316,206 @@
         // recarrega frota/meta também
         if (window.carregarDados) window.carregarDados();
         };
-        window.exportarPdfDomFeriados = function () {
-            const bancoDados = window.bancoDadosCloud;
-            const domInicio = document.getElementById('dataDomInicio')?.value;
-            const domFim    = document.getElementById('dataDomFim')?.value;
-            const ferInicio = document.getElementById('dataFerInicio')?.value;
-            const ferFim    = document.getElementById('dataFerFim')?.value;
+        window.exportarPdfDomFeriados = async function () {
+    const dataInicio = document.getElementById('dataInicio')?.value || document.getElementById('dataDomInicio')?.value;
+    const dataFim    = document.getElementById('dataFim')?.value || document.getElementById('dataDomFim')?.value;
 
-            let registrosDom = [], registrosFer = [];
-            let fatTotalDom = 0, fatTotalFer = 0;
+    if (!dataInicio || !dataFim) {
+        alert("Por favor, selecione um período válido antes de exportar.");
+        return;
+    }
 
-            for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-            const dataObj   = new Date(dataStr + 'T00:00:00');
-            const isDomingo = dataObj.getDay() === 0;
-            for (const [mot, dados] of Object.entries(dadosDia)) {
-                const trabalhou = dados.servicos > 0;
-                const temStatus = dados.status && dados.status !== 'normal';
-                // Ignora dias sem nenhum dado relevante
-                if (!trabalhou && !temStatus && !isDomingo && !dados.isFeriado) continue;
+    // Busca todos os lançamentos
+    const { data: lancs, error } = await window.supabaseClient
+        .from('lancamentos')
+        .select('*')
+        .is('cancelado_em', null)
+        .gte('data', dataInicio)
+        .lte('data', dataFim);
 
-                const obj = {
-                    dataStr,
-                    nome:    mot,
-                    caixas:  dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0,
-                    viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0,
-                    valor:   dados.valor || 0,
-                    valorExtra: dados.valorExtra || 0,
-                    trabalhou,
-                    status:  dados.status || 'normal',
+    if (error) {
+        alert("Erro ao buscar dados para o PDF.");
+        return;
+    }
+
+    let bancoDados = {};
+    let listaExtras = []; 
+    let extraTotalDiasUteis = 0;
+
+    (lancs || []).forEach(l => {
+        const nomeMotorista = (l.motorista_nome || '').toUpperCase().trim();
+        if (!nomeMotorista || !l.data) return;
+        
+        const isFeriado = l.is_feriado;
+        const dataObj  = new Date(l.data + 'T00:00:00');
+        const isDomingo = dataObj.getDay() === 0;
+        const extraVal = parseFloat(l.valor_extra) || 0;
+
+        // Extrai os Extras de Dias Úteis
+        if (!isDomingo && !isFeriado && extraVal > 0) {
+            listaExtras.push({
+                dataStr: l.data,
+                nome: nomeMotorista,
+                valor: extraVal,
+                obs: l.observacao || 'Sem observação'
+            });
+            extraTotalDiasUteis += extraVal;
+        }
+
+        // Agrupa Dom/Fer
+        if (isDomingo || isFeriado) {
+            if (!bancoDados[l.data]) bancoDados[l.data] = {};
+            if (!bancoDados[l.data][nomeMotorista]) {
+                bancoDados[l.data][nomeMotorista] = {
+                    servicos: 0, valor: 0, isFeriado: l.is_feriado,
+                    tipoVeiculo: l.tipo_veiculo, status: l.status_servico
                 };
-                if (isDomingo && !dados.isFeriado) {
-                    if (!domInicio || !domFim || dataEstaNoIntervalo(dataStr, domInicio, domFim)) {
-                        registrosDom.push(obj);
-                        fatTotalDom += obj.valor;
-                    }
+            }
+            bancoDados[l.data][nomeMotorista].servicos += (l.quantidade_servicos || 0);
+            bancoDados[l.data][nomeMotorista].valor += (parseFloat(l.valor_faturamento) || 0);
+            if (l.status_servico && l.status_servico !== 'normal') {
+                bancoDados[l.data][nomeMotorista].status = l.status_servico;
+            }
+        }
+    });
+
+    let registrosDom = [], registrosFer = [];
+    let fatTotalDom = 0, fatTotalFer = 0;
+
+    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
+        const dataObj   = new Date(dataStr + 'T00:00:00');
+        const isDomingo = dataObj.getDay() === 0;
+
+        for (const [mot, dados] of Object.entries(dadosDia)) {
+            const trabalhou = dados.servicos > 0;
+            const temStatus = dados.status && dados.status !== 'normal';
+            if (!trabalhou && !temStatus) continue;
+
+            const obj = {
+                dataStr, nome: mot,
+                caixas: dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0,
+                viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0,
+                valor: dados.valor || 0,
+            };
+            
+            if (isDomingo && !dados.isFeriado) {
+                if (dataEstaNoIntervalo(dataStr, dataInicio, dataFim)) {
+                    registrosDom.push(obj);
+                    fatTotalDom += obj.valor;
                 }
-                if (dados.isFeriado) {
-                    if (!ferInicio || !ferFim || dataEstaNoIntervalo(dataStr, ferInicio, ferFim)) {
-                        registrosFer.push(obj);
-                        fatTotalFer += obj.valor;
-                    }
+            }
+            if (dados.isFeriado) {
+                if (dataEstaNoIntervalo(dataStr, dataInicio, dataFim)) {
+                    registrosFer.push(obj);
+                    fatTotalFer += obj.valor;
                 }
             }
         }
+    }
 
-            const ordenar = (lista) => lista.sort((a, b) => a.nome.localeCompare(b.nome) || new Date(a.dataStr) - new Date(b.dataStr));
-            ordenar(registrosDom);
-            ordenar(registrosFer);
+    const ordenar = (lista) => lista.sort((a, b) => a.nome.localeCompare(b.nome) || new Date(a.dataStr) - new Date(b.dataStr));
+    ordenar(registrosDom);
+    ordenar(registrosFer);
 
-            const fmt     = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const fmtData = (s) => { const [y, m, d] = s.split('-'); return d + '/' + m + '/' + y; };
+    const fmt     = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtData = (s) => { const [y, m, d] = s.split('-'); return d + '/' + m + '/' + y; };
+    const periodoStr = fmtData(dataInicio) + ' – ' + fmtData(dataFim);
 
-            function gerarTabela(lista, total) {
-            if (lista.length === 0) return '<p style="color:#888;font-style:italic;">Nenhum registro no período.</p>';
+    function gerarTabelaDomFer(lista, total) {
+        if (lista.length === 0) return '<p style="color:#888;font-style:italic;">Nenhum registro no período.</p>';
 
-            // Agrupa por motorista
-            const porMot = {};
-            lista.forEach(function(r) {
-                if (!porMot[r.nome]) porMot[r.nome] = [];
-                porMot[r.nome].push(r);
-            });
+        const porMot = {};
+        lista.forEach(function(r) {
+            if (!porMot[r.nome]) porMot[r.nome] = [];
+            porMot[r.nome].push(r);
+        });
 
-            let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-            html += '<thead><tr style="background:#f1f5f9;">'
-                + '<th style="text-align:left;padding:7px 10px;border:1px solid #ddd;">Motorista</th>'
-                + '<th style="padding:7px 10px;border:1px solid #ddd;">Data</th>'
-                + '<th style="padding:7px 10px;border:1px solid #ddd;">Qtd</th>'
-                + '<th style="padding:7px 10px;border:1px solid #ddd;">Valor</th>'
-                + '</tr></thead><tbody>';
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+        html += '<thead><tr style="background:#f1f5f9;">'
+            + '<th style="text-align:left;padding:7px 10px;border:1px solid #ddd;">Motorista</th>'
+            + '<th style="padding:7px 10px;border:1px solid #ddd;">Data</th>'
+            + '<th style="padding:7px 10px;border:1px solid #ddd;">Qtd</th>'
+            + '<th style="padding:7px 10px;border:1px solid #ddd;">Valor</th>'
+            + '</tr></thead><tbody>';
 
-            Object.entries(porMot).forEach(function([nome, registros]) {
-                let subtotal = 0;
-                registros.forEach(function(r, i) {
-                    subtotal += r.valor || 0;
-                    const isFirst = i === 0;
-                    const qtd = r.caixas > 0 ? (r.caixas + ' cx') : (r.viagens + ' vg');
-                    const obs = r.valorExtra > 0
-                        ? '<br><span style="font-size:11px;color:#7c3aed;font-weight:600;">Extra: ' + fmt(r.valorExtra) + '</span>'
-                        : '';
-                    html += '<tr style="background:' + (isFirst ? '#f8fafc' : '#fff') + ';">'
-                        + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isFirst ? '700' : '400') + ';color:' + (isFirst ? '#1e293b' : '#475569') + ';">' + (isFirst ? nome : '') + '</td>'
-                        + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtData(r.dataStr) + '</td>'
-                        + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + qtd + '</td>'
-                        + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:right;color:#dc2626;font-weight:600;">' + fmt(r.valor) + obs + '</td>'
-                        + '</tr>';
-                });
-                // Linha de subtotal por motorista
-                html += '<tr style="background:#fef9c3;">'
-                    + '<td colspan="3" style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#92400e;font-size:12px;">Subtotal ' + nome + ':</td>'
-                    + '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#92400e;">' + fmt(subtotal) + '</td>'
+        Object.entries(porMot).forEach(function([nome, registros]) {
+            let subtotal = 0;
+            registros.forEach(function(r, i) {
+                subtotal += r.valor || 0;
+                const isFirst = i === 0;
+                const qtd = r.caixas > 0 ? (r.caixas + ' cx') : (r.viagens + ' vg');
+                html += '<tr style="background:' + (isFirst ? '#f8fafc' : '#fff') + ';">'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isFirst ? '700' : '400') + ';color:' + (isFirst ? '#1e293b' : '#475569') + ';">' + (isFirst ? nome : '') + '</td>'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtData(r.dataStr) + '</td>'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + qtd + '</td>'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:right;color:#dc2626;font-weight:600;">' + fmt(r.valor) + '</td>'
                     + '</tr>';
             });
+            html += '<tr style="background:#fef9c3;">'
+                + '<td colspan="3" style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#92400e;font-size:12px;">Subtotal ' + nome + ':</td>'
+                + '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#92400e;">' + fmt(subtotal) + '</td>'
+                + '</tr>';
+        });
 
-            html += '</tbody><tfoot><tr>'
-                + '<td colspan="3" style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;">Total Geral:</td>'
-                + '<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#dc2626;">' + fmt(total) + '</td>'
-                + '</tr></tfoot></table>';
-            return html;
-        }
+        html += '</tbody><tfoot><tr>'
+            + '<td colspan="3" style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;">Total da Categoria:</td>'
+            + '<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#dc2626;">' + fmt(total) + '</td>'
+            + '</tr></tfoot></table>';
+        return html;
+    }
 
-            const periodoDom = (domInicio && domFim) ? (fmtData(domInicio) + ' – ' + fmtData(domFim)) : 'Todo o período';
-            const periodoFer = (ferInicio && ferFim)  ? (fmtData(ferInicio) + ' – ' + fmtData(ferFim)) : 'Todo o período';
+    function gerarTabelaExtras(lista, total) {
+        if (lista.length === 0) return '';
+        
+        lista.sort((a,b) => new Date(a.dataStr) - new Date(b.dataStr) || a.nome.localeCompare(b.nome));
 
-            const conteudo = '<html><head><meta charset="UTF-8">'
-                + '<style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b;}'
-                + 'h1{font-size:20px;margin-bottom:4px;}'
-                + 'h2{font-size:15px;margin:28px 0 10px;color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:6px;}'
-                + '.sub{font-size:12px;color:#64748b;margin-bottom:20px;}</style>'
-                + '</head><body>'
-                + '<h1>Domingos &amp; Feriados — Relatório RH</h1>'
-                + '<div class="sub">Gerado em ' + new Date().toLocaleString('pt-BR') + '</div>'
-                + '<h2>☀️ Domingos <span style="font-size:12px;font-weight:400;color:#64748b;">(' + periodoDom + ')</span></h2>'
-                + gerarTabela(registrosDom, fatTotalDom)
-                + '<h2 style="margin-top:36px;">🎉 Feriados <span style="font-size:12px;font-weight:400;color:#64748b;">(' + periodoFer + ')</span></h2>'
-                + gerarTabela(registrosFer, fatTotalFer)
-                + '<div style="margin-top:24px;padding:12px 16px;background:#f1f5f9;border-radius:8px;text-align:right;font-size:15px;font-weight:700;">Total Geral: <span style="color:#dc2626;">' + fmt(fatTotalDom + fatTotalFer) + '</span></div>'
-                + '</body></html>';
+        let html = '<h2 style="margin-top:36px; color:#6b21a8;">💰 Extras <span style="font-size:12px;font-weight:400;color:#64748b;">(Dias Úteis)</span></h2>';
+        html += '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;">';
+        html += '<thead><tr style="background:#f3e8ff;">'
+            + '<th style="text-align:center;padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;">Data</th>'
+            + '<th style="text-align:left;padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;">Motorista</th>'
+            + '<th style="text-align:left;padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;">Observação</th>'
+            + '<th style="padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;text-align:right;">Valor Extra</th>'
+            + '</tr></thead><tbody>';
+        
+        lista.forEach(r => {
+            html += '<tr>'
+                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;text-align:center;">' + fmtData(r.dataStr) + '</td>'
+                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;font-weight:600;">' + r.nome + '</td>'
+                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;color:#475569;">' + r.obs + '</td>'
+                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;text-align:right;color:#7c3aed;font-weight:700;">' + fmt(r.valor) + '</td>'
+                + '</tr>';
+        });
+        html += '</tbody><tfoot><tr style="background:#faf5ff;">'
+            + '<td colspan="3" style="padding:8px 10px;border:1px solid #d8b4fe;text-align:right;font-weight:700;color:#6b21a8;">Total Extras:</td>'
+            + '<td style="padding:8px 10px;border:1px solid #d8b4fe;text-align:right;font-weight:700;color:#7c3aed;">' + fmt(total) + '</td>'
+            + '</tr></tfoot></table>';
+        return html;
+    }
 
-            const win = window.open('', '_blank');
-            win.document.write(conteudo);
-            win.document.close();
-            win.print();
-        };
+    const grandTotal = fatTotalDom + fatTotalFer;
+
+    const conteudo = '<html><head><meta charset="UTF-8">'
+        + '<style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b;}'
+        + 'h1{font-size:20px;margin-bottom:4px;}'
+        + 'h2{font-size:15px;margin:28px 0 10px;color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:6px;}'
+        + '.sub{font-size:12px;color:#64748b;margin-bottom:20px;}</style>'
+        + '</head><body>'
+        + '<h1>Domingos &amp; Feriados &amp; Extras — Relatório RH</h1>' // Título Atualizado!
+        + '<div class="sub">Gerado em ' + new Date().toLocaleString('pt-BR') + '</div>'
+        + '<h2>☀️ Domingos <span style="font-size:12px;font-weight:400;color:#64748b;">(' + periodoStr + ')</span></h2>'
+        + gerarTabelaDomFer(registrosDom, fatTotalDom)
+        + '<h2 style="margin-top:36px;">🎉 Feriados <span style="font-size:12px;font-weight:400;color:#64748b;">(' + periodoStr + ')</span></h2>'
+        + gerarTabelaDomFer(registrosFer, fatTotalFer)
+        + '<div style="margin-top:24px;padding:12px 16px;background:#f1f5f9;border-radius:8px;text-align:right;font-size:15px;font-weight:700;">Total Geral (Dom/Fer): <span style="color:#dc2626;">' + fmt(grandTotal) + '</span></div>'
+        + gerarTabelaExtras(listaExtras, extraTotalDiasUteis)
+        + '</body></html>';
+
+    const win = window.open('', '_blank');
+    win.document.write(conteudo);
+    win.document.close();
+    win.print();
+};
         // ─── RELATÓRIO DE FALTAS / ATESTADOS ───────────────────────────────────────
 
         window.popularSelectFaltas = function () {
