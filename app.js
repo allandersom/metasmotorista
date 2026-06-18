@@ -3057,7 +3057,15 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
         // Função para calcular e atualizar os cards superiores do Cadastro
         window.atualizarCardsCadastro = function() {
         const total = window.motoristasCache.length;
-        const inativos = window.motoristasCache.filter(m => m.status === 'inativo').length;
+        const inativos = window.motoristasCache.filter(m => {
+    // Pega o nome do motorista para verificar no banco de lançamentos
+    const nomeUpper = (m.nome || '').toUpperCase().trim();
+    // Verifica se ele tem algum lançamento como 'desligado'
+    const isDesligado = Object.values(window.bancoDadosCloud || {}).some(dia => dia[nomeUpper]?.status === 'desligado');
+    
+    // É considerado inativo se o status for 'inativo', se tiver data de demissão preenchida OU se estiver como 'desligado'
+    return m.status === 'inativo' || m.data_demissao || isDesligado;
+}).length;
         const ativos = total - inativos;
 
         const percAtivos = total > 0 ? Math.round((ativos / total) * 100) : 0;

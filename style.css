@@ -1749,3 +1749,13 @@ input[type="month"]:focus  { border-color: var(--brand-500); background: white; 
         max-height: 80vh;
     }
 }
+
+/* Esconder a barra de rolagem da área dos botões na Sidebar */
+#sidebar nav::-webkit-scrollbar {
+    display: none !important;
+}
+
+#sidebar nav {
+    -ms-overflow-style: none !important;  /* Para navegadores antigos da Microsoft */
+    scrollbar-width: none !important;     /* Para o Firefox */
+}
