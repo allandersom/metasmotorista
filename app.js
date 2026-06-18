@@ -218,10 +218,10 @@
 
             // Abas permitidas por função
             const permissoes = {
-                admin: Object.keys(todasAbas), // todas
-                operador: ['rankings', 'projecao', 'rotas'],
-                rh: ['cadastro', 'operador', 'faltas', 'domferiados', 'rankings'],
-            };
+             admin: Object.keys(todasAbas), // todas
+            operador: ['rankings', 'projecao', 'rotas', 'lancamentos'], // <-- adicione 'lancamentos' aqui
+            rh: ['cadastro', 'operador', 'faltas', 'domferiados', 'rankings'],
+};
 
             const abasPermitidas = permissoes[funcao] || permissoes['operador'];
 
@@ -252,6 +252,11 @@
             if (funcao === 'admin') {
                 console.log('🔓 Modo Admin ativado. Acesso total.');
             }
+
+            // Operador: aba de Lançamentos fica visível, mas sem botão de gravar
+            const ehOperador = (funcao === 'operador');
+            const btnGravar = document.getElementById('btnSalvarL');
+            if (btnGravar) btnGravar.style.display = ehOperador ? 'none' : '';
         };
 
         // =============================================================
@@ -1263,6 +1268,11 @@
 
 
         window.salvarLancamento = async function () {
+        if (window.usuarioAtualFuncao === 'operador') {
+        alert('Seu perfil não tem permissão para lançar serviços.');
+        return;
+        }
+
             if (window._salvandoLancamento) return;
             window._salvandoLancamento = true;
 
@@ -1597,7 +1607,7 @@
                         ${obsText}${anexoHtml ? `<br>${anexoHtml}` : ''}
                     </td>
                     <td class="text-center">
-                        <button class="btn-delete" onclick="window.deletarLancamentoEspecifico('${dataEscaped}')">Excluir</button>
+${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" onclick="window.deletarLancamentoEspecifico('${dataEscaped}')">Excluir</button>`}
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1607,6 +1617,10 @@
         };
 
         window.deletarLancamentoEspecifico = async function (dataStr) {
+    if (window.usuarioAtualFuncao === 'operador') {
+        alert('Seu perfil não tem permissão para excluir lançamentos.');
+        return;
+    }
             if (!window.motoristaSelecionado) return;
 
             const motivo = prompt(`Motivo para cancelar o lançamento de ${formatarDataParaExibicao(dataStr)}:`);
