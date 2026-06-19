@@ -330,7 +330,14 @@
 
         window.gerarPainelFeriados();
 
-            // ✅ REGRAS DE PERMISSÃO — chamada uma única vez aqui
+
+        // 🔥 ADICIONE ESTAS DUAS LINHAS AQUI para atualizar os cards e o leaderboard automaticamente:
+        if (typeof window.gerarRankingMensal === 'function') window.gerarRankingMensal();
+        if (typeof window.gerarRankingPeriodo === 'function') window.gerarRankingPeriodo();
+            
+        if (window.GerenciadorNotificacoes) window.GerenciadorNotificacoes.gerarInsightsEstrategicos(window.bancoDadosCloud, window.todosMotoristasCloud);
+
+        // ✅ REGRAS DE PERMISSÃO — chamada uma única vez aqui
                 window.aplicarRestricoesInterface();
 
                 const loader = document.getElementById('loader');
@@ -906,30 +913,39 @@
             lucide.createIcons();
         };
 
-        window.toggleTravaGlobais = function () {
-            window.diasUteisTravado = !window.diasUteisTravado;
-            const inLanc = document.getElementById('inputDiasUteisLanc');
-            const inRank = document.getElementById('inputDiasUteisRank');
-            const btnLanc = document.getElementById('btnTravaLanc');
-            const btnRank = document.getElementById('btnTravaRank');
-            if (!inLanc || !inRank) return;
+       window.toggleTravaGlobais = function () {
+    window.diasUteisTravado = !window.diasUteisTravado;
+    const inLanc = document.getElementById('inputDiasUteisLanc');
+    const inRank = document.getElementById('inputDiasUteisRank');
+    const btnLanc = document.getElementById('btnTravaLanc');
+    const btnRank = document.getElementById('btnTravaRank');
+    if (!inLanc || !inRank) return;
 
-            if (window.diasUteisTravado) {
-                inLanc.setAttribute('readonly', 'true');
-                inRank.setAttribute('readonly', 'true');
-            if (btnLanc) { btnLanc.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>'; btnLanc.classList.remove('unlocked'); }
-                if (btnRank) { btnRank.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>'; btnRank.classList.remove('unlocked'); }
-            } else {
-                inLanc.removeAttribute('readonly');
-                inRank.removeAttribute('readonly');
-            if (btnLanc) { btnLanc.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i>'; btnLanc.classList.add('unlocked'); }
+    if (window.diasUteisTravado) {
+        inLanc.setAttribute('readonly', 'true');
+        inRank.setAttribute('readonly', 'true');
+        if (btnLanc) { btnLanc.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>'; btnLanc.classList.remove('unlocked'); }
+        if (btnRank) { btnRank.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i>'; btnRank.classList.remove('unlocked'); }
+        
+        // 🔥 CÓDIGO NOVO AQUI: Salva no banco e força atualização assim que o cadeado fecha
+        const viewLanc = document.getElementById('viewLancamentos');
+        if (viewLanc && viewLanc.style.display !== 'none') {
+            window.salvarDiasUteis('lanc');
+        } else {
+            window.salvarDiasUteis('rank');
+        }
+
+    } else {
+        inLanc.removeAttribute('readonly');
+        inRank.removeAttribute('readonly');
+        if (btnLanc) { btnLanc.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i>'; btnLanc.classList.add('unlocked'); }
         if (btnRank) { btnRank.innerHTML = '<i data-lucide="unlock" class="w-5 h-5"></i>'; btnRank.classList.add('unlocked'); }
-                const viewLanc = document.getElementById('viewLancamentos');
-                if (viewLanc && viewLanc.style.display !== 'none') inLanc.focus();
-                else inRank.focus();
-            }
-            lucide.createIcons();
-        };
+        const viewLanc = document.getElementById('viewLancamentos');
+        if (viewLanc && viewLanc.style.display !== 'none') inLanc.focus();
+        else inRank.focus();
+    }
+    lucide.createIcons();
+};  
 
         window.carregarDiasUteis = function (anoMesStr) {
             const dias = window.configMesesCloud[anoMesStr] || 22;
@@ -1158,7 +1174,7 @@
 
             // Abas que usam o seletor de Mês de Referência
         // Abas que usam o seletor de Mês de Referência
-        const abasComMes = ['lancamentos', 'domferiados', 'projecao', 'rotas', 'faltas'];    const containerMes = document.getElementById('dataGlobal')?.closest('div');
+        const abasComMes = ['lancamentos', 'domferiados', 'rotas', 'faltas'];    const containerMes = document.getElementById('dataGlobal')?.closest('div');
             if (containerMes) containerMes.style.display = abasComMes.includes(aba) ? 'flex' : 'none';
 
             // Ações específicas por aba
@@ -2259,29 +2275,43 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
     renderizarLista(registrosFer, 'listaFeriados', 'Nenhum serviço em feriados.');
 };
 
-        // =============================================================
-        // GRÁFICOS DE PROJEÇÃO
-        // =============================================================
-        window.atualizarGraficosProjecao = function () {
-            const bancoDados = window.bancoDadosCloud;
-            const inicio     = document.getElementById('dataProjInicio')?.value;
-            const fim        = document.getElementById('dataProjFim')?.value;
-            const filtroTurno = document.getElementById('filtroProjTurno')?.value || 'todos';
-            if (!inicio || !fim) return;
+      // =============================================================
+// GRÁFICOS DE PROJEÇÃO
+// =============================================================
+window.atualizarGraficosProjecao = async function () {
+    const inicio     = document.getElementById('dataProjInicio')?.value;
+    const fim        = document.getElementById('dataProjFim')?.value;
+    const filtroTurno = document.getElementById('filtroProjTurno')?.value || 'todos';
+    if (!inicio || !fim) return;
 
-            // Período anterior (mês anterior)
-            const dIni = new Date(inicio + 'T00:00:00');
-            const dFim = new Date(fim    + 'T00:00:00');
-            dIni.setMonth(dIni.getMonth() - 1);
-            dFim.setMonth(dFim.getMonth() - 1);
-            const inicioPassadoStr = formatarDataParaBusca(dIni);
-            const fimPassadoStr    = formatarDataParaBusca(dFim);
+    // Período anterior (mês anterior)
+    const dIni = new Date(inicio + 'T00:00:00');
+    const dFim = new Date(fim    + 'T00:00:00');
+    dIni.setMonth(dIni.getMonth() - 1);
+    dFim.setMonth(dFim.getMonth() - 1);
+    
+    // Correção para meses com 31 dias (para não bugar fevereiro, por exemplo)
+    if (dIni.getDate() !== new Date(inicio + 'T00:00:00').getDate()) dIni.setDate(0);
+    if (dFim.getDate() !== new Date(fim + 'T00:00:00').getDate()) dFim.setDate(0);
 
-            let dadosEvolucaoInd = [], mapGeral = {}, stats = { atual: 0, passado: 0 };
-            let diasTrabalhadosInd = 0, diasMetaBatidaInd = 0, somaServicosFisicosReal = 0;
-            let maxServicosDiarios = 0, dataRecordeFisico = '';
-            let somaPontosDiaDaSemana = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-            const nomesDias = { 0: 'Domingo', 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado' };
+    const inicioPassadoStr = formatarDataParaBusca(dIni);
+    const fimPassadoStr    = formatarDataParaBusca(dFim);
+
+    // Bate no banco de dados para puxar o período selecionado + o mês passado
+    let bancoDados = {};
+    try {
+        const lancamentosProj = await buscarLancamentosPorPeriodo(inicioPassadoStr, fim);
+        bancoDados = mapearLancamentosParaBanco(lancamentosProj);
+    } catch (err) {
+        console.error("Erro ao buscar dados da projeção:", err);
+        return;
+    }
+
+    let dadosEvolucaoInd = [], mapGeral = {}, stats = { atual: 0, passado: 0 };
+    let diasTrabalhadosInd = 0, diasMetaBatidaInd = 0, somaServicosFisicosReal = 0;
+    let maxServicosDiarios = 0, dataRecordeFisico = '';
+    let somaPontosDiaDaSemana = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    const nomesDias = { 0: 'Domingo', 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado' };
 
             const elNomeMot = document.getElementById('projecaoNomeMotorista');
             if (elNomeMot) elNomeMot.innerText = window.motoristaSelecionado || 'Ninguém Selecionado';
