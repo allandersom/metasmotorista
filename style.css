@@ -378,6 +378,32 @@ main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: 
 .stat-card-brand .stat-value { color: white; }
 .stat-card-brand .stat-sub { color: rgba(255,255,255,0.65); }
 
+/* Accent stat cards (BI: Ritmo de Corrida / GPS da Meta) — usa cor de fundo sutil em vez de borda solta */
+.stat-card-accent { position: relative; padding-top: var(--space-6); }
+.stat-card-icon {
+  position: absolute; top: var(--space-5); right: var(--space-5);
+  width: 30px; height: 30px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+}
+.stat-card-accent-purple { background: linear-gradient(180deg, var(--brand-50) 0%, var(--surface-base) 55%); border-color: var(--brand-100); }
+.stat-card-accent-purple .stat-card-icon { background: var(--brand-100); color: var(--brand-600); }
+.stat-card-accent-purple .stat-value { color: var(--brand-700); }
+
+.stat-card-accent-amber { background: linear-gradient(180deg, var(--warning-50) 0%, var(--surface-base) 55%); border-color: #fde9c2; }
+.stat-card-accent-amber .stat-card-icon { background: #fde9c2; color: var(--warning-600); }
+.stat-card-accent-amber .stat-value { color: var(--warning-600); font-size: 18px; }
+
+.stat-sub-success { color: var(--success-600) !important; font-weight: 600; }
+
+/* Empty state overlay for charts without data */
+.chart-empty-state {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--space-3); text-align: center;
+  color: var(--gray-300);
+}
+.chart-empty-state p { font-size: 12.5px; font-weight: 500; color: var(--gray-400); max-width: 220px; line-height: 1.4; }
+
 /* Days uteis card inline */
 .stat-card-plain { display: flex; align-items: center; justify-content: space-between; }
 .stat-card-plain .stat-value-input {

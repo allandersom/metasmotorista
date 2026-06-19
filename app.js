@@ -1,4 +1,4 @@
-        // =============================================================
+// =============================================================
         // IMPORTS
         // =============================================================
         import {
@@ -2462,19 +2462,74 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
             const labelsGeral = arrayGeral.map(d => formatarDataParaExibicao(d.dataStr).substring(0, 5));
             const dataGeral   = arrayGeral.map(d => d.pontos);
 
-            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.font.family = "'DM Sans', 'Inter', sans-serif";
+            Chart.defaults.color = '#8f8f9d';
+
+            const corBrand   = '#4f46e5';
+            const corSuccess = '#10b981';
+
+            const opcoesBaseChart = (corLinha) => ({
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#141422',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        titleFont: { size: 12, weight: '600' },
+                        bodyFont: { size: 12.5, weight: '600' },
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: { label: (ctx) => ` ${ctx.parsed.y} cx` }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { font: { size: 11, weight: '500' } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grace: '10%',
+                        border: { display: false },
+                        grid: { color: '#ebebed', drawTicks: false },
+                        ticks: {
+                            font: { size: 11, weight: '500' },
+                            precision: 0,
+                            maxTicksLimit: 6
+                        }
+                    }
+                },
+                elements: { point: { hoverRadius: 6, hoverBorderWidth: 2 } }
+            });
 
             const ctxInd = document.getElementById('chartEvolucaoIndividual');
+            const wrapInd = document.getElementById('chartEvolucaoIndividualVazio');
             if (ctxInd) {
                 if (window.chartInstanciaInd) window.chartInstanciaInd.destroy();
-                window.chartInstanciaInd = new Chart(ctxInd.getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: labelsInd,
-                        datasets: [{ label: 'Volume', data: dataInd, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#2563eb', fill: true, tension: 0.3 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } },
-                });
+                const semDados = !window.motoristaSelecionado || dataInd.length === 0;
+                ctxInd.style.display = semDados ? 'none' : 'block';
+                if (wrapInd) wrapInd.style.display = semDados ? 'flex' : 'none';
+                if (!semDados) {
+                    window.chartInstanciaInd = new Chart(ctxInd.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labelsInd,
+                            datasets: [{
+                                label: 'Volume', data: dataInd,
+                                borderColor: corBrand, backgroundColor: 'rgba(79,70,229,0.08)',
+                                borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6,
+                                pointBackgroundColor: '#fff', pointBorderColor: corBrand, pointBorderWidth: 2,
+                                fill: true, tension: 0.35
+                            }]
+                        },
+                        options: opcoesBaseChart(corBrand),
+                    });
+                }
             }
 
             const ctxGeral = document.getElementById('chartEvolucaoGeral');
@@ -2484,9 +2539,15 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
                     type: 'line',
                     data: {
                         labels: labelsGeral,
-                        datasets: [{ label: 'Frota', data: dataGeral, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#10b981', fill: true, tension: 0.3 }]
+                        datasets: [{
+                            label: 'Frota', data: dataGeral,
+                            borderColor: corSuccess, backgroundColor: 'rgba(16,185,129,0.08)',
+                            borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6,
+                            pointBackgroundColor: '#fff', pointBorderColor: corSuccess, pointBorderWidth: 2,
+                            fill: true, tension: 0.35
+                        }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } },
+                    options: opcoesBaseChart(corSuccess),
                 });
             }
         };

@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
     <html lang="pt-BR">
     <head>
         <meta charset="UTF-8">
@@ -20,16 +20,11 @@
         </div>
 
         <aside id="sidebar">
-            <div class="sidebar-logo">
-                <div class="logo-icon">
-                    <i data-lucide="waves" class="w-5 h-5 text-white" ></i>
-                </div>
-                <div class="logo-text">
-                    <h1>SGC</h1>
-                    <p>São Gabriel Transportes</p>
-                </div>
+            <!-- LOGO SEM LIMITES DE TAMANHO -->
+            <div class="sidebar-logo" style="padding: 8px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border-subtle);">
+                <img src="logo.png" alt="SGC Transportes" style="width: 100%; height: auto; max-height: 150px; object-fit: contain;">
             </div>
-
+            
             <nav>
         <button id="btnTabRankings" onclick="window.mudarAba('rankings')" class="nav-tab">
         <i data-lucide="trophy" class="w-4 h-4 shrink-0"></i>
@@ -546,21 +541,21 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-                       <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-    <div class="stat-card" style="border-left: 4px solid #8b5cf6;">
-        <div class="stat-label">Ritmo de Corrida (Projeção de Fechamento)</div>
-        <div class="stat-value text-purple-600" id="biRunRate">0</div>
-        <div class="stat-sub" id="biRunRateSub">Mantendo o ritmo atual...</div>
-    </div>
-    
-    <div class="stat-card" style="border-left: 4px solid #f59e0b;">
-        <div class="stat-label">GPS da Meta (O que fazer por dia)</div>
-        <div class="stat-value text-amber-500" id="biGps80">0 /dia p/ 80%</div>
-        <div class="stat-sub" id="biGps100" style="font-weight: bold; color: #10b981;">Para 100%: 0 /dia</div>
-    </div>
-</div>      
-              
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-5 mb-5">
+                        <div class="stat-card stat-card-accent stat-card-accent-purple">
+                            <div class="stat-card-icon"><i data-lucide="gauge" class="w-4 h-4"></i></div>
+                            <div class="stat-label">Ritmo de Corrida (Projeção)</div>
+                            <div class="stat-value" id="biRunRate">0</div>
+                            <div class="stat-sub" id="biRunRateSub">Mantendo o ritmo atual...</div>
+                        </div>
+
+                        <div class="stat-card stat-card-accent stat-card-accent-amber">
+                            <div class="stat-card-icon"><i data-lucide="target" class="w-4 h-4"></i></div>
+                            <div class="stat-label">GPS da Meta</div>
+                            <div class="stat-value" id="biGps80">0 /dia p/ 80%</div>
+                            <div class="stat-sub stat-sub-success" id="biGps100">Para 100%: 0 /dia</div>
+                        </div>
+
                         <div class="stat-card">
                             <div class="stat-label">Produção (Período Atual)</div>
                             <div class="stat-value" id="statMesAtual">0</div>
@@ -603,6 +598,10 @@
                             <h3>Evolução Diária (Período Atual)</h3>
                             <div style="height:240px;position:relative;">
                                 <canvas id="chartEvolucaoIndividual"></canvas>
+                                <div id="chartEvolucaoIndividualVazio" class="chart-empty-state">
+                                    <i data-lucide="user-search" class="w-7 h-7"></i>
+                                    <p>Selecione um motorista para ver a evolução diária</p>
+                                </div>
                             </div>
                         </div>
                         <div class="chart-card">
