@@ -127,6 +127,33 @@ window.criarAcessoSupabase = async function() {
     setMensagemLogin('Acesso criado. Verifique o e-mail para confirmar antes de entrar.');
 };
 
+window.recuperarSenhaSupabase = async function() {
+    const email = el('loginEmail')?.value.trim();
+
+    if (!email) {
+        setMensagemLogin('Digite seu e-mail no campo acima para recuperar a senha.', 'erro');
+        return;
+    }
+
+    setLoginLoading(true);
+    setMensagemLogin('Enviando link de recuperação...');
+
+    // O Supabase vai enviar um e-mail com um link seguro.
+    // O redirectTo garante que, ao clicar no link, ele volte para o seu painel.
+    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin
+    });
+
+    setLoginLoading(false);
+
+    if (error) {
+        setMensagemLogin('Erro ao enviar e-mail: ' + error.message, 'erro');
+        return;
+    }
+
+    setMensagemLogin('E-mail enviado! Verifique sua caixa de entrada (e spam).');
+};
+
 window.logoutSupabase = async function() {
     await supabaseClient.auth.signOut();
     window.location.reload();

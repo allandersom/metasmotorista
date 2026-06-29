@@ -192,8 +192,9 @@ function ensureLoginScreen() {
             <input id="authLoginEmail" type="text" class="auth-login-input" autocomplete="email" placeholder="seu.usuario">
             <label class="auth-login-label" for="authLoginSenha">Senha</label>
             <input id="authLoginSenha" type="password" class="auth-login-input" autocomplete="current-password" placeholder="Sua senha">
-            <p id="authLoginMensagem" class="auth-login-message"></p>
+           <p id="authLoginMensagem" class="auth-login-message"></p>
             <button id="authBtnLogin" type="button" class="auth-login-primary"><i data-lucide="log-in"></i>Entrar</button>
+            <button id="authBtnEsqueciSenha" type="button" class="auth-login-secondary">Esqueci minha senha</button>
         </div>
     `;
 
@@ -350,10 +351,42 @@ async function requireLogin() {
         };
 
         byId('authBtnLogin')?.addEventListener('click', login);
+        byId('authBtnEsqueciSenha')?.addEventListener('click', esqueciSenha);
         byId('authLoginSenha')?.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') login();
         });
     });
 }
 
+
+const esqueciSenha = async () => {
+    const username = byId('authLoginEmail')?.value.trim();
+    if (!username) {
+        setMessage('Digite seu usuário no campo acima antes de clicar.', true);
+        return;
+    }
+
+    const { data: emailEncontrado, error: erroUsuario } = await supabaseClient
+        .rpc('email_por_username', { p_username: username });
+
+    if (erroUsuario || !emailEncontrado) {
+        setMessage('Usuário não encontrado.', true);
+        return;
+    }
+
+    setLoading(true);
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(emailEncontrado, {
+        redirectTo: window.location.origin + '/metasmotorista/redefinir-senha.html'
+    });
+    setLoading(false);
+
+    if (error) {
+        setMessage('Erro ao enviar e-mail: ' + error.message, true);
+        return;
+    }
+
+    setMessage('Enviamos um link de redefinição para o seu e-mail.');
+};
+
+byId('authBtnEsqueciSenha')?.addEventListener('click', esqueciSenha);
 await requireLogin();
