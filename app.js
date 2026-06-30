@@ -3500,9 +3500,8 @@ window.atualizarGraficosProjecao = async function () {
         const isDomingo = dataObj.getDay() === 0;
 
         for (const [mot, dados] of Object.entries(dadosDia)) {
-            const trabalhou = dados.servicos > 0;
-            const temStatus = dados.status && dados.status !== 'normal';
-            if (!trabalhou && !temStatus) continue;
+            // 🔥 MODIFICAÇÃO AQUI: Ignora status (folga/falta) e só entra se produziu serviço ou teve valor
+            if (!(dados.servicos > 0) && !(dados.valor > 0)) continue;
 
             const obj = {
                 dataStr, nome: mot,
