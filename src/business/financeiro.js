@@ -53,8 +53,11 @@ function calcularValorDiaNormal(servicos, config) {
     return 50 + ((servicos - config.metaFinanceira) * config.valorExtraPorUnidade);
 }
 
-function calcularValorDomingoFeriado(servicos) {
-    return servicos * 30;
+function calcularValorDomingoFeriado(servicos, tipoVeiculo) {
+    if (tipoVeiculo === 'cacamba') {
+        return servicos * 60; // Caçamba ganha 60 por VG
+    }
+    return servicos * 30; // Os demais continuam ganhando 30
 }
 
 function getMetaFisicaDiariaSabado(nome, tipoVeiculo) {
@@ -150,7 +153,7 @@ export function calcularValorDia({
 
     if (diaSemana === 0 || isFeriado) {
         return {
-            valorBase: calcularValorDomingoFeriado(servicos),
+            valorBase: calcularValorDomingoFeriado(servicos, tipoVeiculo),
             bateuMetaSemana: false,
         };
     }
