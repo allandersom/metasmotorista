@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir senha - SGC</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: #f3f4f8;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .reset-box {
+            width: 100%;
+            max-width: 380px;
+            background: #ffffff;
+            border: 1px solid #e1e1e5;
+            border-radius: 18px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
+            padding: 28px;
+        }
+
+        .reset-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg { width: 20px; height: 20px; color: white; }
+
+        .reset-brand h1 {
+            margin: 0;
+            color: #141422;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .reset-brand p {
+            margin: 4px 0 0;
+            color: #8f8f9d;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .reset-title h2 {
+            margin: 0;
+            color: #141422;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .reset-title p {
+            margin: 4px 0 20px;
+            color: #6b6b7b;
+            font-size: 13px;
+        }
+
+        .reset-label {
+            display: block;
+            margin: 14px 0 6px;
+            color: #6b6b7b;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .reset-input {
+            width: 100%;
+            height: 42px;
+            border: 1px solid #e1e1e5;
+            border-radius: 10px;
+            padding: 0 12px;
+            color: #141422;
+            font: inherit;
+            outline: none;
+        }
+
+        .reset-input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px #e0e7ff;
+        }
+
+        .reset-message {
+            min-height: 18px;
+            margin: 12px 0;
+            color: #6b6b7b;
+            font-size: 12px;
+        }
+
+        .reset-error { color: #dc2626; }
+        .reset-success { color: #16a34a; }
+
+        .reset-primary {
+            width: 100%;
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid #4f46e5;
+            background: #4f46e5;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 700;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .reset-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .reset-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: #4f46e5;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="reset-box">
+        <div class="reset-brand">
+            <div class="logo-icon"><i data-lucide="waves" class="w-5 h-5 text-white"></i></div>
+            <div>
+                <h1>SGC</h1>
+                <p>Sao Gabriel Transportes</p>
+            </div>
+        </div>
+
+        <div class="reset-title">
+            <h2>Criar nova senha</h2>
+            <p>Defina uma nova senha para acessar o painel.</p>
+        </div>
+
+        <label class="reset-label" for="novaSenha">Nova senha</label>
+        <input id="novaSenha" type="password" class="reset-input" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+
+        <label class="reset-label" for="confirmarSenha">Confirmar nova senha</label>
+        <input id="confirmarSenha" type="password" class="reset-input" autocomplete="new-password" placeholder="Repita a senha">
+
+        <p id="resetMensagem" class="reset-message"></p>
+
+        <button id="btnRedefinir" type="button" class="reset-primary">
+            <i data-lucide="key-round"></i>Salvar nova senha
+        </button>
+
+        <a href="index.html" class="reset-link">Voltar para o login</a>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://ldlqemidjjutrbkjiyir.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_dMnIUJ3FNWhFKm7PmEjxsQ_z5ZhexV9";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        window.lucide?.createIcons?.();
+
+        function byId(id) {
+            return document.getElementById(id);
+        }
+
+        function setMessage(text, type) {
+            const el = byId('resetMensagem');
+            el.textContent = text || '';
+            el.className = 'reset-message' + (type ? ' reset-' + type : '');
+        }
+
+        function setLoading(loading) {
+            byId('btnRedefinir').disabled = loading;
+        }
+
+        // O Supabase, ao seguir o link do e-mail, retorna com um token na URL
+        // e cria automaticamente uma sessão temporária de recuperação.
+        // Verificamos se essa sessão existe antes de liberar o formulário.
+        async function verificarSessaoRecuperacao() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                setMessage('Link inválido ou expirado. Solicite a redefinição novamente na tela de login.', 'error');
+                byId('btnRedefinir').disabled = true;
+            }
+        }
+
+        async function salvarNovaSenha() {
+            const novaSenha = byId('novaSenha').value;
+            const confirmarSenha = byId('confirmarSenha').value;
+
+            if (!novaSenha || !confirmarSenha) {
+                setMessage('Preencha os dois campos de senha.', 'error');
+                return;
+            }
+
+            if (novaSenha.length < 6) {
+                setMessage('A senha precisa ter pelo menos 6 caracteres.', 'error');
+                return;
+            }
+
+            if (novaSenha !== confirmarSenha) {
+                setMessage('As senhas não coincidem.', 'error');
+                return;
+            }
+
+            setLoading(true);
+            setMessage('Salvando...');
+
+            const { error } = await supabaseClient.auth.updateUser({ password: novaSenha });
+
+            setLoading(false);
+
+            if (error) {
+                setMessage('Erro ao salvar: ' + error.message, 'error');
+                return;
+            }
+
+            setMessage('Senha redefinida com sucesso! Redirecionando para o login...', 'success');
+            await supabaseClient.auth.signOut();
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+
+        byId('btnRedefinir').addEventListener('click', salvarNovaSenha);
+        verificarSessaoRecuperacao();
+    </script>
+</body>
+</html>
