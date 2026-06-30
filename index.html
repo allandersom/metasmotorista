@@ -2,7 +2,7 @@
     <html lang="pt-BR">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
         <title>SGC Logística — Gestão da Frota</title>
         <meta name="robots" content="noindex, nofollow">
         <link rel="icon" href="favicon.png">
@@ -80,6 +80,8 @@
         </div>
         </aside>
 
+        <div id="sidebarOverlay" onclick="window.toggleSidebar()"></div>
+
         <main>
             <header>
                 <button onclick="window.toggleSidebar()" class="btn-icon">
@@ -146,8 +148,8 @@
                         </div>
                     </div>
 
-                   <div class="flex flex-col lg:flex-row gap-5" style="min-height: calc(100vh - 310px);">
-    <div class="driver-panel w-full lg:w-[280px] shrink-0">
+                  <div class="flex flex-col lg:flex-row gap-5" id="frotaSplitView" style="min-height: calc(100vh - 310px);">
+    <div class="driver-panel w-full lg:w-[280px] shrink-0" id="painelListaMotoristas">
                             <div class="driver-panel-header">
                                 <h3>Selecionar Motorista</h3>
                                 <div id="filtroTurnoToggle" onclick="window.ciclartarTurno()" style="
@@ -182,7 +184,12 @@
                             </div>
                         </div>
 
-                        <div class="flex-1 bg-white rounded-[1.5rem] border relative overflow-hidden flex flex-col" style="border-color: var(--gray-150); min-width:0;">
+                        <div class="flex-1 bg-white rounded-[1.5rem] border relative overflow-hidden flex flex-col" id="painelDetalheMotorista" style="border-color: var(--gray-150); min-width:0;">
+
+    <button onclick="window.voltarListaMotoristas()" id="btnVoltarMotoristas" class="btn-voltar-mobile">
+        <i data-lucide="arrow-left"></i>
+        Voltar para a lista
+    </button>
 
                             <div id="estadoVazio" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 p-8 text-center rounded-[1.5rem]">
                                 <div class="empty-icon-wrap">
