@@ -24,6 +24,10 @@ async function carregarPerfilUsuario(userId) {
     }
 
     window.usuarioAtualFuncao = data.papel;
+
+    if (data.papel === 'global') {
+    document.body.classList.add('modo-leitura-global');
+}
 }
 
 function injectAuthStyles() {
@@ -390,3 +394,40 @@ const esqueciSenha = async () => {
 
 byId('authBtnEsqueciSenha')?.addEventListener('click', esqueciSenha);
 await requireLogin();
+
+// =============================================================
+// ESCUDO DE SEGURANÇA: PERFIL GLOBAL
+// =============================================================
+// Esta função monitora qualquer tentativa de ação proibida
+function aplicarEscudoGlobal() {
+    if (window.usuarioAtualFuncao !== 'global') return;
+
+    const funcoesProibidas = [
+        'salvarLancamento', 'deletarLancamentoEspecifico', 
+        'salvarCaminhao', 'excluirCaminhao', 'editarCaminhao', 
+        'salvarCadastroMotorista', 'salvarEdicaoMotorista', 
+        'toggleStatusMotorista', 'apagarMotoristaDefinitivo', 'apagarAnexoMotorista', 
+        'salvarServicoRota', 'excluirServicoRota', 'salvarPlanilhaRota', 
+        'salvarDiasUteis', 'salvarSlaMotorista', 'importarDadosIA', 
+        'addMotoristaModal', 'ocultarMotoristaMes', 'mostrarMotoristaMes', 'reativarMotorista'
+    ];
+
+    funcoesProibidas.forEach(nomeFunc => {
+        // Verifica se a função existe no objeto window
+        if (typeof window[nomeFunc] === 'function') {
+            const funcaoOriginal = window[nomeFunc];
+            
+            // Sobrescreve a função com uma versão protegida
+            window[nomeFunc] = function(...args) {
+                console.warn(`Tentativa de ação bloqueada para perfil Global: ${nomeFunc}`);
+                alert('🔒 Acesso negado: Seu perfil (Global) é apenas para visualização.');
+                return; // Bloqueia a execução
+            };
+        }
+    });
+}
+
+// Executa o escudo assim que o perfil do usuário for carregado
+// Adicione esta chamada dentro da função carregarPerfilUsuario (no auth-gate.js)
+// ou simplesmente chame aqui logo após o login:
+setTimeout(aplicarEscudoGlobal, 2000);

@@ -1785,3 +1785,19 @@ input[type="month"]:focus  { border-color: var(--brand-500); background: white; 
     -ms-overflow-style: none !important;  /* Para navegadores antigos da Microsoft */
     scrollbar-width: none !important;     /* Para o Firefox */
 }
+/* TRAVA SUPREMA PARA O PERFIL GLOBAL - Esconde apenas botões de ação */
+body.role-global button[onclick*="excluir"],
+body.role-global button[onclick*="deletar"],
+body.role-global button[onclick*="apagar"],
+body.role-global button[onclick*="salvar"],
+body.role-global button[onclick*="editar"],
+body.role-global button[onclick*="abrirModalEditar"],
+body.role-global button[onclick*="toggleStatus"],
+body.role-global button[onclick*="addMotorista"],
+body.role-global button[onclick*="ocultarMotorista"],
+body.role-global button[onclick*="mostrarMotorista"],
+body.role-global button[onclick*="importarDadosIA"],
+body.role-global .rota-card-delete,
+body.role-global .btn-delete {
+    display: none !important;
+}

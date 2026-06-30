@@ -221,7 +221,7 @@
              admin: Object.keys(todasAbas), // todas
             operador: ['rankings', 'projecao', 'rotas', 'lancamentos'], // <-- adicione 'lancamentos' aqui
             rh: ['cadastro', 'operador', 'faltas', 'domferiados', 'rankings'],
-};
+global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'faltas', 'caminhoes']};
 
             const abasPermitidas = permissoes[funcao] || permissoes['operador'];
 
@@ -244,6 +244,7 @@
                 admin:    'lancamentos',
                 operador: 'rotas',
                 rh:       'cadastro',
+                global:   'rankings', // <-- ADICIONE ESTA LINHA
             };
 
             console.log(`🔐 Perfil "${funcao}" ativado. Abas liberadas: ${abasPermitidas.join(', ')}`);
@@ -254,9 +255,9 @@
             }
 
             // Operador: aba de Lançamentos fica visível, mas sem botão de gravar
-            const ehOperador = (funcao === 'operador');
+           const ehSomenteLeitura = (funcao === 'operador' || funcao === 'global');
             const btnGravar = document.getElementById('btnSalvarL');
-            if (btnGravar) btnGravar.style.display = ehOperador ? 'none' : '';
+            if (btnGravar) btnGravar.style.display = ehSomenteLeitura ? 'none' : '';
         };
 
         // =============================================================
