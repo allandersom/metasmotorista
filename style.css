@@ -1997,3 +1997,42 @@ body.role-global .btn-delete {
         height: 200px !important;
     }
 }
+
+/* ════════════════════════════════════════════════════════
+   AJUSTES ESPECÍFICOS PARA iOS / SAFARI
+   ════════════════════════════════════════════════════════ */
+
+/* 1) Evita o zoom automático do Safari ao tocar em campos com
+      fonte menor que 16px (isso NÃO acontece no Android, só no iOS) */
+@media (max-width: 768px) {
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+    .inline-date, input[type="month"], .search-input {
+        font-size: 16px !important;
+    }
+}
+
+/* 2) Respeita o notch/Dynamic Island e a barra inferior do iPhone */
+header {
+    padding-top: max(0px, env(safe-area-inset-top));
+}
+#sidebar {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.content-area {
+    padding-bottom: max(var(--space-8), env(safe-area-inset-bottom));
+}
+
+/* 3) Rolagem "inercial" suave (estilo nativo) em todas as áreas
+      que rolam, e remove o flash cinza ao tocar em botões no iOS */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+.content-area,
+#sidebar nav,
+.driver-list-scroll,
+#painelDetalheMotorista {
+    -webkit-overflow-scrolling: touch;
+}
