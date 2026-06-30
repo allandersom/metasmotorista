@@ -1141,10 +1141,36 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
 
         window.toggleSidebar = function () {
             const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
             sidebar.classList.toggle('sidebar-fechada');
+            if (overlay) overlay.classList.toggle('show', !sidebar.classList.contains('sidebar-fechada') && window.innerWidth <= 768);
         };
 
+        // No celular o menu começa fechado (drawer escondido)
+        function ajustarSidebarParaTela() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (!sidebar) return;
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add('sidebar-fechada');
+                if (overlay) overlay.classList.remove('show');
+            } else {
+                sidebar.classList.remove('sidebar-fechada');
+                if (overlay) overlay.classList.remove('show');
+            }
+        }
+        window.addEventListener('DOMContentLoaded', ajustarSidebarParaTela);
+        window.addEventListener('resize', ajustarSidebarParaTela);
+
         window.mudarAba = function (aba) {
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                if (sidebar && !sidebar.classList.contains('sidebar-fechada')) {
+                    sidebar.classList.add('sidebar-fechada');
+                    if (overlay) overlay.classList.remove('show');
+                }
+            }
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
 
         ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas', 'viewCadastro', 'viewOperador', 'viewFaltas', 'viewCaminhoes'].forEach(id => {        const el = document.getElementById(id);
@@ -1241,6 +1267,12 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
             if (conteudo)    conteudo.style.display = 'block';
             if (nomeDisplay) nomeDisplay.textContent = nome;
 
+            // No celular, "deslizar" para o painel de detalhe (como uma nova tela)
+            const splitView = document.getElementById('frotaSplitView');
+            if (splitView && window.innerWidth < 1024) {
+                splitView.classList.add('mostrar-detalhe-mobile');
+            }
+
             const selectVeiculo = document.getElementById('tipoVeiculo');
             if (selectVeiculo) {
                 selectVeiculo.innerHTML = `
@@ -1265,6 +1297,60 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
             if (!nome) return;
             window.selecionarMotorista(nome, null);
         };
+
+        // No celular, volta da tela de detalhe para a lista de motoristas
+        window.voltarListaMotoristas = function () {
+            const splitView = document.getElementById('frotaSplitView');
+            if (splitView) splitView.classList.remove('mostrar-detalhe-mobile');
+        };
+        // ── Gesto de arrastar (swipe) no painel de motorista, mobile ──
+(function configurarSwipeMotorista() {
+    const splitView = document.getElementById('frotaSplitView');
+    const painelDetalhe = document.getElementById('painelDetalheMotorista');
+    if (!splitView || !painelDetalhe) return;
+
+    let startX = 0, startY = 0, dragging = false, deltaX = 0;
+
+    function onStart(e) {
+        if (window.innerWidth >= 1024) return;
+        const t = e.touches ? e.touches[0] : e;
+        startX = t.clientX; startY = t.clientY;
+        dragging = true; deltaX = 0;
+        painelDetalhe.style.transition = 'none';
+    }
+
+    function onMove(e) {
+        if (!dragging) return;
+        const t = e.touches ? e.touches[0] : e;
+        deltaX = t.clientX - startX;
+        const deltaY = t.clientY - startY;
+        if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+
+        const aberto = splitView.classList.contains('mostrar-detalhe-mobile');
+        if (aberto && deltaX > 0) {
+            painelDetalhe.style.transform = `translateX(${deltaX}px)`;
+            if (e.cancelable) e.preventDefault();
+        }
+    }
+
+    function onEnd() {
+        if (!dragging) return;
+        dragging = false;
+        painelDetalhe.style.transition = '';
+        painelDetalhe.style.transform = '';
+
+        const aberto = splitView.classList.contains('mostrar-detalhe-mobile');
+        if (aberto && deltaX > 90) {
+            window.voltarListaMotoristas();
+        }
+        deltaX = 0;
+    }
+
+    painelDetalhe.addEventListener('touchstart', onStart, { passive: true });
+    painelDetalhe.addEventListener('touchmove', onMove, { passive: false });
+    painelDetalhe.addEventListener('touchend', onEnd);
+    painelDetalhe.addEventListener('touchcancel', onEnd);
+})();
 
         // =============================================================
         // CONTROLE DE TELA DE FÉRIAS

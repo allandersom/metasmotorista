@@ -170,6 +170,8 @@ body {
     min-width: 0;
 }
 
+#sidebarOverlay { display: none; }
+
 /* Subtle radial glow top-left */
 #sidebar::before {
   content: '';
@@ -698,9 +700,9 @@ textarea.input-base { resize: vertical; }
 .btn-primary svg, .btn-primary .lucide { width: 14px; height: 14px; }
 
 /* ── HISTORY TABLE ──────────────────────────────────────── */
-.table-wrap { border: var(--border); border-radius: var(--r-xl); overflow: hidden; box-shadow: var(--shadow-xs); }
+.table-wrap { border: var(--border); border-radius: var(--r-xl); overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: var(--shadow-xs); }
 
-table { width: 100%; border-collapse: collapse; }
+table { width: 100%; border-collapse: collapse; min-width: 640px; }
 
 thead { background: var(--gray-50); }
 th {
@@ -1800,4 +1802,198 @@ body.role-global button[onclick*="importarDadosIA"],
 body.role-global .rota-card-delete,
 body.role-global .btn-delete {
     display: none !important;
+}
+
+/* ════════════════════════════════════════════════════════
+   MOBILE — celulares e telas pequenas (até 768px)
+   ════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+    /* Sidebar passa a ser um menu "gaveta" sobre o conteúdo,
+       em vez de empurrar o layout */
+    #sidebar {
+        position: fixed;
+        top: 0; left: 0;
+        height: 100vh;
+        width: 260px;
+        min-width: 260px;
+        max-width: 80vw;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+    }
+    #sidebar.sidebar-fechada {
+        width: 260px;
+        min-width: 260px;
+        transform: translateX(-100%);
+    }
+    #sidebar:not(.sidebar-fechada) {
+        transform: translateX(0);
+    }
+
+    /* Fundo escurecido por trás do menu, clicável para fechar */
+    #sidebarOverlay.show {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        z-index: 999;
+    }
+
+    /* Conteúdo principal ocupa 100% da tela (sidebar não empurra mais) */
+    main { width: 100%; }
+
+    /* Cabeçalho: permite quebrar em mais de uma linha em vez de cortar */
+    header {
+        height: auto;
+        min-height: 56px;
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    header div:has(> label) {
+        margin-left: 0 !important;
+        order: 3;
+        width: 100%;
+    }
+    .header-actions { margin-left: auto; }
+    .btn-sistema span,
+    .btn-sistema { font-size: 11.5px; padding: 6px 10px; }
+
+    /* Área de conteúdo com respiro menor nas laterais */
+    .content-area { padding: var(--space-4); }
+
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    /* Grids que tinham colunas fixas passam a empilhar */
+    .motorista-stats { grid-template-columns: 1fr 1fr; }
+    .cadastro-layout { grid-template-columns: 1fr; }
+    .rota-board { grid-template-columns: 1fr; }
+
+    /* Botões e itens de menu com área de toque confortável (mín. 44px) */
+    .btn-icon { width: 40px; height: 40px; }
+    .nav-tab { min-height: 44px; }
+
+    /* Modais ocupando a tela com folga */
+    .modal-container {
+        width: 94vw;
+        max-width: 94vw;
+        max-height: 92vh;
+    }
+}
+
+/* Telas bem pequenas (celulares estreitos, ~360-400px) */
+@media (max-width: 420px) {
+    .motorista-stats { grid-template-columns: 1fr; }
+    .btn-sistema { padding: 6px 8px; }
+    .content-area { padding: var(--space-3); }
+}
+
+/* ════════════════════════════════════════════════════════
+   GESTÃO DA FROTA — lista + detalhe do motorista "deslizando"
+   pro lado no celular/tablet (em vez de empilhar para baixo)
+   ════════════════════════════════════════════════════════ */
+.btn-voltar-mobile { display: none; }
+
+@media (max-width: 1023px) {
+    #frotaSplitView {
+        position: relative;
+        overflow: hidden;
+        flex-wrap: nowrap;
+    }
+
+    #painelListaMotoristas,
+    #painelDetalheMotorista {
+        width: 100%;
+        flex-shrink: 0;
+        transition: transform 0.32s ease;
+    }
+
+    /* Estado inicial: lista visível, detalhe esperando fora da tela à direita */
+    #painelListaMotoristas { transform: translateX(0); }
+    #painelDetalheMotorista {
+        position: absolute;
+        inset: 0;
+        transform: translateX(100%);
+    }
+
+    /* Ao selecionar um motorista: lista sai pela esquerda, detalhe entra pela direita */
+    #frotaSplitView.mostrar-detalhe-mobile #painelListaMotoristas {
+        transform: translateX(-100%);
+    }
+    #frotaSplitView.mostrar-detalhe-mobile #painelDetalheMotorista {
+        transform: translateX(0);
+    }
+
+    .btn-voltar-mobile {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        padding: 12px var(--space-5);
+        background: var(--gray-50);
+        border: none;
+        border-bottom: 1px solid var(--gray-150);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--brand-500);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .btn-voltar-mobile svg, .btn-voltar-mobile .lucide { width: 16px; height: 16px; }
+}
+/* ════════════════════════════════════════════════════════
+   CENTRAL DE RANKINGS e PROJEÇÃO/BI no celular
+   ════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+    /* Cartões ficam com respiro menor e cabeçalhos empilhados */
+    .rank-card { padding: var(--space-4); }
+
+    .rank-card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .rank-card-header > div {
+        width: 100%;
+    }
+
+    /* Linha de filtros de data do "Ranking por Período" quebra em várias linhas */
+    #controlesDataPeriodo {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    #controlesDataPeriodo input,
+    #controlesDataPeriodo button {
+        flex: 1 1 auto;
+    }
+
+    /* Cabeçalho da tela de Projeção: título e filtros empilhados */
+    .proj-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+    }
+
+    /* Bloco de filtros (Motorista / Turno) vira coluna, ocupando a largura toda */
+    .proj-filters {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .proj-filter-group { width: 100%; }
+    .proj-filter-select { width: 100%; }
+    .proj-divider { display: none; }
+
+    /* Gráficos com altura um pouco menor para não exigir tanta rolagem */
+    .chart-card > div[style*="height:240px"],
+    .chart-card > div[style*="height: 240px"] {
+        height: 200px !important;
+    }
 }
