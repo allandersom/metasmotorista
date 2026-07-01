@@ -671,9 +671,9 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
         window._turnoLeaderboardIndex = 0;
         window._turnoLeaderboardAtual = 'todos'; // Memória global blindada
 
-        window.gerarRankingMensal = function () {
-            const elFiltro = document.getElementById('mesFiltro');
-            const mesFiltro = elFiltro?.value || window.anoMesAtual || new Date().toISOString().substring(0, 7);
+       window.gerarRankingMensal = function (mesForcado) {
+    const elFiltro = document.getElementById('mesFiltro');
+    const mesFiltro = mesForcado || elFiltro?.value || window.anoMesAtual || new Date().toISOString().substring(0, 7);  
 
             const diasUteisGlobais = window.carregarDiasUteis(mesFiltro);
             const bancoDados = window.bancoDadosCloud;
@@ -775,6 +775,15 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
 
             let totalLiberado = 0;
             let fatBrutoFiltrado = 0;
+
+            // Guarda o % oficial de cada motorista pra outras telas (ex: PDF) usarem o MESMO número
+window.rankFinalMensalCache = {};
+rankFinal.forEach(item => {
+    window.rankFinalMensalCache[item.nome] = {
+        percentual: item.percentual,
+        percentualTexto: formatarPercentual(item.percentual)
+    };
+});
 
             rankFinal.forEach(mot => {
                 if (mot.percentual >= 80) {
@@ -3880,28 +3889,49 @@ window.atualizarGraficosProjecao = async function () {
                 });
             }
 
-            const conteudo = `<html><head><meta charset="UTF-8">
-        <style>
+            // ... (dentro da função window.exportarPdfFaltasAtestados)
+
+const conteudo = `<html><head><meta charset="UTF-8">
+    <style>
         body{font-family:Arial,sans-serif;padding:30px;color:#1e293b;}
         h1{font-size:20px;margin-bottom:4px;}
         .sub{font-size:12px;color:#64748b;margin-bottom:20px;}
-        table{width:100%;border-collapse:collapse;font-size:13px;}
+        table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:50px;}
         th{background:#f1f5f9;padding:8px 10px;border:1px solid #ddd;text-align:center;}
         th:first-child{text-align:left;}
-        </style></head><body>
-        <h1>${titulos[tipo]}</h1>
-        <div class="sub">
-            Período: ${periodoTxt} &nbsp;|&nbsp; Motorista: ${motTxt}<br>
-            Gerado em ${new Date().toLocaleString('pt-BR')}
-        </div>
-        <table>
+        /* Estilo da área de assinatura */
+        .assinaturas { margin-top: 60px; display: flex; justify-content: space-around; text-align: center; }
+        .assinatura-box { width: 250px; }
+        .linha-assinatura { border-top: 1px solid #1e293b; margin-bottom: 8px; }
+    </style>
+</head><body>
+    <h1>${titulos[tipo]}</h1>
+    <div class="sub">
+        Período: ${periodoTxt} &nbsp;|&nbsp; Motorista: ${motTxt}<br>
+        Gerado em ${new Date().toLocaleString('pt-BR')}
+    </div>
+    <table>
         <thead><tr>
-        <th style="text-align:left;">Motorista</th>
-        <th>Data</th><th>Status</th><th>Observação</th><th>Anexo</th>
+            <th style="text-align:left;">Motorista</th>
+            <th>Data</th><th>Status</th><th>Observação</th><th>Anexo</th>
         </tr></thead>
         <tbody>${linhas}</tbody>
-        </table>
-        </body></html>`;
+    </table>
+
+    <!-- Bloco de Assinaturas Adicionado -->
+    <div class="assinaturas">
+        <div class="assinatura-box">
+            <div class="linha-assinatura"></div>
+            <strong>Conferência 1</strong>
+        </div>
+        <div class="assinatura-box">
+            <div class="linha-assinatura"></div>
+            <strong>Conferência 2</strong>
+        </div>
+    </div>
+</body></html>`;
+
+// ... (resto da função que abre a janela)
 
             const win = window.open('', '_blank');
             win.document.write(conteudo);
@@ -4106,3 +4136,347 @@ window.atualizarGraficosProjecao = async function () {
             );
             window.renderizarTabelaCaminhoes(filtrada);
         };
+// =============================================================
+// RELATÓRIO INDIVIDUAL MENSAL (CORRIGIDO: FÍSICO VS META)
+// =============================================================
+window.gerarRelatorioMotoristaPDF = async function() {
+    const mot = window.motoristaSelecionado;
+    if (!mot) return alert("Selecione um motorista na lista lateral para gerar o relatório!");
+
+    const btn = document.getElementById('btnRelatorioMot');
+    if (btn) {
+        btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i> Gerando...';
+        btn.disabled = true;
+    }
+
+    try {
+        const elMes = document.getElementById('dataGlobal');
+        const mesAtualStr = elMes?.value ? elMes.value.substring(0, 7) : new Date().toISOString().substring(0, 7);
+
+        const [anoAt, mesAt] = mesAtualStr.split('-').map(Number);
+        
+        let anoPassado = anoAt;
+        let mesPassado = mesAt - 1;
+        if (mesPassado === 0) { mesPassado = 12; anoPassado -= 1; }
+        const mesPassadoStr = `${anoPassado}-${String(mesPassado).padStart(2, '0')}`;
+        
+        const dataInicioQuery = mesPassadoStr + '-01';
+        const dataFim = new Date(anoAt, mesAt, 0); 
+        const dataFimQuery = `${anoAt}-${String(mesAt).padStart(2, '0')}-${String(dataFim.getDate()).padStart(2, '0')}`;
+
+        const { data: lancs, error } = await window.supabaseClient
+            .from('lancamentos')
+            .select('*')
+            .eq('motorista_nome', mot)
+            .is('cancelado_em', null)
+            .gte('data', dataInicioQuery)
+            .lte('data', dataFimQuery)
+            .order('data', { ascending: true });
+
+        if (error) throw error;
+let stAtual = { caixas:0, viagens:0, pontos:0, valor:0, extra:0, faltas:0, atestados:0,
+    caixas_extra:0, viagens_extra:0, valorMeta:0, valorFisicoNormal:0, valorCaixasExtra:0, extraCaixasExtra:0, valorExtraTag:0, valorDomingosFeriados: 0, registros: [] };
+let stPassado = { caixas:0, viagens:0, pontos:0, valor:0, extra:0, faltas:0, atestados:0,
+    caixas_extra:0, viagens_extra:0, valorMeta:0, valorFisicoNormal:0, valorCaixasExtra:0, extraCaixasExtra:0, valorExtraTag:0, valorDomingosFeriados: 0 };(lancs || []).forEach(l => {
+     const isAtual = l.data.substring(0,7) === mesAtualStr;
+     const st = isAtual ? stAtual : stPassado;
+     const status = l.status_servico || 'normal';
+     const qtd = l.quantidade_servicos || 0;
+     const val = parseFloat(l.valor_faturamento) || 0;
+     const extraVal = parseFloat(l.valor_extra) || 0;
+
+     if (status === 'normal') {
+         const diaDaSemana = new Date(l.data + 'T00:00:00').getDay();
+         const isFeriado = l.is_feriado === true;
+         const isExtraTag = l.observacao && (l.observacao.includes('[EXTRA R$ 20]') || l.observacao.includes('[EXTRA R$20]'));
+         const diaEspecial = (diaDaSemana === 0) || isFeriado || isExtraTag;
+
+         // ADICIONE ESTE BLOCO AQUI:
+         if (diaDaSemana === 0 || isFeriado) {
+             st.valorDomingosFeriados += val;
+         }
+         if (!diaEspecial) {
+             // Físico dentro da meta
+             st.valorFisicoNormal += val;
+             if (l.tipo_veiculo === 'cacamba') {
+                 st.viagens += qtd;
+             } else {
+                 st.caixas += qtd;
+             }
+             let pts = l.tipo_veiculo === 'cacamba'
+                 ? qtd * 2
+                 : (l.pontos !== undefined && l.pontos !== null ? l.pontos : window.calcularPontosMotorista(mot, qtd, l.tipo_veiculo));
+             st.pontos += pts;
+         } else {
+             // Físico fora da meta (domingo, feriado ou avulso [EXTRA R$ 20])
+             if (l.tipo_veiculo === 'cacamba') {
+                 st.viagens_extra += qtd;
+             } else {
+                 st.caixas_extra += qtd;
+             }
+             st.valorCaixasExtra += val;
+             st.extraCaixasExtra += extraVal;
+         }
+
+         // Dinheiro total: entra tudo, inclusive avulsos
+         st.valor += val;
+         st.extra += extraVal;
+
+         // Valor "estilo Leaderboard Mensal": soma tudo que NÃO é avulso [EXTRA R$ 20]
+         // (inclui domingo e feriado, só exclui o avulso)
+         if (!isExtraTag) {
+             st.valorMeta += val;
+         } else {
+             st.valorExtraTag += val;
+         }
+
+     } else if (status === 'falta' || status === 'suspensao') {
+         st.faltas++;
+     } else if (status === 'atestado') {
+         st.atestados++;
+     }
+     if (isAtual) st.registros.push(l);
+});
+
+       // ==========================================
+        // CÁLCULO DA META (IDÊNTICO AO LEADERBOARD)
+        // ==========================================
+        const slaMot = window.calcularSlaMotorista(mot, mesAtualStr);
+        const motoristaMetaQuatro = mot === 'ROBERTO CARLOS PESSOA' || window.motOutros.includes(mot);
+        const unidadeMetaRelatorio = window.motOutros.includes(mot) ? 'vg' : 'cx';
+        const volumeMetaRelatorio = window.motOutros.includes(mot) ? stAtual.viagens : stAtual.caixas;
+        const metaRelatorio = slaMot * (motoristaMetaQuatro ? 4 : 8);
+        const percAtual = metaRelatorio > 0 ? (volumeMetaRelatorio / metaRelatorio) * 100 : 0;
+        
+        // Financeiro
+       const difValor = stAtual.valor - stPassado.valor;
+        const percValor = stPassado.valor > 0 ? (difValor / stPassado.valor) * 100 : (stAtual.valor > 0 ? 100 : 0);
+
+        // Saldo: diferença entre o Fat extra (fora da meta) e o Fat normal (dentro da meta)
+        const saldoAtual = stAtual.valorCaixasExtra - stAtual.valorFisicoNormal;
+        const saldoPassado = stPassado.valorCaixasExtra - stPassado.valorFisicoNormal;
+        // Formatadores
+        const fmt = v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        const fmtNum = v => v.toLocaleString('pt-BR');
+        const fmtData = d => d.split('-').reverse().join('/');
+        const nomesDiasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+        const fmtDiaSemana = d => nomesDiasSemana[new Date(d + 'T00:00:00').getDay()];
+        const statusLabelsRelatorio = {
+            normal: 'Trabalhou Normal',
+            falta: 'Falta',
+            folga: 'Folga',
+            atestado: 'Atestado',
+            suspensao: 'Suspensao',
+            polioff: 'Poli OFF / Oficina',
+            licenca: 'Ferias',
+            desligado: 'Desligado'
+        };
+        const registrosPorData = {};
+        stAtual.registros.forEach(r => { registrosPorData[r.data] = r; });
+        const diasDoMesRelatorio = [];
+        for (let dia = 1; dia <= dataFim.getDate(); dia++) {
+            diasDoMesRelatorio.push(`${mesAtualStr}-${String(dia).padStart(2, '0')}`);
+        }
+        const registrosDetalhamento = diasDoMesRelatorio.map(dataDia => {
+            return registrosPorData[dataDia] || {
+                data: dataDia,
+                status_servico: 'sem_lancamento',
+                quantidade_servicos: 0,
+                tipo_veiculo: null,
+                valor_extra: 0,
+                valor_faturamento: 0,
+                observacao: ''
+            };
+        });
+
+        const nomeMesAtual = new Date(mesAtualStr + '-01T00:00:00').toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+        const nomeMesPassado = new Date(mesPassadoStr + '-01T00:00:00').toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+        const isMotoristaOutro = window.motOutros.includes(mot);
+        const isEspecial = window.motOutros.includes(mot);
+        const txtQtdAtual = isEspecial ? `${fmtNum(stAtual.viagens)} vg` : `${fmtNum(stAtual.caixas)} cx`;
+        const txtQtdPassado = isEspecial ? `${fmtNum(stPassado.viagens)} vg` : `${fmtNum(stPassado.caixas)} cx`;
+        const txtExtraAtual = isMotoristaOutro ? `${fmtNum(stAtual.viagens_extra)} vg` : `${fmtNum(stAtual.caixas_extra)} cx`;
+        const txtExtraPassado = isMotoristaOutro ? `${fmtNum(stPassado.viagens_extra)} vg` : `${fmtNum(stPassado.caixas_extra)} cx`;
+        const txtBaseMeta = `${fmtNum(volumeMetaRelatorio)} de ${fmtNum(metaRelatorio)} ${unidadeMetaRelatorio}`;
+        const txtPercentualMeta = formatarPercentual(percAtual);
+
+        let corEvolucao = difValor >= 0 ? '#10b981' : '#ef4444';
+        let sinalEvolucao = difValor >= 0 ? '+' : '';
+
+        // HTML DO PDF
+        const html = `
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <title>Relatório - ${mot}</title>
+            <style>
+                body { font-family: 'Arial', sans-serif; color: #1e293b; padding: 40px; line-height: 1.5; }
+                .header { border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 25px; }
+                .header h1 { margin: 0 0 5px 0; font-size: 26px; color: #0f172a; text-transform: uppercase; }
+                .header p { margin: 0; color: #64748b; font-size: 14px; }
+                
+                .grid { display: flex; gap: 20px; margin-bottom: 30px; }
+                .card { flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; background: #f8fafc; }
+                .card-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: bold; margin-bottom: 8px; }
+                .card-value { font-size: 26px; font-weight: 900; color: #0f172a; }
+                .card-sub { font-size: 13px; font-weight: bold; margin-top: 6px; }
+                
+                .section-title { font-size: 16px; font-weight: bold; color: #0f172a; margin: 35px 0 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+                
+                .table-wrapper { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+                table { width: 100%; border-collapse: collapse; font-size: 13px; }
+                th { background: #f1f5f9; text-align: left; padding: 12px 15px; color: #475569; font-weight: bold; }
+                td { padding: 10px 15px; border-top: 1px solid #e2e8f0; }
+                
+                @media print {
+                    body { padding: 0; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>${mot}</h1>
+                <p>Relatório de Desempenho Operacional e Financeiro</p>
+            </div>
+
+            <div class="grid">
+                <div class="card" style="border-top: 4px solid #4f46e5;">
+                    <div class="card-title">Mês de Referência</div>
+                    <div class="card-value" style="text-transform: capitalize;">${nomeMesAtual}</div>
+                    <div class="card-sub" style="color: #64748b;">SLA de contrato: ${slaMot} dias úteis</div>
+                </div>
+                <div class="card" style="border-top: 4px solid #10b981;">
+                    <div class="card-title">Faturamento Total</div>
+                    <div class="card-value" style="color: #10b981;">${fmt(stAtual.valor)}</div>
+                    <div class="card-sub" style="color: ${corEvolucao};">${sinalEvolucao}${fmt(Math.abs(difValor))} (${sinalEvolucao}${percValor.toFixed(1)}% vs ant.)</div>
+                </div>
+                <div class="card" style="border-top: 4px solid #f59e0b;">
+                    <div class="card-title">Atingimento de Meta</div>
+                    <div class="card-value" style="color: #d97706;">${txtPercentualMeta}</div>
+                    <div class="card-sub" style="color: #64748b;">${txtBaseMeta}</div>
+                </div>
+            </div>
+
+           <div class="section-title">📊 Comparativo Operacional</div>
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+    <th>Indicador</th>
+    <th>${nomeMesPassado} (Anterior)</th>
+    <th>Detalhe (Anterior)</th>
+    <th>${nomeMesAtual} (Atual)</th>
+    <th>Detalhe (Atual)</th>
+</tr>
+        </thead>
+       <tbody>
+            <tr>
+                <td><strong>Faturamento Total</strong></td>
+                <td>${fmt(stPassado.valor)}</td>
+                <td></td>
+                <td><strong>${fmt(stAtual.valor)}</strong></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>Extras / Bônus</strong> <span style="font-size:11px;color:#64748b;">(inclui dom. e feriado)</span></td>
+                <td>${fmt(stPassado.valor - stPassado.valorFisicoNormal)}</td>
+                <td></td>
+                <td><strong style="color: #7c3aed;">${fmt(stAtual.valor - stAtual.valorFisicoNormal)}</strong></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>Volume Físico Real</strong></td>
+                <td>${txtQtdPassado}</td>
+                <td></td>                 <td><strong>${txtQtdAtual}</strong></td>
+                <td style="color:#64748b;">${fmt(stAtual.valorFisicoNormal)}</td>             </tr>
+           <tr>
+                <td><strong>Caixas Extra (fora da meta)</strong></td>
+                <td>${txtExtraPassado}</td>
+                <td></td> 
+                <td><strong style="color: #7c3aed;">${txtExtraAtual}</strong></td>
+                <td></td> 
+            </tr>
+            <tr>
+                <td><strong>Faltas / Suspensões</strong></td>
+                <td>${stPassado.faltas}</td>
+                <td></td>
+                <td style="color: ${stAtual.faltas > 0 ? '#ef4444' : '#10b981'}; font-weight: bold;">${stAtual.faltas}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>Atestados Médicos</strong></td>
+                <td>${stPassado.atestados}</td>
+                <td></td>
+                <td style="color: ${stAtual.atestados > 0 ? '#f59e0b' : '#10b981'}; font-weight: bold;">${stAtual.atestados}</td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+           <div class="section-title" style="margin-top: 40px;">📅 Detalhamento Diário (${nomeMesAtual})</div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Qtd Física</th>
+                            <th>Veículo</th>
+                            <th>Observação</th>
+                            <th>Extra Pago</th>
+                            <th style="text-align: right;">Faturamento do Dia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${registrosDetalhamento.length > 0 ? registrosDetalhamento.map(r => {
+                            const status = r.status_servico || 'sem_lancamento';
+                            const statusTexto = status === 'sem_lancamento' ? '-' : (statusLabelsRelatorio[status] || status);
+                            const corStatus = {
+                                normal: '#10b981', falta: '#ef4444', suspensao: '#ef4444',
+                                atestado: '#f59e0b', folga: '#64748b', polioff: '#ea580c',
+                                licenca: '#7c3aed', desligado: '#991b1b', sem_lancamento: '#cbd5e1'
+                            }[status] || '#64748b';
+                            const qtd = status === 'normal'
+                                ? (r.tipo_veiculo === 'cacamba' ? (r.quantidade_servicos + ' vg') : (r.quantidade_servicos + ' cx'))
+                                : '-';
+                            const veiculoNome = status !== 'normal' ? '-' : (r.tipo_veiculo === 'poli_duplo' ? 'Poli. Duplo' : (r.tipo_veiculo === 'cacamba' ? 'Caçamba' : (r.tipo_veiculo === 'misto' ? 'Misto' : 'Poliguindaste')));
+                            const extra = parseFloat(r.valor_extra) > 0 ? '+ ' + fmt(parseFloat(r.valor_extra)) : '-';
+                            const obsTexto = (r.observacao || '-').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            return `
+                            <tr>
+                                <td>${fmtData(r.data)}<br><span style="font-size:11px; color:#94a3b8; font-weight:normal;">${fmtDiaSemana(r.data)}</span></td>
+                                <td><span style="color:${corStatus}; font-weight:bold;">${statusTexto}</span></td>
+                                <td><strong>${qtd}</strong></td>
+                                <td>${veiculoNome}</td>
+                                <td style="font-size:12px; color:#475569; max-width:220px; word-wrap:break-word;">${obsTexto}</td>
+                                <td style="color:#7c3aed; font-weight:bold; font-size:12px;">${extra}</td>
+                                <td style="text-align: right; color:#10b981; font-weight:bold;">${fmt(parseFloat(r.valor_faturamento) || 0)}</td>
+                            </tr>
+                            `;
+                        }).join('') : '<tr><td colspan="7" style="text-align:center; padding:20px; color: #94a3b8; font-style: italic;">Nenhum serviço faturado neste mês.</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        </body>
+        </html>
+        `;
+
+        const win = window.open('', '_blank');
+        win.document.write(html);
+        win.document.close();
+        
+        setTimeout(() => { win.print(); }, 500);
+
+    } catch(e) {
+        console.error(e);
+        alert("Erro ao gerar relatório: " + e.message);
+    } finally {
+        if (btn) {
+            btn.innerHTML = '<i data-lucide="file-text" style="width: 16px; height: 16px; margin-right: 6px;"></i> Relatório Mensal';
+            btn.disabled = false;
+        }
+        if (window.lucide) window.lucide.createIcons();
+    }
+};
