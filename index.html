@@ -203,18 +203,24 @@
 
                             <div id="conteudoMotorista" style="display:none; overflow-y:auto; padding:var(--space-6); flex:1; flex-direction:column;" class="animate-fade-in">
 
-                                <div class="motorista-header">
-                                    <h3 id="nomeMotoristaDisplay">Nome</h3>
-                                    <div class="sla-chip">
-                                        <div class="sla-chip-inner">
-                                            <span class="sla-chip-label">SLA (Dias Úteis)</span>
-                                            <input type="number" id="inputSlaMotorista" min="1" max="31" readonly>
-                                        </div>
-                                        <button id="btnTravaSla" onclick="window.toggleTravaSla()">
-                                            <i data-lucide="lock"></i>
-                                        </button>
-                                    </div>
-                                </div>
+                                <div class="motorista-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <h3 id="nomeMotoristaDisplay" style="margin: 0;">Nome</h3>
+        <div class="sla-chip" style="margin: 0;">
+            <div class="sla-chip-inner">
+                <span class="sla-chip-label">SLA (Dias Úteis)</span>
+                <input type="number" id="inputSlaMotorista" min="1" max="31" readonly>
+            </div>
+            <button id="btnTravaSla" onclick="window.toggleTravaSla()">
+                <i data-lucide="lock"></i>
+            </button>
+        </div>
+    </div>
+    
+    <button id="btnRelatorioMot" onclick="window.gerarRelatorioMotoristaPDF()" class="btn-sistema" style="height: 36px; padding: 0 16px; background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; font-size: 13px; font-weight: 700;">
+        <i data-lucide="file-text" style="width: 16px; height: 16px; margin-right: 6px;"></i> Relatório Mensal
+    </button>
+</div>
 
                                 <div class="motorista-stats">
                                     <div class="mstat">
