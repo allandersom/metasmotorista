@@ -341,6 +341,10 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
         // ✅ REGRAS DE PERMISSÃO — chamada uma única vez aqui
                 window.aplicarRestricoesInterface();
 
+                if (window.LockMes) {
+            window.LockMes.init();
+        }
+
                 const loader = document.getElementById('loader');
                 if (loader) {
                     loader.style.opacity = '0';
@@ -1405,6 +1409,8 @@ rankFinal.forEach(item => {
                         alert('Preencha a Data de Início e Término das férias.');
                         return;
                     }
+                    if (window.LockMes && (window.LockMes.acaoBloqueada(inicio) || window.LockMes.acaoBloqueada(fim))) return;
+
 
                     // Separa a data na mão para não ter problema de fuso horário
                     const [anoIni, mesIni, diaIni] = inicio.split('-').map(Number);
@@ -1476,6 +1482,8 @@ rankFinal.forEach(item => {
                 const elData = document.getElementById('dataLancamento');
                 const dataStr = elData ? elData.value : null;
                 if (!dataStr) { alert('Preencha a data do serviço.'); return; }
+                if (window.LockMes && window.LockMes.acaoBloqueada(dataStr)) return;
+
 
                 const tipoVeiculoInput = document.getElementById('tipoVeiculo').value;
                 let servicosInput     = parseInt(document.getElementById('servicos').value) || 0;
@@ -1733,10 +1741,12 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
         alert('Seu perfil não tem permissão para excluir lançamentos.');
         return;
     }
-            if (!window.motoristaSelecionado) return;
+    if (!window.motoristaSelecionado) return;
 
-            const motivo = prompt(`Motivo para cancelar o lançamento de ${formatarDataParaExibicao(dataStr)}:`);
-            if (motivo === null) return;
+    if (window.LockMes && window.LockMes.acaoBloqueada(dataStr)) return;
+
+    const motivo = prompt(`Motivo para cancelar o lançamento de ${formatarDataParaExibicao(dataStr)}:`);
+    if (motivo === null) return;
 
             const { data: { user } } = await supabase.auth.getUser();
 
