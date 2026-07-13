@@ -58,7 +58,7 @@ window.LockMes = {
         btn.onclick = () => this.toggleTrava(mesAtual, travado);
     },
 
-    toggleTrava: async function(mes, atualmenteTravado) {
+   toggleTrava: async function(mes, atualmenteTravado) {
         const acao = atualmenteTravado ? 'DESBLOQUEAR' : 'TRAVAR';
         const senha = prompt(`Digite a senha para ${acao} o mês de ${mes}:`);
 
@@ -72,18 +72,29 @@ window.LockMes = {
         try {
             if (atualmenteTravado) {
                 // Destrava: deleta do banco
-                await window.supabaseClient.from('meses_fechados').delete().eq('mes', mes);
+                const { error } = await window.supabaseClient.from('meses_fechados').delete().eq('mes', mes);
+                if (error) {
+                    console.error("Erro ao desbloquear mês:", error);
+                    alert("Erro ao desbloquear o mês: " + error.message);
+                    return;
+                }
                 this.mesesTravados = this.mesesTravados.filter(m => m !== mes);
                 alert(`Mês ${mes} desbloqueado! Edições estão liberadas.`);
             } else {
                 // Trava: insere no banco
-                await window.supabaseClient.from('meses_fechados').insert([{ mes: mes }]);
+                const { error } = await window.supabaseClient.from('meses_fechados').insert([{ mes: mes }]);
+                if (error) {
+                    console.error("Erro ao travar mês:", error);
+                    alert("Erro ao travar o mês: " + error.message);
+                    return;
+                }
                 this.mesesTravados.push(mes);
                 alert(`Mês ${mes} TRAVADO! Nenhuma edição poderá ser feita.`);
             }
             this.renderizarBotao();
         } catch(e) {
-            alert("Erro ao alterar status do mês.");
+            console.error("Erro ao alterar status do mês:", e);
+            alert("Erro ao alterar status do mês: " + e.message);
         }
     },
     
