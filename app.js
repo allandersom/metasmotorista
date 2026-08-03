@@ -2093,7 +2093,27 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
 
             const fmt = d => d.split('-').reverse().join('/');
             const periodoLabel = `${fmt(inicio)} até ${fmt(fim)}`;
-            const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e feriados)' : '';
+const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e feriados)' : '';
+
+            const getTxt = id => document.getElementById(id)?.innerText || '';
+            const metasHtml = `
+                <div style="display:flex;gap:10px;margin-bottom:20px;">
+                    <div style="flex:1;background:linear-gradient(135deg,#059669,#047857);border-radius:10px;padding:12px 14px;color:#fff;">
+                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;">Meta Geral (Mês)</div>
+                        <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaGeralGlobal')}</div>
+                        <div style="font-size:9px;opacity:.9;">${getTxt('faltaGeralGlobal')}</div>
+                    </div>
+                    <div style="flex:1;background:linear-gradient(135deg,#db2777,#be185d);border-radius:10px;padding:12px 14px;color:#fff;">
+                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;">Meta Rayanna (Mês)</div>
+                        <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaRayannaGlobal')}</div>
+                        <div style="font-size:9px;opacity:.9;">${getTxt('faltaRayannaGlobal')}</div>
+                    </div>
+                    <div style="flex:1;background:linear-gradient(135deg,#4f46e5,#4338ca);border-radius:10px;padding:12px 14px;color:#fff;">
+                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;">Meta Júlia (Mês)</div>
+                        <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaJuliaGlobal')}</div>
+                        <div style="font-size:9px;opacity:.9;">${getTxt('faltaJuliaGlobal')}</div>
+                    </div>
+                </div>`;
 
             const linhasOriginais = document.querySelectorAll('#listaRankingDiario .diario-row');
             let linhasHtml = '';
@@ -2226,8 +2246,8 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
                         <div style="font-size:15px;font-weight:700;color:#059669;">${totalFat}</div>
                     </div>
                 </div>
+                ${metasHtml}
                 ${linhasHtml}
-                ${statusHtml} 
                 <script>
                     window.onload = function() {
                         window.print();
