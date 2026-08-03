@@ -4,7 +4,7 @@
 // ==========================================
 
 window.LockMes = {
-    senhaMestra: "ddd11112231", // <-- ALTERE A SENHA AQUI
+    senhaMestra: "logistica123", // <-- ALTERE A SENHA AQUI
     mesesTravados: [],
 
     // Inicia o sistema, busca os meses fechados e cria o botão
