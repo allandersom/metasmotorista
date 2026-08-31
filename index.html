@@ -716,12 +716,83 @@
                 </div>
 
                 <div id="viewOperador" style="display:none;">
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;color:#888;">
-            <i data-lucide="hard-hat" style="width:48px;height:48px;"></i>
-            <h2 style="font-size:1.4rem;font-weight:600;">Em construção</h2>
-            <p>Esta seção está sendo desenvolvida.</p>
-        </div>
-    </div>
+
+                    <div class="page-header" style="margin-bottom: 24px;">
+                        <div>
+                            <h2>Operador</h2>
+                            <p>Lançamento de caixas extras — este valor conta apenas para o operador.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+                        <div class="stat-card stat-card-brand">
+                            <div class="stat-label">Caixas Extras — Hoje</div>
+                            <div class="stat-value" id="opCaixasExtraHoje">0</div>
+                        </div>
+                        <div class="stat-card stat-card-emerald">
+                            <div class="stat-label">Caixas Extras — Mês</div>
+                            <div class="stat-value" id="opCaixasExtraMes">0</div>
+                        </div>
+                    </div>
+
+                    <div class="form-card" style="max-width:480px;">
+                        <div class="form-card-title">
+                            <i data-lucide="package-plus"></i>
+                            Adicionar Caixas Extras
+                        </div>
+
+                                                <div style="display:flex; flex-direction:column; gap:var(--space-4); padding: var(--space-6) 0 0;">
+                            <div>
+                                <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Data</label>
+                                <input id="opCaixasExtraData" type="date" class="input-base" style="width:100%;">
+                            </div>
+
+                            <div>
+                                <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Turno</label>
+                                <select id="opCaixasExtraTurno" class="input-base" style="width:100%;">
+                                    <option value="dia">☀️ Dia</option>
+                                    <option value="noite">🌙 Noite</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Quantidade de Caixas Extras</label>
+                                <input id="opCaixasExtraQtd" type="number" min="0" step="1" placeholder="0" class="input-base text-center" style="width:100%;">
+                            </div>
+
+                            <div>
+                                <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Observação (opcional)</label>
+                                <textarea id="opCaixasExtraObs" class="input-base" style="width:100%; min-height:60px;"></textarea>
+                            </div>
+
+                            <button id="btnSalvarCaixasExtraOperador" onclick="window.salvarCaixasExtraOperador()" class="btn-primary"
+                                style="height:44px; font-size:14px; width:100%; border-radius:10px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
+                                <i data-lucide="save" style="width:16px;height:16px;"></i>
+                                Adicionar
+                            </button>
+                        </div>
+                    </div>
+
+                                      <div class="flex-1" style="margin-top:24px; max-width:640px;">
+                        <div class="table-header-row" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                            <span class="table-section-label">Lançamentos do Mês</span>
+                            <input id="opCaixasExtraMes" type="month" class="inline-date" onchange="window.carregarCaixasExtraOperador();">
+                        </div>
+                        <div class="table-wrap">
+                                                        <table id="tabelaCaixasExtraOperador">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th style="text-align:center;">Turno</th>
+                                        <th style="text-align:center;">Qtd</th>
+                                        <th style="text-align:center;">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
                 
             <div id="viewCadastro" style="display:none;">
@@ -1327,7 +1398,7 @@
         <script src="lock-mes.js"></script>
 
 
-        <script type="module" src="app.js"></script>
+        <script type="module" src="app.js?v=2"></script>
 
         <script>
             lucide.createIcons();
