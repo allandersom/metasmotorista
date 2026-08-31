@@ -219,7 +219,7 @@
             // Abas permitidas por função
             const permissoes = {
              admin: Object.keys(todasAbas), // todas
-            operador: ['rankings', 'projecao', 'rotas', 'lancamentos'], // <-- adicione 'lancamentos' aqui
+            operador: ['rankings', 'projecao', 'rotas', 'lancamentos', 'operador'], // <-- adicione 'lancamentos' aqui
             rh: ['cadastro', 'operador', 'faltas', 'domferiados', 'rankings'],
 global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'faltas', 'caminhoes']};
 
@@ -280,6 +280,7 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
         const mesAtualTela = isRankingAtivo ? mesRanking : mesGlobal;
 
         await carregarLancamentosDoMes(mesAtualTela);
+        await window.carregarCaixasExtraOperadorPorTurno(mesAtualTela);
 
                 
 
@@ -675,9 +676,13 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
         window._turnoLeaderboardIndex = 0;
         window._turnoLeaderboardAtual = 'todos'; // Memória global blindada
 
-       window.gerarRankingMensal = function (mesForcado) {
+       window.gerarRankingMensal = async function (mesForcado) {
     const elFiltro = document.getElementById('mesFiltro');
     const mesFiltro = mesForcado || elFiltro?.value || window.anoMesAtual || new Date().toISOString().substring(0, 7);  
+
+    if (typeof window.carregarCaixasExtraOperadorPorTurno === 'function') {
+        await window.carregarCaixasExtraOperadorPorTurno(mesFiltro);
+    }
 
             const diasUteisGlobais = window.carregarDiasUteis(mesFiltro);
             const bancoDados = window.bancoDadosCloud;
@@ -728,7 +733,7 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
                 return metaCheiaDoMes * (slaMotorista / diasUteisGlobais);
             }
 
-            let ptsRayanna = 0, feitasRayanna = 0;
+                        let ptsRayanna = 0, feitasRayanna = 0;
             window.motRayanna.forEach(mot => {
                 ptsRayanna   += getMetaCalculadaMotorista(mot);
                 feitasRayanna += acumuladoMes[mot]?.pontos ?? 0;
@@ -739,6 +744,9 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
                 ptsJulia   += getMetaCalculadaMotorista(mot);
                 feitasJulia += acumuladoMes[mot]?.pontos ?? 0;
             });
+
+            feitasRayanna += window.caixasExtraOperadorCloud?.dia   || 0;
+            feitasJulia   += window.caixasExtraOperadorCloud?.noite || 0;
 
             const ptsGeral    = ptsRayanna + ptsJulia;
             const feitasGeral = feitasRayanna + feitasJulia;
@@ -1089,7 +1097,8 @@ rankFinal.forEach(item => {
             elRankFim.value = isMesAtual ? getHojeStr() : ultimoDiaDoMes(mesSelecionado);
         }
 
-        await carregarLancamentosDoMes(mesSelecionado);
+               await carregarLancamentosDoMes(mesSelecionado);
+        await window.carregarCaixasExtraOperadorPorTurno(mesSelecionado);
         reconstruirMotoristasDoMes(mesSelecionado);
 
         window.carregarDiasUteis(mesSelecionado);
@@ -1117,7 +1126,8 @@ rankFinal.forEach(item => {
             elRankFimF.value = isMesAtualF ? getHojeStr() : ultimoDiaDoMes(mesSelecionado);
         }
 
-        await carregarLancamentosDoMes(mesSelecionado);
+               await carregarLancamentosDoMes(mesSelecionado);
+        await window.carregarCaixasExtraOperadorPorTurno(mesSelecionado);
         reconstruirMotoristasDoMes(mesSelecionado);
 
         window.carregarDiasUteis(mesSelecionado);
@@ -1248,6 +1258,8 @@ rankFinal.forEach(item => {
                 window.renderizarRelatorioFaltas();
             } else if (aba === 'caminhoes') {
             window.carregarCaminhoes();
+            } else if (aba === 'operador') {
+                window.carregarCaixasExtraOperador();
             }
 
         };
@@ -4509,4 +4521,153 @@ let stPassado = { caixas:0, viagens:0, pontos:0, valor:0, extra:0, faltas:0, ate
         }
         if (window.lucide) window.lucide.createIcons();
     }
+};
+
+// =============================================================
+// OPERADOR — CAIXAS EXTRAS (conta apenas para o operador)
+// =============================================================
+
+window.carregarCaixasExtraOperador = async function () {
+    const inputData = document.getElementById('opCaixasExtraData');
+    if (inputData && !inputData.value) inputData.value = getHojeStr();
+
+    const inputMes = document.getElementById('opCaixasExtraMes');
+    if (inputMes && !inputMes.value) inputMes.value = getHojeStr().substring(0, 7);
+
+    const tbody = document.querySelector('#tabelaCaixasExtraOperador tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8;">Carregando...</td></tr>';
+
+    try {
+        const hoje = getHojeStr();
+        const mesSelecionado = inputMes?.value || hoje.substring(0, 7);
+        const inicioMes = mesSelecionado + '-01';
+
+        const { data, error } = await window.supabaseClient
+            .from('caixas_extra_operador')
+            .select('*')
+            .gte('data', inicioMes)
+            .lte('data', ultimoDiaDoMes(mesSelecionado))
+            .order('data', { ascending: false });
+
+        if (error) throw error;
+
+        const registros = data || [];
+
+        const totalMes = registros.reduce((soma, r) => soma + (Number(r.quantidade) || 0), 0);
+        const totalHoje = registros
+            .filter(r => r.data === hoje)
+            .reduce((soma, r) => soma + (Number(r.quantidade) || 0), 0);
+
+        const elHoje = document.getElementById('opCaixasExtraHoje');
+        const elMes = document.getElementById('opCaixasExtraMes');
+        if (elHoje) elHoje.innerText = totalHoje;
+        if (elMes) elMes.innerText = totalMes;
+
+               if (tbody) {
+            tbody.innerHTML = registros.length ? registros.map(r => `
+                <tr>
+                    <td>${formatarDataParaExibicao(r.data)}</td>
+                    <td style="text-align:center; text-transform:capitalize;">${r.turno === 'dia' ? '☀️ Dia' : '🌙 Noite'}</td>
+                    <td style="text-align:center;"><strong>${r.quantidade}</strong></td>
+                    <td style="text-align:center;">
+                        <button class="btn-delete" onclick="window.excluirCaixaExtraOperador('${r.id}')">Excluir</button>
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8; font-style:italic;">Nenhum lançamento neste mês.</td></tr>';
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+
+    } catch (e) {
+        console.error(e);
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#ef4444;">Erro ao carregar lançamentos.</td></tr>';
+    }
+};
+
+window.salvarCaixasExtraOperador = async function () {
+    const inputData = document.getElementById('opCaixasExtraData');
+    const inputQtd = document.getElementById('opCaixasExtraQtd');
+    const inputTurno = document.getElementById('opCaixasExtraTurno');
+    const inputObs = document.getElementById('opCaixasExtraObs');
+    const btn = document.getElementById('btnSalvarCaixasExtraOperador');
+
+    const data = inputData?.value || getHojeStr();
+    const quantidade = parseInt(inputQtd?.value, 10);
+    const turno = inputTurno?.value || '';
+    const observacao = inputObs?.value?.trim() || null;
+
+    if (!quantidade || quantidade <= 0) {
+        alert('Informe uma quantidade de caixas extras válida.');
+        return;
+    }
+
+    if (!turno) {
+        alert('Selecione o turno.');
+        return;
+    }
+
+    if (btn) { btn.disabled = true; }
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('caixas_extra_operador')
+            .insert({ data, quantidade, turno, observacao });
+
+        if (error) throw error;
+
+        if (inputQtd) inputQtd.value = '';
+        if (inputObs) inputObs.value = '';
+
+        await window.carregarCaixasExtraOperador();
+        if (typeof window.carregarCaixasExtraOperadorPorTurno === 'function') {
+            const mesRanking = document.getElementById('mesFiltro')?.value?.substring(0, 7) || getAnoMesAtual();
+            await window.carregarCaixasExtraOperadorPorTurno(mesRanking);
+            if (typeof window.gerarRankingMensal === 'function') window.gerarRankingMensal();
+        }
+
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao salvar: ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; }
+    }
+};
+
+window.excluirCaixaExtraOperador = async function (id) {
+    if (!confirm('Excluir este lançamento de caixas extras?')) return;
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('caixas_extra_operador')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        await window.carregarCaixasExtraOperador();
+
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao excluir: ' + e.message);
+    }
+};
+
+window.carregarCaixasExtraOperadorPorTurno = async function (anoMes) {
+    const inicio = anoMes + '-01';
+    const fim = ultimoDiaDoMes(anoMes);
+
+    const { data, error } = await window.supabaseClient
+        .from('caixas_extra_operador')
+        .select('quantidade, turno')
+        .gte('data', inicio)
+        .lte('data', fim);
+
+    window.caixasExtraOperadorCloud = { dia: 0, noite: 0 };
+    if (error) { console.error(error); return; }
+
+    (data || []).forEach(r => {
+        if (r.turno === 'dia' || r.turno === 'noite') {
+            window.caixasExtraOperadorCloud[r.turno] += Number(r.quantidade) || 0;
+        }
+    });
 };
