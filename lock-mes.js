@@ -7,6 +7,15 @@ window.LockMes = {
     senhaMestra: "logistica123", // <-- ALTERE A SENHA AQUI
     mesesTravados: [],
 
+    normalizarMes: function(valor) {
+        const resultado = /^(\d{4}-\d{2})/.exec(valor || '');
+        return resultado ? resultado[1] : null;
+    },
+
+    obterMesSelecionado: function() {
+        return this.normalizarMes(document.getElementById('dataGlobal')?.value);
+    },
+
     // Inicia o sistema, busca os meses fechados e cria o botão
     init: async function() {
         await this.carregarTravas();
@@ -17,7 +26,9 @@ window.LockMes = {
         try {
             const { data, error } = await window.supabaseClient.from('meses_fechados').select('mes');
             if (!error && data) {
-                this.mesesTravados = data.map(d => d.mes);
+                this.mesesTravados = [...new Set(
+                    data.map(d => this.normalizarMes(d.mes)).filter(Boolean)
+                )];
             }
         } catch(e) {
             console.error("Erro ao carregar travas do mês", e);
@@ -25,7 +36,8 @@ window.LockMes = {
     },
 
     isTravado: function(mesStr) {
-        return this.mesesTravados.includes(mesStr);
+        const mes = this.normalizarMes(mesStr);
+        return Boolean(mes) && this.mesesTravados.includes(mes);
     },
 
     renderizarBotao: function() {
@@ -46,7 +58,13 @@ window.LockMes = {
             container.appendChild(btn);
         }
 
-        const mesAtual = elMes.value.substring(0, 7);
+        const mesAtual = this.obterMesSelecionado();
+        if (!mesAtual) {
+            btn.disabled = true;
+            btn.innerHTML = '🔒 Selecione um mês';
+            return;
+        }
+        btn.disabled = false;
         const travado = this.isTravado(mesAtual);
 
         // Muda a cor e o texto baseado no status
@@ -55,10 +73,19 @@ window.LockMes = {
         btn.style.color = 'white';
         btn.style.border = 'none';
         
-        btn.onclick = () => this.toggleTrava(mesAtual, travado);
+        // Lê o mês no clique para nunca usar uma referência antiga.
+        btn.onclick = () => this.toggleTrava();
     },
 
-   toggleTrava: async function(mes, atualmenteTravado) {
+   toggleTrava: async function() {
+        const mes = this.obterMesSelecionado();
+        if (!mes) {
+            alert('Selecione o mês que deseja travar ou destravar.');
+            return;
+        }
+
+        await this.carregarTravas();
+        const atualmenteTravado = this.isTravado(mes);
         const acao = atualmenteTravado ? 'DESBLOQUEAR' : 'TRAVAR';
         const senha = prompt(`Digite a senha para ${acao} o mês de ${mes}:`);
 
@@ -102,12 +129,28 @@ window.LockMes = {
     acaoBloqueada: function(dataDoLancamento) {
         if (!dataDoLancamento) return false;
         
-        const mesDoLancamento = dataDoLancamento.substring(0, 7);
+        const mesDoLancamento = this.normalizarMes(dataDoLancamento);
+        if (!mesDoLancamento) return false;
         if (this.isTravado(mesDoLancamento)) {
             alert(`⛔ AÇÃO BLOQUEADA!\nO mês de ${mesDoLancamento} está fechado.\nDestranque o mês com a senha para fazer alterações.`);
             return true; // Retorna true indicando que está bloqueado
         }
         return false; // Retorna false indicando que pode prosseguir
+    },
+
+    periodoBloqueado: function(dataInicio, dataFim) {
+        const inicio = this.normalizarMes(dataInicio);
+        const fim = this.normalizarMes(dataFim);
+        if (!inicio || !fim) return false;
+
+        const cursor = new Date(`${inicio}-01T00:00:00`);
+        const limite = new Date(`${fim}-01T00:00:00`);
+        while (cursor <= limite) {
+            const mes = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+            if (this.acaoBloqueada(mes)) return true;
+            cursor.setMonth(cursor.getMonth() + 1);
+        }
+        return false;
     }
 };
 

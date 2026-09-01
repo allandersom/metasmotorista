@@ -26,7 +26,7 @@
             calcularPontos,
             getMetaDiaria,
             getConfigVeiculo,
-        } from './src/business/financeiro.js';
+        } from './src/business/financeiro.js?v=2';
 
 
         import {
@@ -680,9 +680,52 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
     const elFiltro = document.getElementById('mesFiltro');
     const mesFiltro = mesForcado || elFiltro?.value || window.anoMesAtual || new Date().toISOString().substring(0, 7);  
 
-    if (typeof window.carregarCaixasExtraOperadorPorTurno === 'function') {
-        await window.carregarCaixasExtraOperadorPorTurno(mesFiltro);
+    // =============================================================
+// CAIXAS EXTRAS DO OPERADOR
+// Busca diretamente no Supabase para garantir que o ranking
+// sempre utilize os lançamentos reais do mês selecionado.
+// =============================================================
+
+let extrasOperadorDia = 0;
+let extrasOperadorNoite = 0;
+
+try {
+    const inicioExtras = `${mesFiltro}-01`;
+    const fimExtras = ultimoDiaDoMes(mesFiltro);
+
+    const { data: extrasOperador, error: erroExtras } =
+        await window.supabaseClient
+            .from('caixas_extra_operador')
+            .select('quantidade, turno')
+            .gte('data', inicioExtras)
+            .lte('data', fimExtras);
+
+    if (erroExtras) {
+        console.error('Erro ao buscar caixas extras do operador:', erroExtras);
+    } else {
+        (extrasOperador || []).forEach(extra => {
+            const quantidade = Number(extra.quantidade) || 0;
+
+            if (extra.turno === 'dia') {
+                extrasOperadorDia += quantidade;
+            }
+
+            if (extra.turno === 'noite') {
+                extrasOperadorNoite += quantidade;
+            }
+        });
     }
+
+    console.log('📦 EXTRAS OPERADOR NO RANKING:', {
+        mes: mesFiltro,
+        dia: extrasOperadorDia,
+        noite: extrasOperadorNoite,
+        total: extrasOperadorDia + extrasOperadorNoite
+    });
+
+} catch (erro) {
+    console.error('Erro inesperado ao carregar extras do operador:', erro);
+}
 
             const diasUteisGlobais = window.carregarDiasUteis(mesFiltro);
             const bancoDados = window.bancoDadosCloud;
@@ -745,9 +788,14 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
                 feitasJulia += acumuladoMes[mot]?.pontos ?? 0;
             });
 
-            feitasRayanna += window.caixasExtraOperadorCloud?.dia   || 0;
-            feitasJulia   += window.caixasExtraOperadorCloud?.noite || 0;
+            // Usa os extras buscados para o próprio mês do ranking. Assim, os
+            // cards sempre refletem os lançamentos do operador, inclusive após
+            // trocar o filtro de mês ou atualizar a página.
+            const extrasDia = extrasOperadorDia;
+            const extrasNoite = extrasOperadorNoite;
 
+feitasRayanna += extrasDia;
+feitasJulia += extrasNoite;
             const ptsGeral    = ptsRayanna + ptsJulia;
             const feitasGeral = feitasRayanna + feitasJulia;
 
@@ -797,16 +845,18 @@ rankFinal.forEach(item => {
     };
 });
 
-            rankFinal.forEach(mot => {
+          rankFinal.forEach(mot => {
                 if (mot.percentual >= 80) {
                     totalLiberado += mot.valor; 
                 }
                 fatBrutoFiltrado += mot.valor; 
             });
 
+            // Inclui os extras no total exibido no card do Leaderboard.
+            totalCaixasFrota += extrasDia + extrasNoite;
+
             const elQtd = document.getElementById('totalQtdMensalLeaderboard');
             if (elQtd) elQtd.innerText = formatarQuantidadeMista(totalCaixasFrota, totalViagensFrota, false);
-            
             const elFat = document.getElementById('totalFatMensalLeaderboard');
             if (elFat) elFat.innerText = formatarMoeda(fatBrutoFiltrado);
 
@@ -1421,7 +1471,7 @@ rankFinal.forEach(item => {
                         alert('Preencha a Data de Início e Término das férias.');
                         return;
                     }
-                    if (window.LockMes && (window.LockMes.acaoBloqueada(inicio) || window.LockMes.acaoBloqueada(fim))) return;
+                    if (window.LockMes && window.LockMes.periodoBloqueado(inicio, fim)) return;
 
 
                     // Separa a data na mão para não ter problema de fuso horário
@@ -1913,9 +1963,12 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
                 }
             }
 
+       // ✅ SOMA AS CAIXAS DO OPERADOR NO RESUMO GLOBAL DO MÊS
+            const extraOperadorGlobal = (window.caixasExtraOperadorCloud?.dia || 0) + (window.caixasExtraOperadorCloud?.noite || 0);
+            caixasMesGlobal += extraOperadorGlobal;
+
             // --- ATUALIZAÇÃO DA TELA ---
-            const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
-            
+            const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };   
             _set('totalDiaGlobal',     formatarMoeda(totalDiaGlobal));
             _set('totalSemanaGlobal',  formatarMoeda(totalMesGlobal));
             
@@ -2024,8 +2077,11 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
                 }
             }
 
-            if (elQtd) elQtd.innerText = `${totalCaixasGeral} cx | ${totalViagensGeral} vg`;
-            
+// ✅ SOMA AS CAIXAS DO OPERADOR NO TOTAL DO PERÍODO
+            const extraOperadorGlobal = (window.caixasExtraOperadorCloud?.dia || 0) + (window.caixasExtraOperadorCloud?.noite || 0);
+            totalCaixasGeral += extraOperadorGlobal;
+
+            if (elQtd) elQtd.innerText = formatarQuantidadeMista(totalCaixasGeral, totalViagensGeral, false);            
             const elFat = document.getElementById('totalFatPeriodo');
             if (elFat) elFat.innerText = formatarMoeda(totalFatGeral);
 
@@ -2314,7 +2370,6 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
             const dataObj  = new Date(l.data + 'T00:00:00');
             const isDomingo = dataObj.getDay() === 0;
             const extraVal = parseFloat(l.valor_extra) || 0;
-
             // Pega apenas extras de Dias Úteis
             if (!isDomingo && !isFeriado && extraVal > 0) {
                 extraTotalDiasUteis += extraVal;
@@ -3601,12 +3656,12 @@ window.atualizarGraficosProjecao = async function () {
         const dataObj  = new Date(l.data + 'T00:00:00');
         const isDomingo = dataObj.getDay() === 0;
         const extraVal = parseFloat(l.valor_extra) || 0;
-
         // Extrai os Extras de Dias Úteis
         if (!isDomingo && !isFeriado && extraVal > 0) {
             listaExtras.push({
                 dataStr: l.data,
                 nome: nomeMotorista,
+                quantidade: Number(l.quantidade_servicos) || 0,
                 valor: extraVal,
                 obs: l.observacao || 'Sem observação'
             });
@@ -3670,6 +3725,19 @@ window.atualizarGraficosProjecao = async function () {
     const fmt     = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const fmtData = (s) => { const [y, m, d] = s.split('-'); return d + '/' + m + '/' + y; };
     const periodoStr = fmtData(dataInicio) + ' – ' + fmtData(dataFim);
+    const cadastroPorNome = new Map(
+        (window.todosMotoristasCloud || []).map(m => [(m.nome || '').toUpperCase().trim(), m])
+    );
+    const escaparHtmlPdf = valor => String(valor ?? '').replace(/[&<>'"]/g, caractere => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    })[caractere]);
+    const motoristaComPix = nome => {
+        const pix = cadastroPorNome.get(nome)?.chave_pix?.trim();
+        const pixHtml = pix
+            ? `<span style="margin-left:9px;color:#047857;font-size:11px;font-weight:700;white-space:nowrap;">PIX: ${escaparHtmlPdf(pix)}</span>`
+            : '<span style="margin-left:9px;color:#dc2626;font-size:11px;font-weight:700;white-space:nowrap;">⚠ PIX não cadastrado</span>';
+        return `${escaparHtmlPdf(nome)}${pixHtml}`;
+    };
 
     function gerarTabelaDomFer(lista, total) {
         if (lista.length === 0) return '<p style="color:#888;font-style:italic;">Nenhum registro no período.</p>';
@@ -3695,7 +3763,7 @@ window.atualizarGraficosProjecao = async function () {
                 const isFirst = i === 0;
                 const qtd = r.caixas > 0 ? (r.caixas + ' cx') : (r.viagens + ' vg');
                 html += '<tr style="background:' + (isFirst ? '#f8fafc' : '#fff') + ';">'
-                    + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isFirst ? '700' : '400') + ';color:' + (isFirst ? '#1e293b' : '#475569') + ';">' + (isFirst ? nome : '') + '</td>'
+                    + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isFirst ? '700' : '400') + ';color:' + (isFirst ? '#1e293b' : '#475569') + ';">' + (isFirst ? motoristaComPix(nome) : '') + '</td>'
                     + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtData(r.dataStr) + '</td>'
                     + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + qtd + '</td>'
                     + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:right;color:#dc2626;font-weight:600;">' + fmt(r.valor) + '</td>'
@@ -3725,19 +3793,24 @@ window.atualizarGraficosProjecao = async function () {
             + '<th style="text-align:center;padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;">Data</th>'
             + '<th style="text-align:left;padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;">Motorista</th>'
             + '<th style="text-align:left;padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;">Observação</th>'
+            + '<th style="padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;text-align:center;">Qtd. caixas</th>'
             + '<th style="padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;text-align:right;">Valor Extra</th>'
             + '</tr></thead><tbody>';
         
         lista.forEach(r => {
+            const observacaoLimpa = String(r.obs || '')
+                .replace(/\[EXTRA R\$\s*20\]\s*/gi, '')
+                .trim() || '—';
             html += '<tr>'
                 + '<td style="padding:6px 10px;border:1px solid #d8b4fe;text-align:center;">' + fmtData(r.dataStr) + '</td>'
-                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;font-weight:600;">' + r.nome + '</td>'
-                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;color:#475569;">' + r.obs + '</td>'
+                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;font-weight:600;">' + motoristaComPix(r.nome) + '</td>'
+                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;color:#475569;">' + escaparHtmlPdf(observacaoLimpa) + '</td>'
+                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;text-align:center;font-weight:700;">' + r.quantidade + ' cx</td>'
                 + '<td style="padding:6px 10px;border:1px solid #d8b4fe;text-align:right;color:#7c3aed;font-weight:700;">' + fmt(r.valor) + '</td>'
                 + '</tr>';
         });
         html += '</tbody><tfoot><tr style="background:#faf5ff;">'
-            + '<td colspan="3" style="padding:8px 10px;border:1px solid #d8b4fe;text-align:right;font-weight:700;color:#6b21a8;">Total Extras:</td>'
+            + '<td colspan="4" style="padding:8px 10px;border:1px solid #d8b4fe;text-align:right;font-weight:700;color:#6b21a8;">Total Extras:</td>'
             + '<td style="padding:8px 10px;border:1px solid #d8b4fe;text-align:right;font-weight:700;color:#7c3aed;">' + fmt(total) + '</td>'
             + '</tr></tfoot></table>';
         return html;
@@ -4527,15 +4600,44 @@ let stPassado = { caixas:0, viagens:0, pontos:0, valor:0, extra:0, faltas:0, ate
 // OPERADOR — CAIXAS EXTRAS (conta apenas para o operador)
 // =============================================================
 
+function escaparTextoCaixaExtra(valor) {
+    const div = document.createElement('div');
+    div.textContent = valor ?? '';
+    return div.innerHTML;
+}
+
+window.popularMotoristasCaixaExtraOperador = function () {
+    const select = document.getElementById('opCaixasExtraMotorista');
+    if (!select) return;
+
+    const selecionado = select.value;
+    const motoristasAtivos = (window.todosMotoristasCloud || [])
+        .filter(m => (m.nome || '').trim() && (m.status || 'ativo').toLowerCase() !== 'inativo')
+        .map(m => m.nome.trim())
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    select.innerHTML = '<option value="">Selecione o motorista</option>';
+    motoristasAtivos.forEach(nome => {
+        const option = document.createElement('option');
+        option.value = nome;
+        option.textContent = nome;
+        select.appendChild(option);
+    });
+
+    if (motoristasAtivos.includes(selecionado)) select.value = selecionado;
+};
+
 window.carregarCaixasExtraOperador = async function () {
     const inputData = document.getElementById('opCaixasExtraData');
     if (inputData && !inputData.value) inputData.value = getHojeStr();
 
-    const inputMes = document.getElementById('opCaixasExtraMes');
+    const inputMes = document.getElementById('opCaixasExtraMesFiltro');
     if (inputMes && !inputMes.value) inputMes.value = getHojeStr().substring(0, 7);
 
+    window.popularMotoristasCaixaExtraOperador();
+
     const tbody = document.querySelector('#tabelaCaixasExtraOperador tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8;">Carregando...</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">Carregando...</td></tr>';
 
     try {
         const hoje = getHojeStr();
@@ -4569,18 +4671,20 @@ window.carregarCaixasExtraOperador = async function () {
                     <td>${formatarDataParaExibicao(r.data)}</td>
                     <td style="text-align:center; text-transform:capitalize;">${r.turno === 'dia' ? '☀️ Dia' : '🌙 Noite'}</td>
                     <td style="text-align:center;"><strong>${r.quantidade}</strong></td>
+                    <td style="font-weight:600;">${escaparTextoCaixaExtra(r.motorista_nome || '—')}</td>
+                    <td style="color:#475569; max-width:280px; word-break:break-word;">${escaparTextoCaixaExtra(r.observacao || '—')}</td>
                     <td style="text-align:center;">
-                        <button class="btn-delete" onclick="window.excluirCaixaExtraOperador('${r.id}')">Excluir</button>
+                        <button class="btn-delete" onclick="window.excluirCaixaExtraOperador('${r.id}', '${r.data}')">Excluir</button>
                     </td>
                 </tr>
-            `).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8; font-style:italic;">Nenhum lançamento neste mês.</td></tr>';
+            `).join('') : '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8; font-style:italic;">Nenhum lançamento neste mês.</td></tr>';
         }
 
         if (window.lucide) window.lucide.createIcons();
 
     } catch (e) {
-        console.error(e);
-        if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#ef4444;">Erro ao carregar lançamentos.</td></tr>';
+        console.error('Erro ao carregar caixas extras do operador:', e);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#ef4444;">Erro ao carregar lançamentos: ${e.message || e}</td></tr>`;
     }
 };
 
@@ -4588,13 +4692,17 @@ window.salvarCaixasExtraOperador = async function () {
     const inputData = document.getElementById('opCaixasExtraData');
     const inputQtd = document.getElementById('opCaixasExtraQtd');
     const inputTurno = document.getElementById('opCaixasExtraTurno');
+    const inputMotorista = document.getElementById('opCaixasExtraMotorista');
     const inputObs = document.getElementById('opCaixasExtraObs');
     const btn = document.getElementById('btnSalvarCaixasExtraOperador');
 
     const data = inputData?.value || getHojeStr();
     const quantidade = parseInt(inputQtd?.value, 10);
     const turno = inputTurno?.value || '';
+    const motoristaNome = inputMotorista?.value || '';
     const observacao = inputObs?.value?.trim() || null;
+
+    if (window.LockMes && window.LockMes.acaoBloqueada(data)) return;
 
     if (!quantidade || quantidade <= 0) {
         alert('Informe uma quantidade de caixas extras válida.');
@@ -4606,25 +4714,45 @@ window.salvarCaixasExtraOperador = async function () {
         return;
     }
 
+    if (!motoristaNome) {
+        alert('Selecione o motorista referente às caixas extras.');
+        return;
+    }
+
     if (btn) { btn.disabled = true; }
 
     try {
         const { error } = await window.supabaseClient
             .from('caixas_extra_operador')
-            .insert({ data, quantidade, turno, observacao });
+            .insert({ data, quantidade, turno, motorista_nome: motoristaNome, observacao });
 
         if (error) throw error;
 
         if (inputQtd) inputQtd.value = '';
         if (inputObs) inputObs.value = '';
 
+        // 1. Atualiza a tabela do operador
         await window.carregarCaixasExtraOperador();
+        
+        // 2. Recarrega as caixas extras na memória global
+        const elMes = document.getElementById('dataGlobal');
+        const mesRanking = document.getElementById('mesFiltro')?.value?.substring(0, 7) || elMes?.value?.substring(0, 7) || new Date().toISOString().substring(0, 7);
+        
         if (typeof window.carregarCaixasExtraOperadorPorTurno === 'function') {
-            const mesRanking = document.getElementById('mesFiltro')?.value?.substring(0, 7) || getAnoMesAtual();
             await window.carregarCaixasExtraOperadorPorTurno(mesRanking);
-            if (typeof window.gerarRankingMensal === 'function') window.gerarRankingMensal();
         }
+// 3. Atualiza a Central de Rankings
+if (typeof window.gerarRankingMensal === 'function') {
+    await window.gerarRankingMensal(mesRanking);
+}
 
+if (typeof window.atualizarResumosGlobais === 'function') {
+    await window.atualizarResumosGlobais();
+}
+
+if (typeof window.gerarRankingPeriodo === 'function') {
+    await window.gerarRankingPeriodo();
+}
     } catch (e) {
         console.error(e);
         alert('Erro ao salvar: ' + e.message);
@@ -4633,7 +4761,8 @@ window.salvarCaixasExtraOperador = async function () {
     }
 };
 
-window.excluirCaixaExtraOperador = async function (id) {
+window.excluirCaixaExtraOperador = async function (id, data) {
+    if (window.LockMes && window.LockMes.acaoBloqueada(data)) return;
     if (!confirm('Excluir este lançamento de caixas extras?')) return;
 
     try {
@@ -4644,7 +4773,21 @@ window.excluirCaixaExtraOperador = async function (id) {
 
         if (error) throw error;
 
+        // 1. Atualiza a tabela do operador
         await window.carregarCaixasExtraOperador();
+
+        // 2. Recarrega as caixas extras na memória global
+        const elMes = document.getElementById('dataGlobal');
+        const mesRanking = document.getElementById('mesFiltro')?.value?.substring(0, 7) || elMes?.value?.substring(0, 7) || new Date().toISOString().substring(0, 7);
+        
+        if (typeof window.carregarCaixasExtraOperadorPorTurno === 'function') {
+            await window.carregarCaixasExtraOperadorPorTurno(mesRanking);
+        }
+
+        // 3. Dispara a atualização visual de TODOS os cards e rankings
+        if (typeof window.gerarRankingMensal === 'function') window.gerarRankingMensal();
+        if (typeof window.atualizarResumosGlobais === 'function') window.atualizarResumosGlobais();
+        if (typeof window.gerarRankingPeriodo === 'function') window.gerarRankingPeriodo();
 
     } catch (e) {
         console.error(e);
