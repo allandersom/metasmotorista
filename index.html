@@ -464,6 +464,7 @@
                             <div id="listaRankingDiario" class="space-y-2"></div>
                         </div>
                     </div>
+
                 </div>
 
                 <div id="viewDomFeriados" style="display:none;">
@@ -756,6 +757,13 @@
                             </div>
 
                             <div>
+                                <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Motorista</label>
+                                <select id="opCaixasExtraMotorista" class="input-base" style="width:100%;">
+                                    <option value="">Carregando motoristas ativos...</option>
+                                </select>
+                            </div>
+
+                            <div>
                                 <label style="display:block; font-size:11px; font-weight:600; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Quantidade de Caixas Extras</label>
                                 <input id="opCaixasExtraQtd" type="number" min="0" step="1" placeholder="0" class="input-base text-center" style="width:100%;">
                             </div>
@@ -773,7 +781,7 @@
                         </div>
                     </div>
 
-                                      <div class="flex-1" style="margin-top:24px; max-width:640px;">
+                                      <div class="flex-1" style="margin-top:24px; max-width:960px;">
                         <div class="table-header-row" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
                             <span class="table-section-label">Lançamentos do Mês</span>
                             <input id="opCaixasExtraMesFiltro" type="month" class="inline-date" onchange="window.carregarCaixasExtraOperador();">
@@ -785,6 +793,8 @@
                                         <th>Data</th>
                                         <th style="text-align:center;">Turno</th>
                                         <th style="text-align:center;">Qtd</th>
+                                        <th>Motorista</th>
+                                        <th>Observação</th>
                                         <th style="text-align:center;">Ação</th>
                                     </tr>
                                 </thead>
@@ -1395,11 +1405,10 @@
         </script>
 
         <script src="src/notificacoes.js"></script>
-        <script src="lock-mes.js"></script>
+        <script src="lock-mes.js?v=2"></script>
 
 
-        <script type="module" src="app.js?v=2"></script>
-
+<script type="module" src="app.js?v=12"></script>
         <script>
             lucide.createIcons();
             // Show modals with flex when .hidden is removed
