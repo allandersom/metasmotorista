@@ -426,8 +426,18 @@ if (!diaEspecial) {
         let ptsJulia = 0, feitasJulia = 0;
         window.motJulia.forEach(mot => { ptsJulia += getMetaCalculadaMotorista(mot); if (acumuladoMes[mot]) feitasJulia += acumuladoMes[mot].pontos; });
 
+        // Caixas extras lançadas pelos operadores também compõem as metas
+        // do mês: turno Dia para Rayanna e turno Noite para Júlia.
+        const extrasDia = Number(window.caixasExtraOperadorCloud?.dia || 0);
+        const extrasNoite = Number(window.caixasExtraOperadorCloud?.noite || 0);
+        feitasRayanna += extrasDia;
+        feitasJulia += extrasNoite;
+
         const ptsGeral = ptsRayanna + ptsJulia;
         const feitasGeral = feitasRayanna + feitasJulia;
+
+        // O total do Leaderboard deve mostrar as mesmas caixas extras.
+        totalCaixasFrota += extrasDia + extrasNoite;
 
         // SOLUÇÃO DO SEU PEDIDO: Atualiza o card de quantidade acumulada do mês no topo da tela
         const elQtd = document.getElementById('totalQtdMensalLeaderboard');
