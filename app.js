@@ -797,16 +797,18 @@ rankFinal.forEach(item => {
     };
 });
 
-            rankFinal.forEach(mot => {
+          rankFinal.forEach(mot => {
                 if (mot.percentual >= 80) {
                     totalLiberado += mot.valor; 
                 }
                 fatBrutoFiltrado += mot.valor; 
             });
 
+            // 🔥 CORREÇÃO: Soma as caixas extras do operador no total geral da frota
+            totalCaixasFrota += (window.caixasExtraOperadorCloud?.dia || 0) + (window.caixasExtraOperadorCloud?.noite || 0);
+
             const elQtd = document.getElementById('totalQtdMensalLeaderboard');
             if (elQtd) elQtd.innerText = formatarQuantidadeMista(totalCaixasFrota, totalViagensFrota, false);
-            
             const elFat = document.getElementById('totalFatMensalLeaderboard');
             if (elFat) elFat.innerText = formatarMoeda(fatBrutoFiltrado);
 
@@ -1913,9 +1915,12 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
                 }
             }
 
+       // ✅ SOMA AS CAIXAS DO OPERADOR NO RESUMO GLOBAL DO MÊS
+            const extraOperadorGlobal = (window.caixasExtraOperadorCloud?.dia || 0) + (window.caixasExtraOperadorCloud?.noite || 0);
+            caixasMesGlobal += extraOperadorGlobal;
+
             // --- ATUALIZAÇÃO DA TELA ---
-            const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
-            
+            const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };   
             _set('totalDiaGlobal',     formatarMoeda(totalDiaGlobal));
             _set('totalSemanaGlobal',  formatarMoeda(totalMesGlobal));
             
@@ -2024,8 +2029,11 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
                 }
             }
 
-            if (elQtd) elQtd.innerText = `${totalCaixasGeral} cx | ${totalViagensGeral} vg`;
-            
+// ✅ SOMA AS CAIXAS DO OPERADOR NO TOTAL DO PERÍODO
+            const extraOperadorGlobal = (window.caixasExtraOperadorCloud?.dia || 0) + (window.caixasExtraOperadorCloud?.noite || 0);
+            totalCaixasGeral += extraOperadorGlobal;
+
+            if (elQtd) elQtd.innerText = formatarQuantidadeMista(totalCaixasGeral, totalViagensGeral, false);            
             const elFat = document.getElementById('totalFatPeriodo');
             if (elFat) elFat.innerText = formatarMoeda(totalFatGeral);
 
@@ -4531,7 +4539,7 @@ window.carregarCaixasExtraOperador = async function () {
     const inputData = document.getElementById('opCaixasExtraData');
     if (inputData && !inputData.value) inputData.value = getHojeStr();
 
-    const inputMes = document.getElementById('opCaixasExtraMes');
+    const inputMes = document.getElementById('opCaixasExtraMesFiltro');
     if (inputMes && !inputMes.value) inputMes.value = getHojeStr().substring(0, 7);
 
     const tbody = document.querySelector('#tabelaCaixasExtraOperador tbody');
@@ -4579,8 +4587,8 @@ window.carregarCaixasExtraOperador = async function () {
         if (window.lucide) window.lucide.createIcons();
 
     } catch (e) {
-        console.error(e);
-        if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#ef4444;">Erro ao carregar lançamentos.</td></tr>';
+        console.error('Erro ao carregar caixas extras do operador:', e);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">Erro ao carregar lançamentos: ${e.message || e}</td></tr>`;
     }
 };
 
