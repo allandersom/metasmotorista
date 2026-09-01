@@ -2165,21 +2165,21 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
 
             const getTxt = id => document.getElementById(id)?.innerText || '';
             const metasHtml = `
-                <div style="display:flex;gap:10px;margin-bottom:20px;">
-                    <div style="flex:1;background:linear-gradient(135deg,#059669,#047857);border-radius:10px;padding:12px 14px;color:#fff;">
-                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;">Meta Geral (Mês)</div>
+                                <div style="display:flex;gap:10px;margin-bottom:20px;">
+                    <div style="flex:1;background:linear-gradient(135deg,#047857,#065f46);border-radius:10px;padding:12px 14px;color:#fff;">
+                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">Meta Geral (Mês)</div>
                         <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaGeralGlobal')}</div>
-                        <div style="font-size:9px;opacity:.9;">${getTxt('faltaGeralGlobal')}</div>
+                        <div style="font-size:9px;opacity:.95;">${getTxt('faltaGeralGlobal')}</div>
                     </div>
-                    <div style="flex:1;background:linear-gradient(135deg,#db2777,#be185d);border-radius:10px;padding:12px 14px;color:#fff;">
-                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;">Meta Rayanna (Mês)</div>
+                    <div style="flex:1;background:linear-gradient(135deg,#be185d,#9d174d);border-radius:10px;padding:12px 14px;color:#fff;">
+                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">Meta Rayanna (Mês)</div>
                         <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaRayannaGlobal')}</div>
-                        <div style="font-size:9px;opacity:.9;">${getTxt('faltaRayannaGlobal')}</div>
+                        <div style="font-size:9px;opacity:.95;">${getTxt('faltaRayannaGlobal')}</div>
                     </div>
-                    <div style="flex:1;background:linear-gradient(135deg,#4f46e5,#4338ca);border-radius:10px;padding:12px 14px;color:#fff;">
-                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;">Meta Júlia (Mês)</div>
+                    <div style="flex:1;background:linear-gradient(135deg,#4338ca,#3730a3);border-radius:10px;padding:12px 14px;color:#fff;">
+                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">Meta Júlia (Mês)</div>
                         <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaJuliaGlobal')}</div>
-                        <div style="font-size:9px;opacity:.9;">${getTxt('faltaJuliaGlobal')}</div>
+                        <div style="font-size:9px;opacity:.95;">${getTxt('faltaJuliaGlobal')}</div>
                     </div>
                 </div>`;
 
@@ -2286,12 +2286,22 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
             <head>
                 <meta charset="UTF-8">
                 <title>Ranking por Período - ${periodoLabel}</title>
-                <style>
+                                <style>
                     * { box-sizing: border-box; margin: 0; padding: 0; }
+                    html, body {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        color-adjust: exact !important;
+                    }
                     body { font-family: Arial, sans-serif; padding: 28px; background: #fff; color: #111827; }
                     @media print {
                         body { padding: 16px; }
                         @page { margin: 10mm; size: A4 portrait; }
+                        * {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                            color-adjust: exact !important;
+                        }
                     }
                 </style>
             </head>
