@@ -220,7 +220,7 @@
             const permissoes = {
              admin: Object.keys(todasAbas), // todas
             operador: ['rankings', 'projecao', 'rotas', 'lancamentos', 'operador'], // <-- adicione 'lancamentos' aqui
-            rh: ['cadastro', 'operador', 'faltas', 'domferiados', 'rankings'],
+            rh: ['cadastro', 'operador', 'faltas', 'domferiados', 'rankings', 'caminhoes'],
 global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'faltas', 'caminhoes']};
 
             const abasPermitidas = permissoes[funcao] || permissoes['operador'];
