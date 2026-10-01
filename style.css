@@ -2036,3 +2036,24 @@ header {
 #painelDetalheMotorista {
     -webkit-overflow-scrolling: touch;
 }
+/* Operador: ações de alteração indisponíveis nas telas de consulta. */
+body[data-perfil="operador"] [onclick*="window.salvarCadastroMotorista("],
+body[data-perfil="operador"] [onclick*="window.salvarEdicaoMotorista("],
+body[data-perfil="operador"] [onclick*="window.toggleStatusMotorista("],
+body[data-perfil="operador"] [onclick*="window.salvarCaminhao("],
+body[data-perfil="operador"] [onclick*="window.excluirCaminhao("],
+body[data-perfil="operador"] [onclick*="window.apagarAnexoMotorista("],
+body[data-perfil="operador"] [onclick*="window.salvarDiasUteis("],
+body[data-perfil="operador"] [onclick*="window.salvarSlaMotorista("],
+body[data-perfil="operador"] [onclick*="window.addMotoristaModal("],
+body[data-perfil="operador"] [onclick*="window.ocultarMotoristaMes("],
+body[data-perfil="operador"] [onclick*="window.mostrarMotoristaMes("],
+body[data-perfil="operador"] [onclick*="window.apagarMotoristaDefinitivo("],
+body[data-perfil="operador"] [onclick*="window.importarDadosIA("],
+body[data-perfil="operador"] [onclick*="window.apagarTudo("],
+body[data-perfil="operador"] [onclick*="window.processarRestauracaoBackup("],
+body[data-perfil="operador"] [onclick*="window.abrirModalEditarMotorista("],
+body[data-perfil="operador"] [onclick*="window.editarCaminhao("],
+body[data-perfil="operador"] #btnHistoricoPagamentos,
+body[data-perfil="operador"] #painelPagamentos,
+body[data-perfil="operador"] #btnTravaSla { display: none !important; }

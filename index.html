@@ -12,8 +12,9 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <link rel="stylesheet" href="style.css">
-    </head>
+        <link rel="stylesheet" href="style.css?v=2">
+        <link rel="stylesheet" href="acerto.css?v=7">
+</head>
     <body>
 
         <div id="loader" class="loading-screen">
@@ -28,53 +29,47 @@
             </div>
             
             <nav>
-        <button id="btnTabRankings" onclick="window.mudarAba('rankings')" class="nav-tab">
+<button id="btnTabRankings" onclick="window.mudarAba('rankings')" class="nav-tab">
         <i data-lucide="trophy" class="w-4 h-4 shrink-0"></i>
         Central de Rankings
     </button>
-
-    <button id="btnTabLancamentos" onclick="window.mudarAba('lancamentos')" class="nav-tab active">
+<button id="btnTabLancamentos" onclick="window.mudarAba('lancamentos')" class="nav-tab active">
         <i data-lucide="truck" class="w-4 h-4 shrink-0"></i>
         Gestão da Frota
     </button>
-        <button id="btnTabDomFeriados" onclick="window.mudarAba('domferiados')" class="nav-tab">
-            <i data-lucide="calendar-off" class="w-4 h-4 shrink-0"></i>
-            Domingos &amp; Feriados
-        </button>
-
-        <button id="btnTabProjecao" onclick="window.mudarAba('projecao')" class="nav-tab">
-            <i data-lucide="line-chart" class="w-4 h-4 shrink-0"></i>
-            Projeção e BI
-        </button>
-
-        <button id="btnTabAuditoria" onclick="window.mudarAba('auditoria')" class="nav-tab">
-            <i data-lucide="history" class="w-4 h-4 shrink-0"></i>
-        Histórico
-        </button>
-
-        <button id="btnTabRotas" onclick="window.mudarAba('rotas')" class="nav-tab">
-            <i data-lucide="map" class="w-4 h-4 shrink-0"></i>
-            Rota do Dia (Planilha) - manutenção
-        </button>
-
-        <button id="btnTabCadastro" onclick="window.mudarAba('cadastro')" class="nav-tab">
-            <i data-lucide="user-plus" class="w-4 h-4 shrink-0"></i>
-            Cadastro de Motoristas
-        </button>
-
-        <button id="btnTabOperador" onclick="window.mudarAba('operador')" class="nav-tab">
+<button id="btnTabOperador" onclick="window.mudarAba('operador')" class="nav-tab">
         <i data-lucide="user-cog"></i>
         <span>Operador</span>
     </button>
-        <button id="btnTabFaltas" onclick="window.mudarAba('faltas')" class="nav-tab">
-        <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
-        Rel. Faltas/Atestados
-    </button>
-    <button id="btnTabCaminhoes" onclick="window.mudarAba('caminhoes')" class="nav-tab">
+<button id="btnTabProjecao" onclick="window.mudarAba('projecao')" class="nav-tab">
+            <i data-lucide="line-chart" class="w-4 h-4 shrink-0"></i>
+            Projeção e BI
+        </button>
+<button id="btnTabFinanceiro" onclick="window.mudarAba('financeiro')" class="nav-tab">
+            <i data-lucide="wallet" class="w-4 h-4 shrink-0"></i>
+            Financeiro
+        </button>
+<button id="btnTabDomFeriados" onclick="window.mudarAba('domferiados')" class="nav-tab">
+            <i data-lucide="calendar-off" class="w-4 h-4 shrink-0"></i>
+            Domingos &amp; Feriados
+        </button>
+<button id="btnTabCadastro" onclick="window.mudarAba('cadastro')" class="nav-tab">
+            <i data-lucide="user-plus" class="w-4 h-4 shrink-0"></i>
+            Cadastro de Motoristas
+        </button>
+<button id="btnTabCaminhoes" onclick="window.mudarAba('caminhoes')" class="nav-tab">
         <i data-lucide="truck" class="w-4 h-4 shrink-0"></i>
         Caminhões
     </button>
-    </nav>
+<button id="btnTabFaltas" onclick="window.mudarAba('faltas')" class="nav-tab">
+        <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
+        Rel. Faltas/Atestados
+    </button>
+<button id="btnTabAuditoria" onclick="window.mudarAba('auditoria')" class="nav-tab">
+            <i data-lucide="history" class="w-4 h-4 shrink-0"></i>
+        Histórico
+        </button>
+</nav>
     <div style="margin-top: auto; padding: 16px; border-top: 1px solid var(--border-subtle); background: var(--bg-surface);">
             <img src="caminhao.png" alt="Caminhão SGC" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); pointer-events: none; object-fit: cover;">
         </div>
@@ -439,7 +434,7 @@
                                         <i data-lucide="file-down" style="width: 14px; height: 14px; margin-right: 4px;"></i> Exportar PDF
                                     </button>
                                 </div>
-                                <div id="controlesDataPeriodo" class="flex items-center gap-2">
+                                <div id="controlesDataPeriodo" class="flex items-center gap-2 flex-wrap">
                                     <input type="date" id="dataRankingInicio" class="inline-date" onchange="window.gerarRankingPeriodo()">
                                     <span style="color:var(--gray-400);font-size:12px;font-weight:600;">até</span>
                                     <input type="date" id="dataRankingFim" class="inline-date" onchange="window.gerarRankingPeriodo()">
@@ -456,7 +451,7 @@
                                     <span>Total de Serviços no Período</span>
                                     <span id="totalQtdPeriodo" style="color: var(--brand-600); font-size: 15px;">0 cx | 0 vg</span>                                </div>
                                 <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                                    <span>Faturamento no Período</span>
+                                    <span id="rotuloFatPeriodo">Faturamento no Período</span>
                                     <span id="totalFatPeriodo" style="color: #10b981; font-size: 15px;">R$ 0,00</span>
                                 </div>
                             </div>
@@ -467,7 +462,32 @@
 
                 </div>
 
+                <div id="viewFinanceiro" style="display:none;">
+                    <section class="acerto" aria-labelledby="acertoTitulo">
+                        <div class="acerto-cabecalho">
+                            <div class="financeiro-identidade"><span class="financeiro-icone" aria-hidden="true"><i data-lucide="wallet" style="width:22px;height:22px;"></i></span><div><h3 id="acertoTitulo">Financeiro</h3><span class="acerto-estado" id="acertoEstado" role="status">Carregando...</span></div></div>
+                            <div class="acerto-controles"><label>Mês do acerto<input type="month" id="acertoMes" onchange="window.carregarAcertoExtras()"></label><button class="acerto-secundario" type="button" onclick="window.carregarAcertoExtras()" aria-label="Atualizar acerto">Atualizar</button></div>
+                        </div>
+                        <div class="acerto-corpo">
+                            <details class="acerto-formulario"><summary><span class="acerto-novo-icone" aria-hidden="true">+</span> Novo pagamento / adiantamento<span class="acerto-form-seta" aria-hidden="true">⌄</span></summary>
+                                <form onsubmit="window.salvarAdiantamentoExtras(event)">
+                                    <label>Motorista<select id="acertoNome" required><option value="">Selecione o motorista</option></select></label>
+                                    <label>Valor pago / adiantado (R$)<input id="acertoValor" type="number" min="0.01" max="9999999999.99" step="0.01" placeholder="0,00" required></label>
+                                    <label>Abater de<select id="acertoDestino" required onchange="document.getElementById('acertoObs').disabled = this.value === 'meta'"><option value="">Escolha o destino</option><option value="meta">Meta (Leaderboard Mensal)</option><option value="domingo">Domingos e feriados</option><option value="extra">Extras</option></select></label>
+                                    <label>Data do pagamento<input id="acertoData" type="date" required></label>
+                                    <label class="acerto-obs">Observação (opcional)<input id="acertoObs" maxlength="300" placeholder="Ex.: adiantamento solicitado ao financeiro"></label>
+                                    <button class="acerto-principal" id="acertoSalvar" type="submit">Salvar pagamento</button>
+                                </form>
+                            </details>
+                            <p id="acertoStatus" class="acerto-status" role="status"></p>
+                            <div class="financeiro-pesquisa"><label for="pesquisaFinanceiro">Pesquisar motorista</label><input type="search" id="pesquisaFinanceiro" placeholder="Digite o nome do motorista" oninput="window.filtrarFinanceiro()" autocomplete="off"><span id="resultadoPesquisaFinanceiro" role="status"></span></div>
+                            <div id="acertoMotoristas"></div>
+                        </div>
+                    </section>
+                </div>
+
                 <div id="viewDomFeriados" style="display:none;">
+
                     <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-7 pb-5" style="border-bottom: var(--border-subtle);">
                         <div>
                             <h2 style="font-size:22px;font-weight:700;color:var(--gray-900);letter-spacing:-0.025em;">Domingos &amp; Feriados</h2>
@@ -1408,7 +1428,7 @@
         <script src="lock-mes.js?v=2"></script>
 
 
-<script type="module" src="app.js?v=12"></script>
+<script type="module" src="app.js?v=29"></script>
         <script>
             lucide.createIcons();
             // Show modals with flex when .hidden is removed

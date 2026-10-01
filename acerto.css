@@ -1,0 +1,138 @@
+.acerto { margin: 0 0 28px; border: 1px solid #dbe4f0; border-radius: 20px; overflow: hidden; background: #f8faff; box-shadow: 0 8px 30px #1e3a8a08; }
+.acerto [hidden] { display: none !important; }
+.acerto-cabecalho { padding: 24px; display: flex; gap: 22px; align-items: center; justify-content: space-between; flex-wrap: wrap; color: #fff; background: linear-gradient(120deg, #172554, #3730a3); }
+.acerto-cabecalho h3 { font-size: 24px; font-weight: 750; letter-spacing: -.6px; margin: 5px 0 0; color: white; }
+.acerto-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #818cf8; }
+.acerto-cabecalho .acerto-eyebrow { color: #a5b4fc; }
+.acerto-controles { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.acerto-controles input, .acerto-controles button { height: 42px; box-sizing: border-box; }
+.acerto-controles label { font-size: 11px; color: #c7d2fe; display: grid; gap: 5px; }
+.acerto input, .acerto select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #dbe4f0; border-radius: 9px; background: white; color: #172554; font: inherit; }
+.acerto input:focus, .acerto select:focus { outline: 2px solid #818cf8; outline-offset: 2px; }
+.acerto button { cursor: pointer; font: inherit; font-weight: 650; border-radius: 9px; padding: 10px 15px; transition: background .15s; }
+.acerto button:disabled { opacity: .5; cursor: wait; }
+.acerto button:focus-visible, .acerto summary:focus-visible { outline: 2px solid #818cf8; outline-offset: 3px; }
+.acerto-secundario { border: 1px solid #c7d2fe; background: #fff; color: #3730a3; }
+.acerto-principal { border: 1px solid #4f46e5; background: #4f46e5; color: white; }
+.acerto-principal:hover { background: #4338ca; }
+.acerto-corpo { padding: 24px; }
+.acerto-estado { display: inline-block; margin-bottom: 16px; color: #4338ca; background: #eef2ff; border-radius: 20px; padding: 6px 12px; font-size: 11px; font-weight: 650; }
+.acerto-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
+.acerto-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; }
+.acerto-card span { display: block; font-size: 11px; color: #64748b; margin-bottom: 8px; }
+.acerto-card strong { font-size: 19px; letter-spacing: -.5px; color: #1e293b; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.acerto-card.verde { background: #ecfdf5; border-color: #a7f3d0; }
+.acerto-card.verde strong { color: #047857; }
+.acerto-card.amarelo { background: #fffbeb; border-color: #fde68a; }
+.acerto-card.amarelo strong { color: #b45309; }
+.acerto-formulario { background: white; padding: 18px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 22px; }
+.acerto-formulario summary { cursor: pointer; color: #3730a3; font-weight: 700; font-size: 14px; }
+.acerto-formulario form { display: grid; grid-template-columns: 2fr 1fr 1fr; align-items: end; gap: 14px; margin-top: 18px; }
+.acerto-formulario label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 600; }
+.acerto-formulario .acerto-obs { grid-column: span 2; }
+.acerto-status { font-size: 12px; color: #475569; margin: 10px 0; line-height: 1.6; }
+.acerto-motorista { padding: 18px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 12px; }
+.acerto-motorista-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.acerto-motorista h4 { font-size: 13px; margin-top: 5px; font-weight: 750; color: #1e293b; }
+.acerto-receber { text-align: right; flex-shrink: 0; }
+.acerto-receber span { display: block; font-size: 10px; color: #64748b; margin-bottom: 4px; }
+.acerto-receber strong { color: #047857; font-size: 19px; font-variant-numeric: tabular-nums; }
+.acerto-valores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; font-size: 11px; color: #64748b; }
+.acerto-valores b { display: block; margin-top: 4px; color: #334155; font-size: 13px; }
+.acerto-valores .acerto-alerta b { color: #b45309; }
+.acerto-barra { height: 4px; background: #eef2ff; border-radius: 4px; margin: 16px 0; overflow: hidden; }
+.acerto-barra span { display: block; height: 100%; background: #818cf8; }
+.acerto-motorista summary, .acerto-historico summary { cursor: pointer; font-size: 12px; font-weight: 650; color: #6366f1; }
+.acerto-tabela { overflow-x: auto; margin-top: 12px; }
+.acerto-tabela table { width: 100%; border-collapse: collapse; font-size: 11px; white-space: nowrap; }
+.acerto-tabela th, .acerto-tabela td { text-align: right; padding: 10px; border-bottom: 1px solid #e2e8f0; }
+.acerto-tabela th { color: #64748b; background: #f8fafc; }
+.acerto-tabela th:first-child, .acerto-tabela td:first-child { text-align: left; }
+.acerto-historico { margin-top: 22px; border-top: 1px solid #e2e8f0; padding-top: 18px; }
+.acerto-historico-item { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 0; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+.acerto-historico-item > div { flex: 1; min-width: 160px; }
+.acerto-historico-item p, .acerto-historico-item small { color: #64748b; margin-top: 4px; overflow-wrap: anywhere; }
+.acerto-excluir { color: #b91c1c; border: 1px solid #fecaca; background: #fff; font-size: 11px !important; }
+.acerto-cancelado > b { text-decoration: line-through; color: #94a3b8; }
+.acerto-vazio { padding: 22px; font-size: 13px; color: #64748b; text-align: center; }
+@media(max-width: 1000px) { .acerto-cards { grid-template-columns: repeat(3, 1fr); } }
+@media(max-width: 600px) {
+    .acerto-cabecalho, .acerto-corpo { padding: 16px; }
+    .acerto-cabecalho h3 { font-size: 22px; }
+    .acerto-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .acerto-card { padding: 12px; }
+    .acerto-card strong { font-size: 17px; }
+    .acerto-formulario form { grid-template-columns: 1fr; }
+    .acerto-formulario .acerto-obs { grid-column: auto; }
+    .acerto-valores { grid-template-columns: repeat(2, 1fr); }
+    .acerto-motorista-top { align-items: flex-start; flex-direction: column; }
+    .acerto-receber { text-align: left; }
+}
+
+/* Financeiro: detalhes somente ao abrir o motorista. */
+.financeiro-motorista { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+.financeiro-motorista > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 18px; cursor: pointer; list-style: none; font-size: 13px; font-weight: 650; color: #334155; }
+.financeiro-motorista > summary::-webkit-details-marker { display: none; }
+.financeiro-motorista > summary:hover { background: #f8fafc; }
+.financeiro-motorista[open] > summary { border-bottom: 1px solid #e2e8f0; }
+.financeiro-seta { font-size: 20px; color: #64748b; }
+.financeiro-motorista[open] .financeiro-seta { transform: rotate(180deg); }
+.financeiro-detalhes { padding: 18px; }
+.financeiro-legenda { font-size: 12px; color: #64748b; margin: 0 0 12px; }
+.financeiro-categorias { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.financeiro-categorias > div { padding: 14px; border-radius: 8px; background: #f8fafc; }
+.financeiro-categorias span { display: block; font-size: 12px; color: #64748b; margin-bottom: 8px; }
+.financeiro-categorias strong { font-size: 19px; color: #172554; font-variant-numeric: tabular-nums; }
+.financeiro-adiantamento { display: flex; flex-wrap: wrap; gap: 10px 24px; font-size: 12px; color: #64748b; padding: 18px 0; }
+.financeiro-adiantamento b { color: #334155; }
+.financeiro-historico { border-top: 1px solid #e2e8f0; padding-top: 14px; }
+.financeiro-historico h4 { font-size: 12px; font-weight: 650; color: #475569; margin: 0 0 12px; }
+@media(max-width:600px) { .financeiro-categorias { grid-template-columns: 1fr; gap: 8px; } .financeiro-categorias > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; } .financeiro-categorias span { margin: 0; } }
+
+.financeiro-categorias { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.financeiro-categorias small { display: block; margin-top: 10px; color: #64748b; font-size: 11px; line-height: 1.6; }
+.financeiro-categorias .saldo-negativo { color: #dc2626; }
+.financeiro-categorias .saldo-positivo { color: #047857; }
+@media(max-width:600px) { .financeiro-categorias { grid-template-columns: 1fr; } .financeiro-categorias > div { display: block; } .financeiro-categorias span { margin-bottom: 8px; } }
+
+/* Cabeçalho compacto e formulário de adiantamento. */
+.acerto { background: #fff; border-color: #e5e7eb; border-radius: 14px; box-shadow: 0 2px 8px #0f172a04; }
+.acerto-cabecalho { padding: 22px 24px; background: #fff; color: #1e293b; border-bottom: 1px solid #edf0f4; gap: 18px; }
+.financeiro-identidade { display: flex; align-items: center; gap: 12px; }
+.financeiro-icone { width: 46px; height: 46px; border-radius: 12px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; }
+.acerto-cabecalho h3 { color: #1e293b; font-size: 22px; margin: 0 0 5px; letter-spacing: -.5px; }
+.acerto-estado { margin: 0; padding: 0; background: transparent; color: #64748b; border-radius: 0; font-size: 12px; font-weight: 400; }
+.acerto-controles { gap: 8px; }
+.acerto-controles label { color: #64748b; font-size: 11px; gap: 6px; }
+.acerto-controles input { background: #f8fafc; border-color: #e2e8f0; min-width: 170px; }
+.acerto-controles .acerto-secundario { color: #475569; border-color: #e2e8f0; background: #fff; font-size: 12px; }
+.acerto-controles .acerto-secundario:hover { background: #f8fafc; }
+.acerto-corpo { padding: 20px 24px 24px; }
+.acerto-formulario { padding: 0; margin-bottom: 18px; border-color: #e2e8f0; border-radius: 10px; overflow: hidden; }
+.acerto-formulario > summary { display: flex; align-items: center; gap: 10px; list-style: none; padding: 13px 16px; color: #475569; font-size: 13px; font-weight: 600; }
+.acerto-formulario > summary::-webkit-details-marker { display: none; }
+.acerto-formulario > summary:hover { background: #f8fafc; }
+.acerto-novo-icone { width: 26px; height: 26px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; background: #eef2ff; color: #4f46e5; font-size: 20px; font-weight: 400; }
+.acerto-form-seta { margin-left: auto; color: #94a3b8; font-size: 18px; }
+.acerto-formulario[open] > summary { border-bottom: 1px solid #edf0f4; }
+.acerto-formulario[open] .acerto-form-seta { transform: rotate(180deg); }
+.acerto-formulario form { margin: 0; padding: 18px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.acerto-formulario form > label:first-child { grid-column: span 2; }
+.acerto-status:empty { display: none; }
+@media(max-width:800px) { .acerto-formulario form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media(max-width:600px) {
+ .acerto-cabecalho, .acerto-corpo { padding: 16px; }
+ .acerto-controles { width: 100%; }
+ .acerto-controles label { flex: 1; }
+ .acerto-controles input { min-width: 0; }
+ .acerto-formulario form { grid-template-columns: 1fr; padding: 14px; }
+ .acerto-formulario form > label:first-child, .acerto-formulario .acerto-obs { grid-column: auto; }
+}
+
+.financeiro-categorias { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media(max-width:700px) { .financeiro-categorias { grid-template-columns: 1fr; } }
+
+.financeiro-pesquisa { display: grid; gap: 7px; margin: 0 0 16px; }
+.financeiro-pesquisa label { font-size: 12px; font-weight: 600; color: #475569; }
+.financeiro-pesquisa input { max-width: 440px; }
+.financeiro-pesquisa span { font-size: 11px; color: #64748b; }
