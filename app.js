@@ -1,3 +1,5 @@
+import './src/business/operadores.js?v=1';
+import { resumirPeriodoBI, compararMotoristasAtivosBI, ultimosMesesCompletosBI } from './src/business/bi-comparacao.js?v=3';
 import { ehDiaEspecialRanking } from './src/business/meta-financeiro.js';
 import { buscarPagamentos } from './src/business/pagamentos.js?v=5';
 import { pagamentosPorMotorista } from './src/business/financeiro-controles.js';
@@ -31,7 +33,7 @@ import { gerarRelatorioEspeciais } from './src/business/relatorio-especiais.js?v
             calcularPontos,
             getMetaDiaria,
             getConfigVeiculo,
-        } from './src/business/financeiro.js?v=10';
+        } from './src/business/financeiro.js?v=11';
 
 
         import {
@@ -190,8 +192,6 @@ import { gerarRelatorioEspeciais } from './src/business/relatorio-especiais.js?v
         _setInputVal('dataDomFim',        hojeStr);
         _setInputVal('dataFerInicio',     startStr);
         _setInputVal('dataFerFim',        hojeStr);
-        _setInputVal('dataProjInicio',    startStr);
-        _setInputVal('dataProjFim',       hojeStr);
         _setInputVal('dataRotaDia',       hojeStr);
 
         // =============================================================
@@ -302,6 +302,7 @@ global: ['rankings', 'lancamentos', 'domferiados', 'financeiro', 'projecao', 'ca
         if (erroMots) throw erroMots;
                 window.todosMotoristasCloud = mots || [];
         reconstruirMotoristasDoMes(mesGlobal);
+        await window.carregarCadastroOperadores();
 
                 // 3. Dias Úteis
                 const { data: configs } = await supabase.from('config_meses').select('*');
@@ -829,6 +830,7 @@ feitasJulia += extrasNoite;
             renderizarMeta(feitasGeral,   ptsGeral,   'metaGeralGlobal',   'faltaGeralGlobal');
             renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal');
             renderizarMeta(feitasJulia,   ptsJulia,   'metaJuliaGlobal',   'faltaJuliaGlobal');
+            window.atualizarMetasCadastroOperadores?.();
 
             const rankFinal = Object.keys(acumuladoMes).map(mot => {
                 const info = acumuladoMes[mot];
@@ -1305,19 +1307,7 @@ rankFinal.forEach(item => {
             } else if (aba === 'domferiados') {
                 window.gerarPainelFeriados();
             } else if (aba === 'projecao') {
-            const selProjMot = document.getElementById('filtroProjMot');
-            if (selProjMot) {
-                const atual = selProjMot.value;
-                selProjMot.innerHTML = '<option value="">Selecione...</option>';
-                window.motoristas.forEach(m => {
-                    const opt = document.createElement('option');
-                    opt.value = m;
-                    opt.textContent = m;
-                    selProjMot.appendChild(opt);
-                });
-                if (atual) selProjMot.value = atual;
-            }
-            window.atualizarGraficosProjecao();
+            window.atualizarGraficosProjecao(true);
             } else if (aba === 'auditoria') {
                 window.carregarAuditoriaLancamentos();
 
@@ -2194,12 +2184,12 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
                         <div style="font-size:9px;opacity:.95;">${getTxt('faltaGeralGlobal')}</div>
                     </div>
                     <div style="flex:1;background:#203654;border-radius:10px;padding:12px 14px;color:#fff;">
-                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">Meta Rayanna (Mês)</div>
+                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">${getTxt('tituloMetaOperadorDia').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) || 'Meta Dia (Mês)'}</div>
                         <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaRayannaGlobal')}</div>
                         <div style="font-size:9px;opacity:.95;">${getTxt('faltaRayannaGlobal')}</div>
                     </div>
                     <div style="flex:1;background:#203654;border-radius:10px;padding:12px 14px;color:#fff;">
-                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">Meta Júlia (Mês)</div>
+                        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">${getTxt('tituloMetaOperadorNoite').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) || 'Meta Noite (Mês)'}</div>
                         <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaJuliaGlobal')}</div>
                         <div style="font-size:9px;opacity:.95;">${getTxt('faltaJuliaGlobal')}</div>
                     </div>
@@ -2558,309 +2548,86 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
       // =============================================================
 // GRÁFICOS DE PROJEÇÃO
 // =============================================================
-window.atualizarGraficosProjecao = async function () {
-    const inicio     = document.getElementById('dataProjInicio')?.value;
-    const fim        = document.getElementById('dataProjFim')?.value;
-    const filtroTurno = document.getElementById('filtroProjTurno')?.value || 'todos';
-    if (!inicio || !fim) return;
-
-    // Período anterior (mês anterior)
-    const dIni = new Date(inicio + 'T00:00:00');
-    const dFim = new Date(fim    + 'T00:00:00');
-    dIni.setMonth(dIni.getMonth() - 1);
-    dFim.setMonth(dFim.getMonth() - 1);
-    
-    // Correção para meses com 31 dias (para não bugar fevereiro, por exemplo)
-    if (dIni.getDate() !== new Date(inicio + 'T00:00:00').getDate()) dIni.setDate(0);
-    if (dFim.getDate() !== new Date(fim + 'T00:00:00').getDate()) dFim.setDate(0);
-
-    const inicioPassadoStr = formatarDataParaBusca(dIni);
-    const fimPassadoStr    = formatarDataParaBusca(dFim);
-
-    // Bate no banco de dados para puxar o período selecionado + o mês passado
-    let bancoDados = {};
-    try {
-        const lancamentosProj = await buscarLancamentosPorPeriodo(inicioPassadoStr, fim);
-        bancoDados = mapearLancamentosParaBanco(lancamentosProj);
-    } catch (err) {
-        console.error("Erro ao buscar dados da projeção:", err);
-        return;
+let versaoComparacaoBI = 0;
+window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
+    const versao = ++versaoComparacaoBI;
+    const campo = id => document.getElementById(id);
+    if (!campo('biResultado')) return;
+    const hoje = getHojeStr();
+    if (reiniciarPeriodos || !campo('biResultado').dataset.periodosIniciados) {
+        const padrao = ultimosMesesCompletosBI(hoje);
+        campo('dataProjBaseInicio').value = padrao.a[0];
+        campo('dataProjBaseFim').value = padrao.a[1];
+        campo('dataProjInicio').value = padrao.b[0];
+        campo('dataProjFim').value = padrao.b[1];
+        campo('biResultado').dataset.periodosIniciados = 'true';
     }
-
-    let dadosEvolucaoInd = [], mapGeral = {}, stats = { atual: 0, passado: 0 };
-    let diasTrabalhadosInd = 0, diasMetaBatidaInd = 0, somaServicosFisicosReal = 0;
-    let maxServicosDiarios = 0, dataRecordeFisico = '';
-    let somaPontosDiaDaSemana = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-    const nomesDias = { 0: 'Domingo', 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado' };
-
-            const elNomeMot = document.getElementById('projecaoNomeMotorista');
-            if (elNomeMot) elNomeMot.innerText = window.motoristaSelecionado || 'Ninguém Selecionado';
-
-            for (const [data, motoristasDia] of Object.entries(bancoDados)) {
-                const isPeriodoAtual   = dataEstaNoIntervalo(data, inicio, fim);
-                const isPeriodoPassado = dataEstaNoIntervalo(data, inicioPassadoStr, fimPassadoStr);
-                const dataObj          = new Date(data + 'T00:00:00');
-                const diaDaSemana      = dataObj.getDay();
-                let pontosDiaGeral     = 0;
-
-                for (const [mot, dados] of Object.entries(motoristasDia)) {
-                    const isExtra = dados.observacao && (dados.observacao.includes('[EXTRA R$ 20]') || dados.observacao.includes('[EXTRA R$20]'));
-                    const statusN = (!dados.status || dados.status === 'normal') && !isExtra;
-                    const pts     = dados.pontos !== undefined
-                        ? dados.pontos
-                        : window.calcularPontosMotorista(mot, dados.servicos || 0, dados.tipoVeiculo);
-                    const qtdReal = statusN ? (dados.servicos || 0) : 0;
-
-                    if (mot === window.motoristaSelecionado) {
-                        if (isPeriodoAtual && statusN) {
-                            stats.atual += pts;
-                            somaServicosFisicosReal += qtdReal;
-                            if (qtdReal > maxServicosDiarios) { maxServicosDiarios = qtdReal; dataRecordeFisico = data; }
-                            if (diaDaSemana !== 0 && diaDaSemana !== 6 && !dados.isFeriado) {
-                                diasTrabalhadosInd++;
-                                if (pts >= window.getMetaDiaria(mot)) diasMetaBatidaInd++;
-                            }
-                            dadosEvolucaoInd.push({ dataStr: data, pontos: pts });
-                        }
-                        if (isPeriodoPassado && statusN) stats.passado += pts;
-                    }
-
-                    const incluirNoGeral =
-                        filtroTurno === 'todos' ||
-                        (filtroTurno === 'dia'      && window.motRayanna.includes(mot)) ||
-                        (filtroTurno === 'noite'    && window.motJulia.includes(mot))   ||
-                        (filtroTurno === 'especial' && window.motOutros.includes(mot));
-
-                    if (isPeriodoAtual && incluirNoGeral && statusN) {
-                        pontosDiaGeral += pts;
-                        somaPontosDiaDaSemana[diaDaSemana] += pts;
-                    }
-                }
-                if (isPeriodoAtual) mapGeral[data] = pontosDiaGeral;
-            }
-
-            const txtSufixo = window.motOutros.includes(window.motoristaSelecionado) ? ' vg' : ' cx';
-
-            const _set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
-            // === LÓGICA DE BI E GPS DA META ===
-        const isEspecial = window.motOutros.includes(window.motoristaSelecionado);
-        const divisorVisual = isEspecial ? 2 : 1;
-        
-        if (window.motoristaSelecionado) {
-            // Pegando SLA e Metas
-            const inicioAnoMes = inicio.substring(0, 7);
-            const slaMot = window.calcularSlaMotorista(window.motoristaSelecionado, inicioAnoMes);
-            const metaDiariaFixa = window.getMetaDiaria(window.motoristaSelecionado);
-            
-            const meta100Pts = slaMot * metaDiariaFixa;
-            const meta80Pts = meta100Pts * 0.8;
-
-            // Tempos e Ritmo
-            const { corridos, restantes } = calcularDiasCorridosERestantes(inicioAnoMes, slaMot);
-            const fechamentoProjetado = calcularRunRate(stats.atual, corridos, slaMot);
-            
-            // Exibindo o Run Rate (Ritmo de Corrida)
-            const valorVisualRunRate = Math.ceil(fechamentoProjetado / divisorVisual);
-            const metaVisual100 = meta100Pts / divisorVisual;
-            
-            _set('biRunRate', `${valorVisualRunRate}${txtSufixo}`);
-            const percProjetado = meta100Pts > 0 ? ((fechamentoProjetado / meta100Pts) * 100).toFixed(1) : 0;
-            
-            const elRunRateSub = document.getElementById('biRunRateSub');
-            if (elRunRateSub) {
-                if (fechamentoProjetado >= meta100Pts) {
-                    elRunRateSub.innerHTML = `<span class="text-emerald-600 font-bold">Excelente! Você fechará em ${percProjetado}%</span>`;
-                } else if (fechamentoProjetado >= meta80Pts) {
-                    elRunRateSub.innerHTML = `<span class="text-amber-500 font-bold">Bom, mas fechará em ${percProjetado}% (Garante os 80%)</span>`;
-                } else {
-                    elRunRateSub.innerHTML = `<span class="text-red-500 font-bold">Alerta! Você fechará em ${percProjetado}% (Abaixo da liberação)</span>`;
-                }
-            }
-
-            // Exibindo GPS da Meta
-            const gps80 = calcularGpsMeta(stats.atual, meta80Pts, restantes);
-            const gps100 = calcularGpsMeta(stats.atual, meta100Pts, restantes);
-            
-            const visualGps80 = Math.ceil(gps80 / divisorVisual);
-            const visualGps100 = Math.ceil(gps100 / divisorVisual);
-
-            if (stats.atual >= meta80Pts) {
-                _set('biGps80', `✅ 80% Garantido!`);
-            } else {
-                _set('biGps80', `Faça ${visualGps80}${txtSufixo}/dia p/ 80%`);
-            }
-
-            if (stats.atual >= meta100Pts) {
-                _set('biGps100', `🌟 Você atingiu os 100%!`);
-            } else {
-                _set('biGps100', `Para 100%: Focar em ${visualGps100}${txtSufixo}/dia`);
-            }
-
-        } else {
-            // Ninguém selecionado
-            _set('biRunRate', `0`);
-            _set('biRunRateSub', `Selecione um motorista`);
-            _set('biGps80', `0 /dia`);
-            _set('biGps100', `Para 100%: 0 /dia`);
+    const a = [campo('dataProjBaseInicio').value, campo('dataProjBaseFim').value];
+    const b = [campo('dataProjInicio').value, campo('dataProjFim').value];
+    campo('biResultado').innerHTML = '';
+    if ([...a,...b].some(v => !v) || a[0] > a[1] || b[0] > b[1]) {
+        campo('biEstado').textContent = 'Selecione dois períodos válidos: o início deve ser anterior ou igual ao fim.'; return;
+    }
+    const turno = campo('filtroProjTurno').value;
+    const grupos = {dia: window.motRayanna, noite: window.motJulia, especial: window.motOutros};
+    const nomes = turno === 'todos' ? null : new Set((grupos[turno] || []).map(n => n.trim().toUpperCase()));
+    campo('biEstado').textContent = 'Carregando comparação…';
+    try {
+        const inicio = [...a,...b].sort()[0], fim = [...a,...b].sort().at(-1);
+        let lancamentos = [];
+        for (let offset = 0; ; offset += 1000) {
+            const {data, error} = await supabase.from('lancamentos').select('*').is('cancelado_em', null).gte('data', inicio).lte('data', fim).order('data').order('id').range(offset,offset+999);
+            if (error) throw error;
+            if (versao !== versaoComparacaoBI) return;
+            lancamentos.push(...(data || []));
+            if (!data || data.length < 1000) break;
         }
-            _set('statMesAtual',   Math.round(stats.atual)   + txtSufixo);
-            _set('statMesPassado', Math.round(stats.passado) + txtSufixo);
-
-            const elCrescimento = document.getElementById('statCrescimento');
-            if (elCrescimento) {
-                if (!window.motoristaSelecionado) {
-                    elCrescimento.innerHTML = `<span class="text-slate-500 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Selecione na lista</span>`;
-                } else {
-                    const diff = Math.round(stats.atual - stats.passado);
-                    if (diff > 0)      elCrescimento.innerHTML = `<span class="text-emerald-600 bg-emerald-100 px-3 py-1 rounded-xl text-sm font-bold">+${diff}${txtSufixo}</span><span class="text-xs text-slate-500 font-medium">vs Per. Anterior</span>`;
-                    else if (diff < 0) elCrescimento.innerHTML = `<span class="text-red-600 bg-red-100 px-3 py-1 rounded-xl text-sm font-bold">-${Math.abs(diff)}${txtSufixo}</span><span class="text-xs text-slate-500 font-medium">vs Per. Anterior</span>`;
-                    else               elCrescimento.innerHTML = `<span class="text-slate-600 bg-slate-100 px-3 py-1 rounded-xl text-sm font-bold">Empatado</span><span class="text-xs text-slate-500 font-medium">vs Per. Anterior</span>`;
-                }
-            }
-
-            const winRate = diasTrabalhadosInd > 0 ? Math.round((diasMetaBatidaInd / diasTrabalhadosInd) * 100) : 0;
-            const elWinRate = document.getElementById('statWinRate');
-            if (elWinRate) {
-                elWinRate.innerText = `${winRate}%`;
-                const elSub = document.getElementById('statWinRateSub');
-                if (elSub) elSub.innerText = `${diasMetaBatidaInd} metas batidas em ${diasTrabalhadosInd} dias úteis`;
-            }
-
-            const mediaReal      = diasTrabalhadosInd > 0 ? (somaServicosFisicosReal / diasTrabalhadosInd).toFixed(1) : '0.0';
-            const metaDiariaFixa = window.motoristaSelecionado ? window.getMetaDiaria(window.motoristaSelecionado) : 0;
-            const elMediaReal    = document.getElementById('statMediaReal');
-            if (elMediaReal) {
-                elMediaReal.innerText = `${mediaReal} ${txtSufixo}/dia`;
-                const metaVisual = window.motOutros.includes(window.motoristaSelecionado)
-                    ? (metaDiariaFixa / 2) + ' vg'
-                    : metaDiariaFixa + ' cx';
-                const elNec = document.getElementById('statMediaNec');
-                if (elNec) elNec.innerText = `SLA pede: ${metaVisual} /dia`;
-            }
-
-            const elRecorde = document.getElementById('statRecorde');
-            if (elRecorde) {
-                elRecorde.innerText = `${maxServicosDiarios} ${txtSufixo}`;
-                const elRecordeData = document.getElementById('statRecordeData');
-                if (elRecordeData) elRecordeData.innerText = dataRecordeFisico ? `Dia ${formatarDataParaExibicao(dataRecordeFisico)}` : 'Sem registros';
-            }
-
-            const melhorDiaChave = Object.keys(somaPontosDiaDaSemana).reduce((a, b) =>
-                somaPontosDiaDaSemana[a] > somaPontosDiaDaSemana[b] ? a : b
-            );
-            const ptsMelhorDia = somaPontosDiaDaSemana[melhorDiaChave];
-            const elMelhorDia  = document.getElementById('statMelhorDia');
-            if (elMelhorDia) {
-                if (ptsMelhorDia > 0 && nomesDias[melhorDiaChave]) {
-                    elMelhorDia.innerText = nomesDias[melhorDiaChave];
-                    const elPts = document.getElementById('statMelhorDiaPts');
-                    if (elPts) elPts.innerText = `${Math.round(ptsMelhorDia)} pts acumulados`;
-                } else {
-                    elMelhorDia.innerText = 'N/A';
-                    const elPts = document.getElementById('statMelhorDiaPts');
-                    if (elPts) elPts.innerText = 'Sem dados';
-                }
-            }
-
-            // Gráficos
-            dadosEvolucaoInd.sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
-            const labelsInd  = dadosEvolucaoInd.map(d => formatarDataParaExibicao(d.dataStr).substring(0, 5));
-            const dataInd    = dadosEvolucaoInd.map(d => d.pontos);
-            const arrayGeral = Object.keys(mapGeral)
-                .map(k => ({ dataStr: k, pontos: mapGeral[k] }))
-                .sort((a, b) => new Date(a.dataStr) - new Date(b.dataStr));
-            const labelsGeral = arrayGeral.map(d => formatarDataParaExibicao(d.dataStr).substring(0, 5));
-            const dataGeral   = arrayGeral.map(d => d.pontos);
-
-            Chart.defaults.font.family = "'DM Sans', 'Inter', sans-serif";
-            Chart.defaults.color = '#8f8f9d';
-
-            const corBrand   = '#4f46e5';
-            const corSuccess = '#10b981';
-
-            const opcoesBaseChart = (corLinha) => ({
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#141422',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        titleFont: { size: 12, weight: '600' },
-                        bodyFont: { size: 12.5, weight: '600' },
-                        padding: 10,
-                        cornerRadius: 8,
-                        displayColors: false,
-                        callbacks: { label: (ctx) => ` ${ctx.parsed.y} cx` }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: { font: { size: 11, weight: '500' } }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grace: '10%',
-                        border: { display: false },
-                        grid: { color: '#ebebed', drawTicks: false },
-                        ticks: {
-                            font: { size: 11, weight: '500' },
-                            precision: 0,
-                            maxTicksLimit: 6
-                        }
-                    }
-                },
-                elements: { point: { hoverRadius: 6, hoverBorderWidth: 2 } }
-            });
-
-            const ctxInd = document.getElementById('chartEvolucaoIndividual');
-            const wrapInd = document.getElementById('chartEvolucaoIndividualVazio');
-            if (ctxInd) {
-                if (window.chartInstanciaInd) window.chartInstanciaInd.destroy();
-                const semDados = !window.motoristaSelecionado || dataInd.length === 0;
-                ctxInd.style.display = semDados ? 'none' : 'block';
-                if (wrapInd) wrapInd.style.display = semDados ? 'flex' : 'none';
-                if (!semDados) {
-                    window.chartInstanciaInd = new Chart(ctxInd.getContext('2d'), {
-                        type: 'line',
-                        data: {
-                            labels: labelsInd,
-                            datasets: [{
-                                label: 'Volume', data: dataInd,
-                                borderColor: corBrand, backgroundColor: 'rgba(79,70,229,0.08)',
-                                borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6,
-                                pointBackgroundColor: '#fff', pointBorderColor: corBrand, pointBorderWidth: 2,
-                                fill: true, tension: 0.35
-                            }]
-                        },
-                        options: opcoesBaseChart(corBrand),
-                    });
-                }
-            }
-
-            const ctxGeral = document.getElementById('chartEvolucaoGeral');
-            if (ctxGeral) {
-                if (window.chartInstanciaGeral) window.chartInstanciaGeral.destroy();
-                window.chartInstanciaGeral = new Chart(ctxGeral.getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: labelsGeral,
-                        datasets: [{
-                            label: 'Frota', data: dataGeral,
-                            borderColor: corSuccess, backgroundColor: 'rgba(16,185,129,0.08)',
-                            borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6,
-                            pointBackgroundColor: '#fff', pointBorderColor: corSuccess, pointBorderWidth: 2,
-                            fill: true, tension: 0.35
-                        }]
-                    },
-                    options: opcoesBaseChart(corSuccess),
-                });
-            }
-        };
+        const base = resumirPeriodoBI(lancamentos,...a,hoje,nomes), atual = resumirPeriodoBI(lancamentos,...b,hoje,nomes);
+        const num = n => n == null ? '—' : n.toLocaleString('pt-BR',{maximumFractionDigits:1});
+        const variacao = base.caixas > 0 ? `${num((atual.caixas / base.caixas - 1)*100)}%` : 'Sem base percentual';
+        const periodo = p => p.map(d => d.split('-').reverse().join('/')).join(' a ');
+        campo('biEstado').textContent = !base.registros && !atual.registros ? 'Nenhuma produção de meta encontrada nos períodos selecionados.' : 'Comparação atualizada.';
+        const desligados = new Set();
+        for (const dia of Object.values(window.bancoDadosCloud || {})) {
+            for (const [nome, dados] of Object.entries(dia)) if (dados.status === 'desligado') desligados.add(nome.trim().toUpperCase());
+        }
+        const individuais = compararMotoristasAtivosBI(window.todosMotoristasCloud || [], lancamentos, a, b, hoje, turno, desligados);
+        const escBI = v => String(v || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const linhasMotoristas = individuais.map(m => {
+            const viagens = m.base.viagens > 0 || m.atual.viagens > 0;
+            const mostrar = (cx, vg) => `${num(cx)} cx${viagens ? `<small>${num(vg)} vg</small>` : ''}`;
+            const delta = m.atual.caixas - m.base.caixas;
+            const variacaoMot = m.base.caixas > 0 ? `${delta > 0 ? '+' : ''}${num(delta / m.base.caixas * 100)}%` : m.atual.caixas > 0 ? 'Sem base' : '—';
+            return `<tr><td><strong>${escBI(m.nome)}</strong><small>${m.turno === 'dia' ? 'Dia' : m.turno === 'noite' ? 'Noite' : 'Especial'}</small></td>
+                <td>${mostrar(m.base.caixas,m.base.viagens)}</td><td>${mostrar(m.atual.caixas,m.atual.viagens)}</td>
+                <td>${delta > 0 ? '+' : ''}${num(delta)} cx<small>${variacaoMot}${viagens ? ` · ${num(m.atual.viagens-m.base.viagens)} vg` : ''}</small></td>
+                <td>${num(m.base.media)} → ${num(m.atual.media)} cx/dia</td>
+                <td>${mostrar(m.atual.projecao,m.atual.projecaoViagens)}${m.atual.projecao == null ? '<small>Sem base para estimar</small>' : ''}</td></tr>`;
+        }).join('');
+        campo('biResultado').innerHTML = `
+            <div class="bi-cards">
+                <div class="stat-card"><div class="stat-label">Período A · caixas da meta</div><div class="stat-value">${num(base.caixas)} cx</div><div class="stat-sub">${periodo(a)}</div></div>
+                <div class="stat-card"><div class="stat-label">Período B · caixas da meta</div><div class="stat-value">${num(atual.caixas)} cx</div><div class="stat-sub">${periodo(b)}</div></div>
+                <div class="stat-card"><div class="stat-label">Variação B × A</div><div class="stat-value">${variacao}</div><div class="stat-sub">Diferença: ${num(atual.caixas-base.caixas)} cx</div></div>
+                <div class="stat-card"><div class="stat-label">Projeção até ${b[1].split('-').reverse().join('/')}</div><div class="stat-value">${num(atual.projecao)} cx</div><div class="stat-sub">${atual.projecao == null ? 'Sem base para estimar' : b[1] <= hoje ? 'Período encerrado · realizado' : 'Mantendo a média diária do período B'}</div></div>
+            </div>
+            <div class="chart-card" style="overflow-x:auto"><h3>Comparação dos períodos</h3><table class="bi-table"><thead><tr><th>Indicador</th><th>Período A</th><th>Período B</th></tr></thead><tbody>
+            <tr><td>Caixas da meta</td><td>${num(base.caixas)} cx</td><td>${num(atual.caixas)} cx</td></tr>
+            <tr><td>Média por dia decorrido</td><td>${num(base.media)} cx/dia</td><td>${num(atual.media)} cx/dia</td></tr>
+            <tr><td>Dias decorridos / previstos</td><td>${base.decorridos} / ${base.dias}</td><td>${atual.decorridos} / ${atual.dias}</td></tr>
+            <tr><td>Viagens de caçamba</td><td>${num(base.viagens)} vg</td><td>${num(atual.viagens)} vg</td></tr>
+            <tr><td>Projeção de viagens até o fim</td><td>${num(base.projecaoViagens)} vg</td><td>${num(atual.projecaoViagens)} vg</td></tr>
+            </tbody></table></div>
+            <div class="chart-card bi-drivers" style="overflow-x:auto;margin-top:22px"><h3>Comparação dos motoristas ativos</h3>
+            <p class="bi-note">Mesmos períodos e turno selecionados acima. Média A → B; projeção até o fim do período B. Motoristas ativos sem produção também aparecem.</p>
+            <table class="bi-table"><thead><tr><th>Motorista</th><th>Período A</th><th>Período B</th><th>Diferença B − A</th><th>Média diária A → B</th><th>Projeção B</th></tr></thead>
+            <tbody>${linhasMotoristas || '<tr><td colspan="6">Nenhum motorista ativo neste turno.</td></tr>'}</tbody></table></div>`;
+    } catch (erro) {
+        if (versao !== versaoComparacaoBI) return;
+        campo('biEstado').textContent = 'Não foi possível carregar a comparação. Tente atualizar novamente.';
+        console.error('Comparação BI:', erro);
+    }
+};
 
         // =============================================================
         // ROTA DO DIA
@@ -4541,6 +4308,8 @@ window.popularMotoristasCaixaExtraOperador = function () {
 };
 
 window.carregarCaixasExtraOperador = async function () {
+    await window.carregarCadastroOperadores();
+    window.gerarRankingMensal?.();
     const inputData = document.getElementById('opCaixasExtraData');
     if (inputData && !inputData.value) inputData.value = getHojeStr();
 
