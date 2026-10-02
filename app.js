@@ -1,3 +1,8 @@
+import { ehDiaEspecialRanking } from './src/business/meta-financeiro.js';
+import { buscarPagamentos } from './src/business/pagamentos.js?v=5';
+import { pagamentosPorMotorista } from './src/business/financeiro-controles.js';
+import { consultarAcerto } from './src/business/adiantamentos.js?v=7';
+import { gerarRelatorioEspeciais } from './src/business/relatorio-especiais.js?v=7';
 // =============================================================
         // IMPORTS
         // =============================================================
@@ -26,7 +31,7 @@
             calcularPontos,
             getMetaDiaria,
             getConfigVeiculo,
-        } from './src/business/financeiro.js?v=2';
+        } from './src/business/financeiro.js?v=10';
 
 
         import {
@@ -208,22 +213,26 @@
                 lancamentos: 'btnTabLancamentos',
                 rankings:    'btnTabRankings',
                 domferiados: 'btnTabDomFeriados',
+                financeiro: 'btnTabFinanceiro',
                 projecao:    'btnTabProjecao',
                 auditoria:   'btnTabAuditoria',
-                rotas:       'btnTabRotas',
+
                 cadastro:    'btnTabCadastro',
                 operador:    'btnTabOperador',
                 faltas:      'btnTabFaltas',
+                caminhoes:   'btnTabCaminhoes',
             };
 
             // Abas permitidas por função
             const permissoes = {
              admin: Object.keys(todasAbas), // todas
-            operador: ['rankings', 'projecao', 'rotas', 'lancamentos', 'operador'], // <-- adicione 'lancamentos' aqui
-            rh: ['cadastro', 'operador', 'faltas', 'domferiados', 'rankings', 'caminhoes'],
-global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'faltas', 'caminhoes']};
+            operador: ['rankings', 'lancamentos', 'domferiados', 'cadastro', 'faltas', 'caminhoes'], // <-- adicione 'lancamentos' aqui
+            rh: ['cadastro', 'operador', 'faltas', 'domferiados', 'financeiro', 'rankings', 'caminhoes'],
+global: ['rankings', 'lancamentos', 'domferiados', 'financeiro', 'projecao', 'cadastro', 'faltas', 'caminhoes']};
 
             const abasPermitidas = permissoes[funcao] || permissoes['operador'];
+            window.abasPermitidas = abasPermitidas;
+            document.body.dataset.perfil = funcao;
 
             // Oculta as abas não permitidas
             Object.entries(todasAbas).forEach(([aba, btnId]) => {
@@ -242,14 +251,14 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
             // Define qual aba abrir por padrão conforme a função
             const abaInicial = {
                 admin:    'lancamentos',
-                operador: 'rotas',
+                operador: 'rankings',
                 rh:       'cadastro',
                 global:   'rankings', // <-- ADICIONE ESTA LINHA
             };
 
             console.log(`🔐 Perfil "${funcao}" ativado. Abas liberadas: ${abasPermitidas.join(', ')}`);
         const abaJaAtiva = document.querySelector('.nav-tab.active');
-        if (!abaJaAtiva) window.mudarAba(abaInicial[funcao] || abasPermitidas[0]);
+        if (!abaJaAtiva || !abasPermitidas.some(aba => todasAbas[aba] === abaJaAtiva.id)) window.mudarAba(abaInicial[funcao] || abasPermitidas[0]);
             if (funcao === 'admin') {
                 console.log('🔓 Modo Admin ativado. Acesso total.');
             }
@@ -439,10 +448,12 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
         };
 
         window.apagarTudo = async function () {
+            if (window.usuarioAtualFuncao === 'operador') return;
             alert('Exclusão total desativada por segurança.');
         };
 
         window.importarDadosIA = async function () {
+            if (window.usuarioAtualFuncao === 'operador') return;
             const jsonText = document.getElementById('codigoIA').value.trim();
             if (!jsonText) { alert('Cole o código gerado pela IA antes de importar!'); return; }
 
@@ -552,6 +563,7 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
         };
 
         window.addMotoristaModal = async function () {
+            if (window.usuarioAtualFuncao === 'operador') return;
             const nome  = document.getElementById('novoMotNome').value.toUpperCase().trim();
             const turno = document.getElementById('novoMotTurno').value;
             const elMes = document.getElementById('dataGlobal');
@@ -578,6 +590,7 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
         };
 
         window.ocultarMotoristaMes = async function () {
+            if (window.usuarioAtualFuncao === 'operador') return;
             const nome = document.getElementById('ocultarMotNome').value;
             const elMes = document.getElementById('dataGlobal');
             const mesAtualFiltro = elMes?.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
@@ -588,6 +601,7 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
         };
 
         window.mostrarMotoristaMes = async function () {
+            if (window.usuarioAtualFuncao === 'operador') return;
             const nome = document.getElementById('mostrarMotNome').value;
             const elMes = document.getElementById('dataGlobal');
             const mesAtualFiltro = elMes?.value ? elMes.value.substring(0, 7) : getAnoMesAtual();
@@ -598,6 +612,7 @@ global: ['rankings', 'lancamentos', 'domferiados', 'projecao', 'cadastro', 'falt
         };
 
         window.apagarMotoristaDefinitivo = async function () {
+            if (window.usuarioAtualFuncao === 'operador') return;
             let nome = prompt('⚠️ ZONA DE PERIGO: Para APAGAR um motorista definitivamente do painel, digite o NOME EXATO dele abaixo:');
             if (!nome) return;
             nome = nome.toUpperCase().trim();
@@ -1027,6 +1042,7 @@ rankFinal.forEach(item => {
         };
 
         window.salvarDiasUteis = async function (origem) {
+            if (window.usuarioAtualFuncao === 'operador') return;
             const elId = origem === 'lanc' ? 'inputDiasUteisLanc' : 'inputDiasUteisRank';
             const dias = parseInt(document.getElementById(elId)?.value) || 22;
             if (dias < 1 || dias > 31) return;
@@ -1103,6 +1119,7 @@ rankFinal.forEach(item => {
         };
 
         window.salvarSlaMotorista = async function () {
+            if (window.usuarioAtualFuncao === 'operador') return;
             if (!window.motoristaSelecionado) return;
             const inSla = document.getElementById('inputSlaMotorista');
             const elMes = document.getElementById('dataGlobal');
@@ -1236,6 +1253,7 @@ rankFinal.forEach(item => {
         window.addEventListener('resize', ajustarSidebarParaTela);
 
         window.mudarAba = function (aba) {
+            if (window.abasPermitidas && !window.abasPermitidas.includes(aba)) return;
             if (window.innerWidth <= 768) {
                 const sidebar = document.getElementById('sidebar');
                 const overlay = document.getElementById('sidebarOverlay');
@@ -1246,7 +1264,7 @@ rankFinal.forEach(item => {
             }
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
 
-        ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewProjecao', 'viewAuditoria', 'viewRotas', 'viewCadastro', 'viewOperador', 'viewFaltas', 'viewCaminhoes'].forEach(id => {        const el = document.getElementById(id);
+        ['viewLancamentos', 'viewRankings', 'viewDomFeriados', 'viewFinanceiro', 'viewProjecao', 'viewAuditoria', 'viewRotas', 'viewCadastro', 'viewOperador', 'viewFaltas', 'viewCaminhoes'].forEach(id => {        const el = document.getElementById(id);
                 if (el) el.style.display = 'none';
             });
 
@@ -1254,9 +1272,10 @@ rankFinal.forEach(item => {
                 lancamentos: { btn: 'btnTabLancamentos', view: 'viewLancamentos' },
                 rankings:    { btn: 'btnTabRankings',    view: 'viewRankings'    },
                 domferiados: { btn: 'btnTabDomFeriados', view: 'viewDomFeriados' },
+                financeiro: { btn: 'btnTabFinanceiro', view: 'viewFinanceiro' },
                 projecao:    { btn: 'btnTabProjecao',    view: 'viewProjecao'    },
                 auditoria:   { btn: 'btnTabAuditoria',   view: 'viewAuditoria'   },
-                rotas:       { btn: 'btnTabRotas',       view: 'viewRotas'       },
+
                 cadastro:    { btn: 'btnTabCadastro',    view: 'viewCadastro'    },
                 operador:    { btn: 'btnTabOperador',    view: 'viewOperador'    },
                 faltas:      { btn: 'btnTabFaltas',    view: 'viewFaltas'    },
@@ -1274,13 +1293,15 @@ rankFinal.forEach(item => {
 
             // Abas que usam o seletor de Mês de Referência
         // Abas que usam o seletor de Mês de Referência
-        const abasComMes = ['lancamentos', 'domferiados', 'rotas', 'faltas'];    const containerMes = document.getElementById('dataGlobal')?.closest('div');
+        const abasComMes = ['lancamentos', 'domferiados', 'faltas'];    const containerMes = document.getElementById('dataGlobal')?.closest('div');
             if (containerMes) containerMes.style.display = abasComMes.includes(aba) ? 'flex' : 'none';
 
             // Ações específicas por aba
             if (aba === 'rankings') {
                 window.gerarRankingPeriodo();
                 window.gerarRankingMensal();
+            } else if (aba === 'financeiro') {
+                window.carregarAcertoExtras();
             } else if (aba === 'domferiados') {
                 window.gerarPainelFeriados();
             } else if (aba === 'projecao') {
@@ -1299,8 +1320,7 @@ rankFinal.forEach(item => {
             window.atualizarGraficosProjecao();
             } else if (aba === 'auditoria') {
                 window.carregarAuditoriaLancamentos();
-            } else if (aba === 'rotas') {
-                window.carregarRotasDia();
+
             } else if (aba === 'cadastro') {
                 window.carregarMotoristas();
             } else if (aba === 'faltas') {
@@ -2154,11 +2174,13 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
         // =============================================================
         // FUNÇÃO PARA EXPORTAR O RANKING EM PDF
         // =============================================================
-        window.exportarRankingPeriodoPDF = function() {
+        window.exportarRankingPeriodoPDF = async function() {
             const inicio = document.getElementById('dataRankingInicio')?.value;
             const fim    = document.getElementById('dataRankingFim')?.value;
-            if (!inicio || !fim) return alert('Selecione o período antes de exportar.');
+            if (!inicio || !fim || inicio > fim) return alert('Selecione o período antes de exportar.');
 
+            const janelaImpressao = window.open('', '_blank', 'width=800,height=900');
+            if (!janelaImpressao) return alert('Permita abrir a janela para exportar o PDF.');
             const fmt = d => d.split('-').reverse().join('/');
             const periodoLabel = `${fmt(inicio)} até ${fmt(fim)}`;
 const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e feriados)' : '';
@@ -2166,24 +2188,64 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
             const getTxt = id => document.getElementById(id)?.innerText || '';
             const metasHtml = `
                                 <div style="display:flex;gap:10px;margin-bottom:20px;">
-                    <div style="flex:1;background:linear-gradient(135deg,#047857,#065f46);border-radius:10px;padding:12px 14px;color:#fff;">
+                    <div style="flex:1;background:#203654;border-radius:10px;padding:12px 14px;color:#fff;">
                         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">Meta Geral (Mês)</div>
                         <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaGeralGlobal')}</div>
                         <div style="font-size:9px;opacity:.95;">${getTxt('faltaGeralGlobal')}</div>
                     </div>
-                    <div style="flex:1;background:linear-gradient(135deg,#be185d,#9d174d);border-radius:10px;padding:12px 14px;color:#fff;">
+                    <div style="flex:1;background:#203654;border-radius:10px;padding:12px 14px;color:#fff;">
                         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">Meta Rayanna (Mês)</div>
                         <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaRayannaGlobal')}</div>
                         <div style="font-size:9px;opacity:.95;">${getTxt('faltaRayannaGlobal')}</div>
                     </div>
-                    <div style="flex:1;background:linear-gradient(135deg,#4338ca,#3730a3);border-radius:10px;padding:12px 14px;color:#fff;">
+                    <div style="flex:1;background:#203654;border-radius:10px;padding:12px 14px;color:#fff;">
                         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.9;">Meta Júlia (Mês)</div>
                         <div style="font-size:15px;font-weight:800;margin:2px 0;">${getTxt('metaJuliaGlobal')}</div>
                         <div style="font-size:9px;opacity:.95;">${getTxt('faltaJuliaGlobal')}</div>
                     </div>
                 </div>`;
 
-            const linhasOriginais = document.querySelectorAll('#listaRankingDiario .diario-row');
+            const mesMeta = document.getElementById('mesFiltro')?.value || inicio.slice(0, 7);
+            const metasMensais = new Map();
+            for (const [data, motoristas] of Object.entries(window.bancoDadosCloud || {})) {
+                if (!data.startsWith(mesMeta + '-')) continue;
+                for (const [nome, dados] of Object.entries(motoristas)) {
+                    if (ehDiaEspecialRanking(data, dados)) continue;
+                    const chave = nome.trim().toUpperCase();
+                    metasMensais.set(chave, (metasMensais.get(chave) || 0) + Math.round((Number(dados.valor) || 0) * 100));
+                }
+            }
+            let pagos;
+            try {
+                pagos = pagamentosPorMotorista(await buscarPagamentos(inicio, fim));
+            } catch (erro) {
+                janelaImpressao.close();
+                return alert('Não foi possível consultar os pagamentos da meta para o PDF. ' + erro.message);
+            }
+            if (document.getElementById('dataRankingInicio').value !== inicio || document.getElementById('dataRankingFim').value !== fim) { janelaImpressao.close(); return alert('O período mudou. Exporte novamente.'); }
+            if (janelaImpressao.closed) return;
+            const linhasOriginais = [...document.querySelectorAll('#listaRankingDiario .diario-row')].map(l => l.cloneNode(true));
+            const encontrados = new Set();
+            for (const linha of linhasOriginais) {
+                const nome = (linha.getAttribute('data-motorista') || linha.querySelector('.diario-nome').innerText.replace(/#\d+\s*-\s*/, '').split('(')[0]).trim().toUpperCase();
+                encontrados.add(nome);
+                const pago = pagos.get(nome) || 0;
+                const fat = linha.querySelector('.diario-faturamento');
+                const bruto = linha.hasAttribute('data-valor') ? Number(linha.getAttribute('data-valor')) : Number(fat.innerText.replace(/[R$\s.]/g, '').replace(',', '.'));
+                linha.setAttribute('data-bruto-meta', Math.round(bruto * 100));
+                fat.innerText = formatarMoeda((Math.round(bruto * 100) - pago) / 100);
+                linha.setAttribute('data-pago-meta', pago);
+            }
+            for (const [nome, pago] of pagos) {
+                if (encontrados.has(nome)) continue;
+                const linha = document.createElement('div');
+                linha.setAttribute('data-perc', '0');
+                linha.setAttribute('data-pago-meta', pago);
+                linha.innerHTML = '<span class="diario-nome"></span><span class="diario-faturamento"></span>';
+                linha.querySelector('.diario-nome').innerText = nome;
+                linha.querySelector('.diario-faturamento').innerText = formatarMoeda(-pago / 100);
+                linhasOriginais.push(linha);
+            }
             let linhasHtml = '';
             
             linhasOriginais.forEach((linha) => {
@@ -2192,6 +2254,7 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
 
                 const nomeTexto = nomeEl ? nomeEl.innerText : '';
                 const fatTexto  = fatEl  ? fatEl.innerText  : '';
+                const pagoMeta = Number(linha.getAttribute('data-pago-meta')) || 0;
 
                 const nomeMotorista = nomeTexto.replace(/#\d+\s*-\s*/, '').split('(')[0].trim();
 
@@ -2213,15 +2276,19 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
 
                 const percBloqueado = porcentagemRaw < 80;
         const estileFat = percBloqueado
-            ? 'font-family:monospace;font-weight:600;color:#ef4444;font-size:15px;text-decoration:line-through;'
-            : 'font-family:monospace;font-weight:600;color:#059669;font-size:15px;';
+            ? 'font-family:Arial,sans-serif;white-space:nowrap;font-weight:600;color:#ef4444;font-size:15px;text-decoration:line-through;'
+            : 'font-family:Arial,sans-serif;white-space:nowrap;font-weight:600;color:#059669;font-size:15px;';
 
         linhasHtml += `
-            <div style="padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;page-break-inside:avoid;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="padding:14px 15px;border:1px solid #e2e8f0;border-left:3px solid #158477;border-radius:5px;margin-bottom:9px;page-break-inside:avoid;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:10px;">
                     <div>
                         <div style="font-size:13px;font-weight:600;color:#111827;">${nomeTexto}</div>
                         ${pixHtml}
+                        <div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:6px;font-size:11px;color:#475569;">
+                        <span>Total da meta mensal (${mesMeta.split('-').reverse().join('/')}): <strong>${formatarMoeda((metasMensais.get(nomeMotorista.toUpperCase()) || 0) / 100)}</strong></span>
+                        ${pagoMeta ? `<div style="font-size:11px;font-weight:600;color:#475569;">Adiantamento descontado: ${formatarMoeda(pagoMeta / 100)}</div>` : ''}
+                        </div>
                     </div>
                     <div style="${estileFat}">${fatTexto}${percBloqueado ? ' <span style="font-size:10px;background:#fee2e2;color:#ef4444;padding:2px 6px;border-radius:4px;font-weight:700;">BLOQUEADO</span>' : ''}</div>
                 </div>
@@ -2238,12 +2305,16 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
 
         // Soma apenas motoristas com 80%+
         let totalFatLiberado = 0;
+        let totalBrutoMeta = 0, totalDescontadoMeta = 0;
         linhasOriginais.forEach((linha) => {
             const perc = parseFloat(linha.getAttribute('data-perc')) || 0;
             const fatEl = linha.querySelector('.diario-faturamento');
             if (perc >= 80 && fatEl) {
+                const bruto = Number(linha.getAttribute('data-bruto-meta')) || 0;
+                totalBrutoMeta += bruto;
+                totalDescontadoMeta += Math.min(bruto, Number(linha.getAttribute('data-pago-meta')) || 0);
                 const valorLimpo = fatEl.innerText.replace(/[R$\s.]/g, '').replace(',', '.');
-                totalFatLiberado += parseFloat(valorLimpo) || 0;
+                totalFatLiberado += Math.max(0, parseFloat(valorLimpo) || 0);
             }
         });
         const totalFat = totalFatLiberado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -2280,7 +2351,7 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
                     </div>`;
             }
 
-            const janelaImpressao = window.open('', '_blank', 'width=800,height=900');
+
             janelaImpressao.document.write(`<!DOCTYPE html>
             <html lang="pt-BR">
             <head>
@@ -2293,10 +2364,10 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
                         print-color-adjust: exact !important;
                         color-adjust: exact !important;
                     }
-                    body { font-family: Arial, sans-serif; padding: 28px; background: #fff; color: #111827; }
+                    body { font-family: Arial, sans-serif; padding: 28px; background: #fff; color: #24344b; line-height:1.4; font-variant-numeric:tabular-nums; }
                     @media print {
-                        body { padding: 16px; }
-                        @page { margin: 10mm; size: A4 portrait; }
+                        body { padding: 0; }
+                        @page { margin: 14mm 12mm; size: A4 portrait; }
                         * {
                             -webkit-print-color-adjust: exact !important;
                             print-color-adjust: exact !important;
@@ -2307,25 +2378,31 @@ const uteisSufixo = window._apenasUteis ? ' · Apenas dias úteis (exceto dom. e
             </head>
             <body>
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-                    <div style="background:#dcfce7;border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;">📊</div>
+                    
                     <div>
-                        <div style="font-size:17px;font-weight:700;color:#111827;">Ranking por Período</div>
+                        <div style="font-size:24px;font-weight:700;color:#172c4d;letter-spacing:-.6px;">Ranking por Período</div>
                         <div style="font-size:12px;color:#9ca3af;">Total de serviços e faturamento</div>
                     </div>
                 </div>
-                <div style="font-size:11px;color:#6b7280;margin-bottom:16px;padding-left:52px;">📅 ${periodoLabel}${uteisSufixo}</div>
-                <div style="display:flex;justify-content:space-between;background:#f9fafb;border:1px solid #d1fae5;border-radius:10px;padding:12px 16px;margin-bottom:20px;">
+                <div style="font-size:11px;color:#64748b;margin:12px 0 20px;padding-bottom:14px;border-bottom:3px solid #158477;"> ${periodoLabel}${uteisSufixo}</div>
+                <div style="display:flex;justify-content:space-between;background:#edf5f3;border:1px solid #d6e7e1;border-radius:6px;padding:12px 16px;margin-bottom:20px;">
                     <div>
-                        <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Total de Serviços no Período</div>
-                        <div style="font-size:15px;font-weight:700;color:#16a34a;">${totalQtd}</div>
+                        <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Faturamento total da meta</div>
+                        <div style="font-size:15px;font-weight:700;color:#172c4d;">${formatarMoeda(totalBrutoMeta / 100)}</div>
                     </div>
+                    ${totalDescontadoMeta > 0 ? `<div style="text-align:right;">
+                        <div style="font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.08em;">Adiantamento descontado</div>
+                        <div style="font-size:15px;font-weight:700;color:#475569;">${formatarMoeda(totalDescontadoMeta / 100)}</div>
+                    </div>` : ''}
                     <div style="text-align:right;">
-                        <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Faturamento no Período</div>
+                        <div style="font-size:9px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.08em;">Valor que falta pagar</div>
                         <div style="font-size:15px;font-weight:700;color:#059669;">${totalFat}</div>
                     </div>
                 </div>
+                <div style="font-size:9px;color:#64748b;margin:-12px 0 18px;">Resumo de pagamento do período · Motoristas com 80% ou mais · Serviços: ${totalQtd}</div>
                 ${metasHtml}
                 ${linhasHtml}
+                <div style="margin-top:24px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:9px;color:#718096;">Relatório financeiro · Valores em reais (R$)</div>
                 <script>
                     window.onload = function() {
                         window.print();
@@ -3005,6 +3082,7 @@ window.atualizarGraficosProjecao = async function () {
         // RESTAURAÇÃO DE BACKUP
         // =============================================================
         window.processarRestauracaoBackup = function (event) {
+            if (window.usuarioAtualFuncao === 'operador') return;
             const arquivo = event.target.files?.[0];
             if (!arquivo) return;
             alert('Atenção: A função de restaurar backup via arquivo está temporariamente desativada no modo SQL para evitar corrupção de dados.');
@@ -3288,6 +3366,7 @@ window.atualizarGraficosProjecao = async function () {
 
         // Salvar novo motorista
         window.salvarCadastroMotorista = async function() {
+            if (window.usuarioAtualFuncao === 'operador') return;
         const nome = document.getElementById('cadNome').value.trim().toUpperCase();
         const turno = document.getElementById('cadTurno').value;
         const cpf = document.getElementById('cadCpf')?.value?.trim() || null;
@@ -3446,6 +3525,7 @@ window.atualizarGraficosProjecao = async function () {
         };
 
         window.apagarAnexoMotorista = async function(id, path, nomeMotorista, containerId = 'listaAnexosMotorista') {
+            if (window.usuarioAtualFuncao === 'operador') return;
         if (!confirm('Apagar este anexo?')) return;
 
         const { error: storageError } = await window.supabaseClient.storage
@@ -3512,6 +3592,7 @@ window.atualizarGraficosProjecao = async function () {
         }
         // Abrir modal de edição
         window.abrirModalEditarMotorista = async function(nome) {
+            if (window.usuarioAtualFuncao === 'operador') return;
         const motorista = window.motoristasCache.find(m => m.nome === nome);
         
         if (!motorista) {
@@ -3547,6 +3628,7 @@ window.atualizarGraficosProjecao = async function () {
 
         // Salvar edição
         window.salvarEdicaoMotorista = async function() {
+            if (window.usuarioAtualFuncao === 'operador') return;
         const nomeOriginal = document.getElementById('editNomeOriginal').value;
         const novoNome = document.getElementById('editNome').value.trim().toUpperCase();
         const turno = document.getElementById('editTurno').value;
@@ -3617,6 +3699,7 @@ window.atualizarGraficosProjecao = async function () {
         };
 
         window.toggleStatusMotorista = async function(nome, statusAtual) {
+            if (window.usuarioAtualFuncao === 'operador') return;
         const novoStatus = statusAtual === 'inativo' ? 'ativo' : 'inativo';
         const acao = novoStatus === 'inativo' ? 'desativar' : 'reativar';
         if (!confirm(`Deseja ${acao} o motorista ${nome}?`)) return;
@@ -3633,222 +3716,25 @@ window.atualizarGraficosProjecao = async function () {
         if (window.carregarDados) window.carregarDados();
         };
         window.exportarPdfDomFeriados = async function () {
-    const dataInicio = document.getElementById('dataInicio')?.value || document.getElementById('dataDomInicio')?.value;
-    const dataFim    = document.getElementById('dataFim')?.value || document.getElementById('dataDomFim')?.value;
-
-    if (!dataInicio || !dataFim) {
-        alert("Por favor, selecione um período válido antes de exportar.");
-        return;
-    }
-
-    // Busca todos os lançamentos
-    const { data: lancs, error } = await window.supabaseClient
-        .from('lancamentos')
-        .select('*')
-        .is('cancelado_em', null)
-        .gte('data', dataInicio)
-        .lte('data', dataFim);
-
-    if (error) {
-        alert("Erro ao buscar dados para o PDF.");
-        return;
-    }
-
-    let bancoDados = {};
-    let listaExtras = []; 
-    let extraTotalDiasUteis = 0;
-
-    (lancs || []).forEach(l => {
-        const nomeMotorista = (l.motorista_nome || '').toUpperCase().trim();
-        if (!nomeMotorista || !l.data) return;
-        
-        const isFeriado = l.is_feriado;
-        const dataObj  = new Date(l.data + 'T00:00:00');
-        const isDomingo = dataObj.getDay() === 0;
-        const extraVal = parseFloat(l.valor_extra) || 0;
-        // Extrai os Extras de Dias Úteis
-        if (!isDomingo && !isFeriado && extraVal > 0) {
-            listaExtras.push({
-                dataStr: l.data,
-                nome: nomeMotorista,
-                quantidade: Number(l.quantidade_servicos) || 0,
-                valor: extraVal,
-                obs: l.observacao || 'Sem observação'
-            });
-            extraTotalDiasUteis += extraVal;
-        }
-
-        // Agrupa Dom/Fer
-        if (isDomingo || isFeriado) {
-            if (!bancoDados[l.data]) bancoDados[l.data] = {};
-            if (!bancoDados[l.data][nomeMotorista]) {
-                bancoDados[l.data][nomeMotorista] = {
-                    servicos: 0, valor: 0, isFeriado: l.is_feriado,
-                    tipoVeiculo: l.tipo_veiculo, status: l.status_servico
-                };
+            const inicio = document.getElementById('dataInicio')?.value || document.getElementById('dataDomInicio')?.value;
+            const fim = document.getElementById('dataFim')?.value || document.getElementById('dataDomFim')?.value;
+            if (!inicio || !fim || inicio > fim) return alert('Selecione um período válido antes de exportar.');
+            const janela = window.open('', '_blank');
+            if (!janela) return alert('Permita abrir a janela para exportar o PDF.');
+            janela.document.write('<p>Carregando serviços e adiantamentos...</p>');
+            try {
+                const acerto = await consultarAcerto(inicio, fim);
+                if (janela.closed) return;
+                janela.document.open();
+                janela.document.write(gerarRelatorioEspeciais(acerto, inicio, fim, window.todosMotoristasCloud || []));
+                janela.document.close();
+                janela.focus();
+                janela.print();
+            } catch (erro) {
+                if (!janela.closed) janela.close();
+                alert('Não foi possível gerar o PDF com os abatimentos. ' + erro.message);
             }
-            bancoDados[l.data][nomeMotorista].servicos += (l.quantidade_servicos || 0);
-            bancoDados[l.data][nomeMotorista].valor += (parseFloat(l.valor_faturamento) || 0);
-            if (l.status_servico && l.status_servico !== 'normal') {
-                bancoDados[l.data][nomeMotorista].status = l.status_servico;
-            }
-        }
-    });
-
-    let registrosDom = [], registrosFer = [];
-    let fatTotalDom = 0, fatTotalFer = 0;
-
-    for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
-        const dataObj   = new Date(dataStr + 'T00:00:00');
-        const isDomingo = dataObj.getDay() === 0;
-
-        for (const [mot, dados] of Object.entries(dadosDia)) {
-            // 🔥 MODIFICAÇÃO AQUI: Ignora status (folga/falta) e só entra se produziu serviço ou teve valor
-            if (!(dados.servicos > 0) && !(dados.valor > 0)) continue;
-
-            const obj = {
-                dataStr, nome: mot,
-                caixas: dados.tipoVeiculo !== 'cacamba' ? dados.servicos : 0,
-                viagens: dados.tipoVeiculo === 'cacamba' ? dados.servicos : 0,
-                valor: dados.valor || 0,
-            };
-            
-            if (isDomingo && !dados.isFeriado) {
-                if (dataEstaNoIntervalo(dataStr, dataInicio, dataFim)) {
-                    registrosDom.push(obj);
-                    fatTotalDom += obj.valor;
-                }
-            }
-            if (dados.isFeriado) {
-                if (dataEstaNoIntervalo(dataStr, dataInicio, dataFim)) {
-                    registrosFer.push(obj);
-                    fatTotalFer += obj.valor;
-                }
-            }
-        }
-    }
-
-    const ordenar = (lista) => lista.sort((a, b) => a.nome.localeCompare(b.nome) || new Date(a.dataStr) - new Date(b.dataStr));
-    ordenar(registrosDom);
-    ordenar(registrosFer);
-
-    const fmt     = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const fmtData = (s) => { const [y, m, d] = s.split('-'); return d + '/' + m + '/' + y; };
-    const periodoStr = fmtData(dataInicio) + ' – ' + fmtData(dataFim);
-    const cadastroPorNome = new Map(
-        (window.todosMotoristasCloud || []).map(m => [(m.nome || '').toUpperCase().trim(), m])
-    );
-    const escaparHtmlPdf = valor => String(valor ?? '').replace(/[&<>'"]/g, caractere => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-    })[caractere]);
-    const motoristaComPix = nome => {
-        const pix = cadastroPorNome.get(nome)?.chave_pix?.trim();
-        const pixHtml = pix
-            ? `<span style="margin-left:9px;color:#047857;font-size:11px;font-weight:700;white-space:nowrap;">PIX: ${escaparHtmlPdf(pix)}</span>`
-            : '<span style="margin-left:9px;color:#dc2626;font-size:11px;font-weight:700;white-space:nowrap;">⚠ PIX não cadastrado</span>';
-        return `${escaparHtmlPdf(nome)}${pixHtml}`;
-    };
-
-    function gerarTabelaDomFer(lista, total) {
-        if (lista.length === 0) return '<p style="color:#888;font-style:italic;">Nenhum registro no período.</p>';
-
-        const porMot = {};
-        lista.forEach(function(r) {
-            if (!porMot[r.nome]) porMot[r.nome] = [];
-            porMot[r.nome].push(r);
-        });
-
-        let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-        html += '<thead><tr style="background:#f1f5f9;">'
-            + '<th style="text-align:left;padding:7px 10px;border:1px solid #ddd;">Motorista</th>'
-            + '<th style="padding:7px 10px;border:1px solid #ddd;">Data</th>'
-            + '<th style="padding:7px 10px;border:1px solid #ddd;">Qtd</th>'
-            + '<th style="padding:7px 10px;border:1px solid #ddd;">Valor</th>'
-            + '</tr></thead><tbody>';
-
-        Object.entries(porMot).forEach(function([nome, registros]) {
-            let subtotal = 0;
-            registros.forEach(function(r, i) {
-                subtotal += r.valor || 0;
-                const isFirst = i === 0;
-                const qtd = r.caixas > 0 ? (r.caixas + ' cx') : (r.viagens + ' vg');
-                html += '<tr style="background:' + (isFirst ? '#f8fafc' : '#fff') + ';">'
-                    + '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (isFirst ? '700' : '400') + ';color:' + (isFirst ? '#1e293b' : '#475569') + ';">' + (isFirst ? motoristaComPix(nome) : '') + '</td>'
-                    + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + fmtData(r.dataStr) + '</td>'
-                    + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">' + qtd + '</td>'
-                    + '<td style="padding:6px 10px;border:1px solid #ddd;text-align:right;color:#dc2626;font-weight:600;">' + fmt(r.valor) + '</td>'
-                    + '</tr>';
-            });
-            html += '<tr style="background:#fef9c3;">'
-                + '<td colspan="3" style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#92400e;font-size:12px;">Subtotal ' + nome + ':</td>'
-                + '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#92400e;">' + fmt(subtotal) + '</td>'
-                + '</tr>';
-        });
-
-        html += '</tbody><tfoot><tr>'
-            + '<td colspan="3" style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;">Total da Categoria:</td>'
-            + '<td style="padding:8px 10px;border:1px solid #ddd;text-align:right;font-weight:700;color:#dc2626;">' + fmt(total) + '</td>'
-            + '</tr></tfoot></table>';
-        return html;
-    }
-
-    function gerarTabelaExtras(lista, total) {
-        if (lista.length === 0) return '';
-        
-        lista.sort((a,b) => new Date(a.dataStr) - new Date(b.dataStr) || a.nome.localeCompare(b.nome));
-
-        let html = '<h2 style="margin-top:36px; color:#6b21a8;">💰 Extras <span style="font-size:12px;font-weight:400;color:#64748b;">(Dias Úteis)</span></h2>';
-        html += '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;">';
-        html += '<thead><tr style="background:#f3e8ff;">'
-            + '<th style="text-align:center;padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;">Data</th>'
-            + '<th style="text-align:left;padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;">Motorista</th>'
-            + '<th style="text-align:left;padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;">Observação</th>'
-            + '<th style="padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;text-align:center;">Qtd. caixas</th>'
-            + '<th style="padding:7px 10px;border:1px solid #d8b4fe;color:#6b21a8;text-align:right;">Valor Extra</th>'
-            + '</tr></thead><tbody>';
-        
-        lista.forEach(r => {
-            const observacaoLimpa = String(r.obs || '')
-                .replace(/\[EXTRA R\$\s*20\]\s*/gi, '')
-                .trim() || '—';
-            html += '<tr>'
-                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;text-align:center;">' + fmtData(r.dataStr) + '</td>'
-                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;font-weight:600;">' + motoristaComPix(r.nome) + '</td>'
-                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;color:#475569;">' + escaparHtmlPdf(observacaoLimpa) + '</td>'
-                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;text-align:center;font-weight:700;">' + r.quantidade + ' cx</td>'
-                + '<td style="padding:6px 10px;border:1px solid #d8b4fe;text-align:right;color:#7c3aed;font-weight:700;">' + fmt(r.valor) + '</td>'
-                + '</tr>';
-        });
-        html += '</tbody><tfoot><tr style="background:#faf5ff;">'
-            + '<td colspan="4" style="padding:8px 10px;border:1px solid #d8b4fe;text-align:right;font-weight:700;color:#6b21a8;">Total Extras:</td>'
-            + '<td style="padding:8px 10px;border:1px solid #d8b4fe;text-align:right;font-weight:700;color:#7c3aed;">' + fmt(total) + '</td>'
-            + '</tr></tfoot></table>';
-        return html;
-    }
-
-    const grandTotal = fatTotalDom + fatTotalFer;
-
-    const conteudo = '<html><head><meta charset="UTF-8">'
-        + '<style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b;}'
-        + 'h1{font-size:20px;margin-bottom:4px;}'
-        + 'h2{font-size:15px;margin:28px 0 10px;color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:6px;}'
-        + '.sub{font-size:12px;color:#64748b;margin-bottom:20px;}</style>'
-        + '</head><body>'
-        + '<h1>Domingos &amp; Feriados &amp; Extras — Relatório RH</h1>' // Título Atualizado!
-        + '<div class="sub">Gerado em ' + new Date().toLocaleString('pt-BR') + '</div>'
-        + '<h2>☀️ Domingos <span style="font-size:12px;font-weight:400;color:#64748b;">(' + periodoStr + ')</span></h2>'
-        + gerarTabelaDomFer(registrosDom, fatTotalDom)
-        + '<h2 style="margin-top:36px;">🎉 Feriados <span style="font-size:12px;font-weight:400;color:#64748b;">(' + periodoStr + ')</span></h2>'
-        + gerarTabelaDomFer(registrosFer, fatTotalFer)
-        + '<div style="margin-top:24px;padding:12px 16px;background:#f1f5f9;border-radius:8px;text-align:right;font-size:15px;font-weight:700;">Total Geral (Dom/Fer): <span style="color:#dc2626;">' + fmt(grandTotal) + '</span></div>'
-        + gerarTabelaExtras(listaExtras, extraTotalDiasUteis)
-        + '</body></html>';
-
-    const win = window.open('', '_blank');
-    win.document.write(conteudo);
-    win.document.close();
-    win.print();
-};
+        };
         // ─── RELATÓRIO DE FALTAS / ATESTADOS ───────────────────────────────────────
 
         window.popularSelectFaltas = function () {
@@ -4028,6 +3914,15 @@ const conteudo = `<html><head><meta charset="UTF-8">
         .assinaturas { margin-top: 60px; display: flex; justify-content: space-around; text-align: center; }
         .assinatura-box { width: 250px; }
         .linha-assinatura { border-top: 1px solid #1e293b; margin-bottom: 8px; }
+            @page{size:A4 portrait;margin:14mm 12mm}
+        body{font-size:12px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        h1{font-size:23px;color:#172c4d;letter-spacing:-.5px;padding-bottom:12px;border-bottom:3px solid #158477}
+        .sub{font-size:10px;line-height:1.7}
+        table{font-size:10px;margin-bottom:28px}th{background:#203654;color:white;border:0;padding:10px;font-size:9px;text-transform:uppercase;letter-spacing:.3px}
+        tbody td{padding:10px!important;border:0!important;border-bottom:1px solid #e2e8f0!important;font-size:10px!important;overflow-wrap:anywhere}
+        tbody tr[style*="#fef9c3"]{background:#edf3f8!important}tbody tr[style*="#fef9c3"] td{color:#334b65!important}
+        tr,.assinaturas{break-inside:avoid}thead{display:table-header-group}.assinaturas{font-size:10px;gap:30px}.assinatura-box{flex:1;max-width:230px}
+        @media print{body{padding:0;margin:0}}
     </style>
 </head><body>
     <h1>${titulos[tipo]}</h1>
@@ -4151,6 +4046,7 @@ const conteudo = `<html><head><meta charset="UTF-8">
         };
 
         window.salvarCaminhao = async function() {
+            if (window.usuarioAtualFuncao === 'operador') return;
             const placa = document.getElementById('cadCamPlaca').value.trim().toUpperCase();
             if (!placa) return alert('Placa é obrigatória.');
 
@@ -4205,6 +4101,7 @@ const conteudo = `<html><head><meta charset="UTF-8">
         };
 
         window.editarCaminhao = function(id) {
+            if (window.usuarioAtualFuncao === 'operador') return;
             const c = window.caminhoesCache.find(x => x.id === id);
             if (!c) return;
             window._removerDocCaminhao = false; // 👇 ADICIONE ISTO AQUI 👇
@@ -4232,6 +4129,7 @@ const conteudo = `<html><head><meta charset="UTF-8">
         };
 
         window.excluirCaminhao = async function(id) {
+            if (window.usuarioAtualFuncao === 'operador') return;
             if (!confirm('Excluir este caminhão? Esta ação não pode ser desfeita.')) return;
             const { error } = await window.supabaseClient.from('caminhoes').delete().eq('id', id);
             if (error) return alert('Erro ao excluir: ' + error.message);
@@ -4457,6 +4355,11 @@ let stPassado = { caixas:0, viagens:0, pontos:0, valor:0, extra:0, faltas:0, ate
                 @media print {
                     body { padding: 0; }
                 }
+                            @page{size:A4 portrait;margin:14mm 12mm}
+                body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-variant-numeric:tabular-nums}
+                .header{border-bottom:3px solid #158477}.header h1{font-size:23px;color:#172c4d;letter-spacing:-.5px}
+                .header p{font-size:11px}.grid{gap:12px;break-inside:avoid}.card{padding:12px;border-radius:6px}.card-value{font-size:20px}.card-sub{font-size:10px}
+                .section-title{font-size:14px;break-after:avoid}.table-wrapper{overflow:visible;border:0;border-radius:0}table{font-size:10px}th{background:#203654;color:white;padding:10px}td{padding:9px;overflow-wrap:anywhere}tr{break-inside:avoid}thead{display:table-header-group}
             </style>
         </head>
         <body>

@@ -1,3 +1,4 @@
+import { ehDiaEspecialRanking } from './meta-financeiro.js';
 import {
     dataEstaNoMes,
     dataEstaNoIntervalo,
@@ -176,33 +177,32 @@ export function calcularValorDia({
     };
 }
 
-function ehDiaEspecialRanking(dataStr, dados) {
-    const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
-    if (diaDaSemana === 0 || dados.isFeriado === true) return true;
-    
-    // Dia exclusivamente extra = não conta pra meta, igual domingo/feriado
-    const isExtra = dados.observacao &&
-        (dados.observacao.includes('[EXTRA R$ 20]') ||
-         dados.observacao.includes('[EXTRA R$20]'));
-    if (isExtra && dados.pontos === 0) return true;
-    
-    return false;
-}
-
 function aplicarCorrecaoRankings() {
     if (typeof window === 'undefined') return;
 
+  let versaoRanking = 0;
   window.gerarRankingPeriodo = async function() {
+        const versao = ++versaoRanking;
+        const apenasUteis = Boolean(window._apenasUteis);
         const elInicio = document.getElementById('dataRankingInicio');
         const elFim = document.getElementById('dataRankingFim');
         if (!elInicio || !elFim) return;
         const inicio = elInicio.value;
         const fim = elFim.value;
-        if (!inicio || !fim) return;
+        if (!inicio || !fim || inicio > fim) {
+            document.getElementById('listaRankingDiario').textContent = 'Selecione um intervalo de datas válido.';
+            document.getElementById('totalFatPeriodo').textContent = '-';
+            document.getElementById('totalQtdPeriodo').textContent = '-';
+            document.getElementById('btnExportarPDF').disabled = true;
+            return;
+        }
 
         const elTotalQtd = document.getElementById('totalQtdPeriodo');
         if (elTotalQtd) elTotalQtd.innerText = "Carregando...";
 
+        document.getElementById('listaRankingDiario').replaceChildren();
+        document.getElementById('totalFatPeriodo').textContent = 'Carregando...';
+        document.getElementById('btnExportarPDF').disabled = true;
         let bancoDados = {};
         try {
             const { data: lancs, error } = await window.supabaseClient
@@ -213,6 +213,7 @@ function aplicarCorrecaoRankings() {
                 .lte('data', fim);
 
             if (error) throw error;
+            if (versao !== versaoRanking) return;
 
             (lancs || []).forEach(l => {
                 const nomeMotorista = (l.motorista_nome || '').toUpperCase().trim();
@@ -230,6 +231,10 @@ function aplicarCorrecaoRankings() {
                 };
             });
         } catch (err) {
+            if (versao !== versaoRanking) return;
+            if (elTotalQtd) elTotalQtd.textContent = 'Erro';
+            document.getElementById('totalFatPeriodo').textContent = 'Erro';
+            document.getElementById('listaRankingDiario').textContent = err.message || 'Erro ao carregar ranking.';
             console.error("Erro ao buscar período no banco:", err);
             return;
         }
@@ -240,19 +245,19 @@ function aplicarCorrecaoRankings() {
         for (const [dataStr, dadosDia] of Object.entries(bancoDados)) {
             if (dataEstaNoIntervalo(dataStr, inicio, fim)) {
                 const diaDaSemana = new Date(dataStr + 'T00:00:00').getDay();
-                if (window._apenasUteis && diaDaSemana === 0) continue;
+                if (apenasUteis && diaDaSemana === 0) continue;
 
                for (const [mot, dados] of Object.entries(dadosDia)) {
                     const isExtra = dados.observacao && (dados.observacao.includes('[EXTRA R$ 20]') || dados.observacao.includes('[EXTRA R$20]'));
 
                     // Se "Dias Úteis" estiver ativado, o Extra some completamente do ranking
-                    if (window._apenasUteis && (dados.isFeriado || isExtra)) continue;
+                    if (apenasUteis && (dados.isFeriado || isExtra)) continue;
 
                     if (!rankPeriodo[mot]) rankPeriodo[mot] = { caixas: 0, viagens: 0, valor: 0, extra: 0, pontos: 0 };
 
                     // O dinheiro continua entrando para o ranking geral (se não foi bloqueado pelos Dias Úteis)
-                    rankPeriodo[mot].valor += dados.valor || 0;
-                    rankPeriodo[mot].extra += dados.valorExtra || 0;
+                    rankPeriodo[mot].valor += apenasUteis ? Math.max(0, (dados.valor || 0) - (dados.valorExtra || 0)) : (dados.valor || 0);
+                    rankPeriodo[mot].extra += apenasUteis ? 0 : (dados.valorExtra || 0);
                     totalFatPeriodo += dados.valor || 0;
 
                     const statusNormal = (!dados.status || dados.status === 'normal');
@@ -272,6 +277,11 @@ function aplicarCorrecaoRankings() {
             }
         }
 
+        if (apenasUteis) {
+            totalFatPeriodo = Object.values(rankPeriodo).reduce((total, item) => total + Math.round(item.valor * 100), 0) / 100;
+        }
+        document.getElementById('rotuloFatPeriodo').textContent = 'Faturamento no Período';
+        document.getElementById('btnExportarPDF').disabled = false;
         const elTotalFat = document.getElementById('totalFatPeriodo');
         if (elTotalQtd) elTotalQtd.innerText = `${totalCaixasPeriodo} cx | ${totalViagensPeriodo} vg`;
         if (elTotalFat) elTotalFat.innerText = formatarMoeda(totalFatPeriodo);
@@ -349,6 +359,8 @@ function aplicarCorrecaoRankings() {
             
             // INVISÍVEL: Guarda a porcentagem calculada pro PDF pescar!
             linha.setAttribute('data-perc', mot.porcentagem);
+            linha.setAttribute('data-motorista', mot.nome);
+            linha.setAttribute('data-valor', mot.valor);
 
             linha.innerHTML = `
                 <div class="diario-top" style="margin-bottom: 0;">
