@@ -12,7 +12,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <link rel="stylesheet" href="style.css?v=2">
+        <link rel="stylesheet" href="style.css?v=6">
         <link rel="stylesheet" href="acerto.css?v=7">
 </head>
     <body>
@@ -377,13 +377,13 @@
                         </div>
 
                         <div class="meta-card-pink">
-                            <div class="meta-card-label">Meta Rayanna (Mês)</div>
+                            <div class="meta-card-label" id="tituloMetaOperadorDia" data-meta-operador="dia">Meta Dia (Mês)</div>
                             <div class="meta-card-value" id="metaRayannaGlobal">0 / 0 cx</div>
                             <div class="meta-card-sub" id="faltaRayannaGlobal">0% | Faltam 0</div>
                         </div>
 
                         <div class="meta-card-indigo">
-                            <div class="meta-card-label">Meta Júlia (Mês)</div>
+                            <div class="meta-card-label" id="tituloMetaOperadorNoite" data-meta-operador="noite">Meta Noite (Mês)</div>
                             <div class="meta-card-value" id="metaJuliaGlobal">0 / 0 cx</div>
                             <div class="meta-card-sub" id="faltaJuliaGlobal">0% | Faltam 0</div>
                         </div>
@@ -544,108 +544,15 @@
                 </div>
 
                 <div id="viewProjecao" style="display:none;">
-                    <div class="proj-header">
-                        <div>
-                            <h2>Projeção e Evolução</h2>
-                            <div class="proj-sub" style="margin-top:6px;font-size:13px;color:var(--gray-400);">
-                                Análise de
-                                <strong id="projecaoNomeMotorista" style="font-weight:700;color:var(--brand-600);text-transform:uppercase;">Ninguém</strong>
-                                no período:
-                                <input type="date" id="dataProjInicio" class="inline-date" style="margin-left:6px;" onchange="window.atualizarGraficosProjecao()">
-                                <span style="margin:0 4px;color:var(--gray-400);font-weight:700;font-size:11px;">ATÉ</span>
-                                <input type="date" id="dataProjFim" class="inline-date" onchange="window.atualizarGraficosProjecao()">
-                            </div>
-                        </div>
-                        <div class="proj-filters">
-                            <div class="proj-filter-group">
-                                <span class="proj-filter-label">Motorista (Azul)</span>
-                                <select id="filtroProjMot" onchange="window.selecionarMotoristaProjecao(this.value)" class="proj-filter-select">
-                                    <option value="">Selecione...</option>
-                                </select>
-                            </div>
-                            <div class="proj-divider"></div>
-                            <div class="proj-filter-group">
-                                <span class="proj-filter-label">Turno (Verde)</span>
-                                <select id="filtroProjTurno" onchange="window.atualizarGraficosProjecao()" class="proj-filter-select green-select">
-                                    <option value="todos">Frota Completa</option>
-                                    <option value="dia">Dia (Rayanna)</option>
-                                    <option value="noite">Noite (Júlia)</option>
-                                    <option value="especial">Especial (Caçamba)</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div class="page-header"><div><h2>Comparação e projeção da frota</h2><p>Compare a produção da meta entre dois períodos.</p></div></div>
+                    <div class="bi-filters">
+                        <fieldset><legend>Período A · referência</legend><label>De<input type="date" id="dataProjBaseInicio" onchange="window.atualizarGraficosProjecao()"></label><label>Até<input type="date" id="dataProjBaseFim" onchange="window.atualizarGraficosProjecao()"></label></fieldset>
+                        <fieldset><legend>Período B · análise e projeção</legend><label>De<input type="date" id="dataProjInicio" onchange="window.atualizarGraficosProjecao()"></label><label>Até<input type="date" id="dataProjFim" onchange="window.atualizarGraficosProjecao()"></label></fieldset>
+                        <label>Visão<select id="filtroProjTurno" onchange="window.atualizarGraficosProjecao()"><option value="todos">Frota completa</option><option value="dia">Dia · Rayanna</option><option value="noite">Noite · Júlia</option><option value="especial">Especial · Caçamba</option></select></label>
+                        <button class="btn-sistema" onclick="window.atualizarGraficosProjecao()">Atualizar</button>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-5 mb-5">
-                        <div class="stat-card stat-card-accent stat-card-accent-purple">
-                            <div class="stat-card-icon"><i data-lucide="gauge" class="w-4 h-4"></i></div>
-                            <div class="stat-label">Ritmo de Corrida (Projeção)</div>
-                            <div class="stat-value" id="biRunRate">0</div>
-                            <div class="stat-sub" id="biRunRateSub">Mantendo o ritmo atual...</div>
-                        </div>
-
-                        <div class="stat-card stat-card-accent stat-card-accent-amber">
-                            <div class="stat-card-icon"><i data-lucide="target" class="w-4 h-4"></i></div>
-                            <div class="stat-label">GPS da Meta</div>
-                            <div class="stat-value" id="biGps80">0 /dia p/ 80%</div>
-                            <div class="stat-sub stat-sub-success" id="biGps100">Para 100%: 0 /dia</div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-label">Produção (Período Atual)</div>
-                            <div class="stat-value" id="statMesAtual">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Produção (Período Anterior)</div>
-                            <div class="stat-value" id="statMesPassado">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Desempenho vs Anterior</div>
-                            <div id="statCrescimento" style="font-size:16px;font-weight:600;color:var(--gray-800);margin-top:4px;display:flex;align-items:center;gap:8px;">—</div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-7">
-                        <div class="stat-card">
-                            <div class="stat-label">Consistência (Metas)</div>
-                            <div class="stat-value text-brand" id="statWinRate" style="font-size:26px;">0%</div>
-                            <div class="stat-sub" id="statWinRateSub">0 de 0 dias úteis</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Média Diária (Real)</div>
-                            <div class="stat-value" id="statMediaReal">0.0</div>
-                            <div class="stat-sub" id="statMediaNec">SLA pede: 0.0 /dia</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Recorde Pessoal</div>
-                            <div class="stat-value text-warning" id="statRecorde">0</div>
-                            <div class="stat-sub" id="statRecordeData">Sem registro</div>
-                        </div>
-                        <div class="stat-card stat-card-dark">
-                            <div class="stat-label" id="tituloDiaForte">Melhor Dia (Frota)</div>
-                            <div class="stat-value" id="statMelhorDia">N/A</div>
-                            <div class="stat-sub" id="statMelhorDiaPts">Sem dados</div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="chart-card">
-                            <h3>Evolução Diária (Período Atual)</h3>
-                            <div style="height:240px;position:relative;">
-                                <canvas id="chartEvolucaoIndividual"></canvas>
-                                <div id="chartEvolucaoIndividualVazio" class="chart-empty-state">
-                                    <i data-lucide="user-search" class="w-7 h-7"></i>
-                                    <p>Selecione um motorista para ver a evolução diária</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="chart-card">
-                            <h3>Volume Geral da Frota (Período Atual)</h3>
-                            <div style="height:240px;position:relative;">
-                                <canvas id="chartEvolucaoGeral"></canvas>
-                            </div>
-                        </div>
-                    </div>
+                    <p id="biEstado" role="status" aria-live="polite"></p>
+                    <div id="biResultado"></div>
                 </div>
 
                 <div id="viewAuditoria" style="display:none;">
@@ -745,6 +652,25 @@
                         </div>
                     </div>
 
+                    <section class="chart-card op-cadastro" style="margin-bottom:24px">
+                        <div class="page-header"><div><h3>Cadastro de operadores</h3><p>Um responsável por turno · Meta de <span id="opMesMeta"></span>.</p></div><button class="btn-sistema" onclick="window.carregarCadastroOperadores()">Atualizar cadastro</button></div>
+                        <div class="bi-cards" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+                            <div class="stat-card"><div class="stat-label">Responsável · Dia</div><strong id="opResponsavel-dia">Carregando…</strong><div class="stat-value" id="opMeta-dia" style="font-size:22px;margin-top:12px">—</div><p class="stat-sub" id="opMetaDetalhe-dia"></p></div>
+                            <div class="stat-card"><div class="stat-label">Responsável · Noite</div><strong id="opResponsavel-noite">Carregando…</strong><div class="stat-value" id="opMeta-noite" style="font-size:22px;margin-top:12px">—</div><p class="stat-sub" id="opMetaDetalhe-noite"></p></div>
+                        </div>
+                        <form id="formCadastroOperador" onsubmit="window.salvarCadastroOperador(event)" hidden style="margin:18px 0">
+                            <input type="hidden" id="cadOperadorId">
+                            <div class="op-cadastro-campos">
+                                <label>Nome<input id="cadOperadorNome" placeholder="Nome do operador" class="input-base" required maxlength="120" style="display:block"></label>
+                                <label>Turno<select id="cadOperadorTurno" class="input-base" style="display:block"><option value="dia">Dia</option><option value="noite">Noite</option></select></label>
+                                <label class="op-status-toggle"><input id="cadOperadorAtivo" type="checkbox" checked> Ativo</label>
+                                <button id="salvarCadastroOperador" type="submit" class="btn-primary">Salvar operador</button>
+                                <button type="button" class="btn-sistema" onclick="window.limparCadastroOperador()">Limpar</button>
+                            </div>
+                        </form>
+                        <p id="cadOperadorMensagem" role="status" style="margin:12px 0"></p>
+                        <div class="table-wrap"><table class="bi-table"><thead><tr><th>Operador</th><th>Turno</th><th>Status</th><th>Ação</th></tr></thead><tbody id="listaCadastroOperadores"></tbody></table></div>
+                    </section>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
                         <div class="stat-card stat-card-brand">
                             <div class="stat-label">Caixas Extras — Hoje</div>
@@ -1428,7 +1354,7 @@
         <script src="lock-mes.js?v=2"></script>
 
 
-<script type="module" src="app.js?v=29"></script>
+<script type="module" src="app.js?v=33"></script>
         <script>
             lucide.createIcons();
             // Show modals with flex when .hidden is removed

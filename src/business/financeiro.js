@@ -484,6 +484,7 @@ if (!diaEspecial) {
         renderizarMeta(feitasGeral, ptsGeral, 'metaGeralGlobal', 'faltaGeralGlobal');
         renderizarMeta(feitasRayanna, ptsRayanna, 'metaRayannaGlobal', 'faltaRayannaGlobal');
         renderizarMeta(feitasJulia, ptsJulia, 'metaJuliaGlobal', 'faltaJuliaGlobal');
+        window.atualizarMetasCadastroOperadores?.();
 
         const rankFinal = Object.keys(acumuladoMes).map(mot => {
             const info = acumuladoMes[mot];

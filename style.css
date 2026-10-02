@@ -2057,3 +2057,87 @@ body[data-perfil="operador"] [onclick*="window.editarCaminhao("],
 body[data-perfil="operador"] #btnHistoricoPagamentos,
 body[data-perfil="operador"] #painelPagamentos,
 body[data-perfil="operador"] #btnTravaSla { display: none !important; }
+
+/* Comparação de períodos da frota */
+.bi-filters{display:flex;flex-wrap:wrap;gap:18px;align-items:end;padding:20px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:16px}.bi-filters fieldset{display:flex;gap:12px;border:0;padding:0;margin:0;min-width:0}.bi-filters legend{font-size:12px;font-weight:700;color:#334155;margin-bottom:10px}.bi-filters label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:#64748b}.bi-filters input,.bi-filters select{padding:9px;border:1px solid #cbd5e1;border-radius:6px;color:#1e293b;background:white;min-width:0}.bi-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:16px 0 22px}.bi-cards .stat-value{font-size:24px}.bi-table{width:100%;border-collapse:collapse;margin-top:14px}.bi-table th,.bi-table td{text-align:right;padding:13px;border-bottom:1px solid #e2e8f0;font-size:13px}.bi-table th:first-child,.bi-table td:first-child{text-align:left}.bi-table th{color:#64748b;background:#f8fafc}.bi-note{font-size:12px;line-height:1.7;color:#64748b;margin:18px 0}#biEstado{font-size:13px;color:#64748b}@media(max-width:900px){.bi-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:540px){.bi-cards{grid-template-columns:1fr}.bi-filters fieldset{flex-wrap:wrap}.bi-filters{padding:14px}}
+
+.bi-drivers .bi-table{min-width:800px}.bi-drivers small{display:block;font-size:11px;color:#64748b;margin-top:4px}.bi-drivers td{vertical-align:top}.bi-drivers .bi-table th:first-child{min-width:210px}
+
+/* Acabamento visual do painel de comparação */
+#viewProjecao{max-width:1500px;margin:0 auto}
+#viewProjecao .page-header{padding:8px 0 20px;margin-bottom:0}
+#viewProjecao .page-header h2{font-size:25px;letter-spacing:-.7px;color:#172b46}
+#viewProjecao .page-header p{margin-top:7px;color:#738196;font-size:13px}
+#viewProjecao .bi-filters{display:grid;grid-template-columns:minmax(250px,1fr) minmax(250px,1fr) minmax(160px,.65fr) auto;gap:20px;padding:24px;border-color:#e4eaf2;border-radius:16px;box-shadow:0 3px 14px rgba(24,43,70,.035)}
+#viewProjecao .bi-filters fieldset{gap:10px}
+#viewProjecao .bi-filters fieldset label{flex:1;min-width:0}
+#viewProjecao .bi-filters legend{font-size:12px;margin-bottom:12px;padding-left:10px;border-left:3px solid #6478b9}
+#viewProjecao .bi-filters fieldset:nth-child(2) legend{border-left-color:#188b83}
+#viewProjecao .bi-filters input,#viewProjecao .bi-filters select{width:100%;min-height:40px;padding:9px 10px;border-color:#dfe6ef;border-radius:8px;font-family:inherit;font-size:12px;background:#fbfcfe;transition:border-color .15s,box-shadow .15s}
+#viewProjecao .bi-filters input:focus,#viewProjecao .bi-filters select:focus{outline:2px solid #a6c3ea;outline-offset:2px;border-color:#6a8fbc}
+#viewProjecao .bi-filters button{min-height:40px;border:0;border-radius:8px;background:#243b61;color:#fff;padding:10px 18px;font-weight:600;cursor:pointer}
+#viewProjecao .bi-filters button:hover{background:#314e7b}
+#biEstado{padding:0 4px;font-size:12px;min-height:18px}
+#viewProjecao .bi-cards{gap:16px;margin:18px 0 26px}
+#viewProjecao .bi-cards .stat-card{position:relative;min-height:146px;padding:22px;border:1px solid #e2e8f1;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(24,43,70,.035);overflow:hidden}
+#viewProjecao .bi-cards .stat-card:before{content:'';position:absolute;top:0;left:22px;right:22px;height:3px;background:#7a8bc4;border-radius:0 0 3px 3px}
+#viewProjecao .bi-cards .stat-card:nth-child(2):before{background:#188b83}
+#viewProjecao .bi-cards .stat-card:nth-child(3):before{background:#a6b2c4}
+#viewProjecao .bi-cards .stat-card:last-child{background:#edf6f4;border-color:#cee4df}
+#viewProjecao .bi-cards .stat-card:last-child:before{background:#188b83}
+#viewProjecao .bi-cards .stat-label{font-size:10px;line-height:1.6;letter-spacing:.5px;color:#64748b}
+#viewProjecao .bi-cards .stat-value{font-size:clamp(20px,2.1vw,30px);line-height:1.25;margin:13px 0 10px;letter-spacing:-.7px;color:#213854;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#viewProjecao .bi-cards .stat-card:last-child .stat-value{color:#16756e}
+#viewProjecao .bi-cards .stat-sub{font-size:11px;line-height:1.5;color:#7a8798}
+#viewProjecao .chart-card{padding:24px;border:1px solid #e2e8f1;border-radius:16px;box-shadow:0 3px 14px rgba(24,43,70,.025);background:white}
+#viewProjecao .chart-card h3{font-size:15px;font-weight:700;letter-spacing:-.2px;color:#243b56;margin:0 0 18px}
+#viewProjecao .bi-table{font-variant-numeric:tabular-nums}
+#viewProjecao .bi-table th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;background:#f3f6fa;padding:14px;color:#68788d;white-space:nowrap}
+#viewProjecao .bi-table td{padding:16px 14px;font-size:12px;border-color:#edf0f5;color:#34465e}
+#viewProjecao .bi-table tbody tr:nth-child(even){background:#fbfcfe}
+#viewProjecao .bi-table tbody tr:hover{background:#f2f7fc}
+#viewProjecao .bi-table tr:last-child td{border-bottom:0}
+#viewProjecao .bi-table td:last-child{font-weight:600;color:#16756e}
+#viewProjecao .bi-drivers .bi-table td:first-child strong{font-size:11px;letter-spacing:.1px;color:#243b56}
+#viewProjecao .bi-drivers .bi-note{margin:-6px 0 18px;font-size:11px}
+#viewProjecao>.bi-note{padding:14px 18px;border-left:2px solid #d5deea;background:#f5f7fb;border-radius:0 8px 8px 0;font-size:11px;color:#78869a}
+@media(max-width:1200px){#viewProjecao .bi-filters{grid-template-columns:1fr 1fr}#viewProjecao .bi-filters button{justify-self:end;min-width:130px}}
+@media(max-width:600px){#viewProjecao .bi-filters{grid-template-columns:1fr;padding:18px;gap:18px}#viewProjecao .bi-filters button{justify-self:stretch}#viewProjecao .page-header h2{font-size:21px}#viewProjecao .chart-card{padding:18px}#viewProjecao .bi-cards .stat-card{min-height:125px;padding:18px}#viewProjecao .bi-cards .stat-value{font-size:27px}}
+
+/* Cadastro de operadores: estilos isolados desta seção */
+#viewOperador .op-cadastro{padding:26px;border:1px solid #e1e7ef;border-radius:18px;box-shadow:0 4px 18px rgba(25,43,70,.035);background:#fff}
+.op-cadastro .page-header{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:22px;padding:0}
+.op-cadastro .page-header h3{font-size:18px;font-weight:700;letter-spacing:-.4px;color:#203650;margin-bottom:5px}
+.op-cadastro .page-header p{font-size:12px;color:#7a8798}
+.op-cadastro .bi-cards{gap:18px;margin:0 0 24px}
+.op-cadastro .stat-card{position:relative;padding:22px;border:1px solid #dbe9e5;border-radius:12px;background:#f4faf7;box-shadow:none;overflow:hidden}
+.op-cadastro .stat-card:nth-child(2){background:#f5f6fc;border-color:#e0e3f1}
+.op-cadastro .stat-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#427665;margin-bottom:10px}
+.op-cadastro .stat-card:nth-child(2) .stat-label{color:#646b9a}
+.op-cadastro .stat-card>strong{display:block;font-size:19px;letter-spacing:-.3px;color:#203650;overflow-wrap:anywhere}
+.op-cadastro .stat-value{color:#257460;font-variant-numeric:tabular-nums;line-height:1.3}
+.op-cadastro .stat-card:nth-child(2) .stat-value{color:#555f99}
+.op-cadastro .stat-sub{font-size:11px;line-height:1.6;color:#6b7d88;margin-top:8px}
+.op-cadastro #formCadastroOperador{padding:20px;background:#f8fafc;border:1px solid #e6ebf2;border-radius:12px}
+.op-cadastro-campos{display:grid;grid-template-columns:minmax(180px,2fr) minmax(115px,1fr) auto auto auto;gap:14px;align-items:end}
+.op-cadastro-campos>label{display:flex;flex-direction:column;gap:8px;font-size:11px;font-weight:600;color:#63748a}
+.op-cadastro-campos .input-base{width:100%;min-width:0;min-height:42px;border:1px solid #dce3ed;border-radius:8px;background:white;padding:10px 12px;font-size:13px;color:#263b55}
+.op-cadastro-campos .input-base:focus{outline:2px solid #b1c6e8;outline-offset:2px}
+.op-cadastro-campos .op-status-toggle{flex-direction:row;align-items:center;gap:8px;min-height:42px;padding:0 10px;white-space:nowrap}
+.op-status-toggle input{width:16px;height:16px;accent-color:#277a68}
+.op-cadastro button{min-height:38px;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer}
+.op-cadastro #salvarCadastroOperador{min-height:42px;background:#263f65;color:white;border:0}
+.op-cadastro #salvarCadastroOperador:hover{background:#34547e}
+.op-cadastro button:disabled{opacity:.5;cursor:wait}
+.op-cadastro #cadOperadorMensagem{font-size:12px;color:#596d85;line-height:1.6}
+.op-cadastro #cadOperadorMensagem:empty{display:none}
+.op-cadastro .table-wrap{border:1px solid #e5eaf1;border-radius:10px;overflow:auto;box-shadow:none}
+.op-cadastro .bi-table{margin:0;min-width:430px}
+.op-cadastro .bi-table th{text-align:left;background:#f7f9fc;font-size:10px;text-transform:uppercase;letter-spacing:.7px;padding:13px 16px;color:#728197}
+.op-cadastro .bi-table td{text-align:left;padding:15px 16px;border-color:#edf1f5;font-size:12px;color:#4c6078;vertical-align:middle}
+.op-cadastro .bi-table td:first-child{color:#203650}
+.op-cadastro .bi-table th:last-child,.op-cadastro .bi-table td:last-child{text-align:right}
+.op-cadastro .bi-table tr:last-child td{border-bottom:0}
+.op-cadastro .bi-table tbody tr:hover{background:#fafcfe}
+@media(max-width:1150px){.op-cadastro-campos{grid-template-columns:minmax(160px,2fr) minmax(110px,1fr) auto}.op-cadastro-campos button{justify-self:start}}
+@media(max-width:600px){#viewOperador .op-cadastro{padding:16px}.op-cadastro-campos{grid-template-columns:1fr}.op-cadastro-campos button{justify-self:stretch}.op-cadastro .stat-card{padding:18px}.op-cadastro #formCadastroOperador{padding:15px}}
