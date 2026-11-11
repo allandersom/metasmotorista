@@ -301,6 +301,7 @@ global: ['rankings', 'lancamentos', 'domferiados', 'financeiro', 'projecao', 'ca
 
         if (erroMots) throw erroMots;
                 window.todosMotoristasCloud = mots || [];
+        renderizarListaLoteMotoristas();
         reconstruirMotoristasDoMes(mesGlobal);
         await window.carregarCadastroOperadores();
 
@@ -375,6 +376,215 @@ global: ['rankings', 'lancamentos', 'domferiados', 'financeiro', 'projecao', 'ca
 
         window.carregarDadosDoSupabase = carregarDadosDoSupabase;
         window.carregarDadosDoSupabase();
+
+        function renderizarListaLoteMotoristas() {
+            const lista = document.getElementById('loteListaMotoristas');
+            if (!lista) return;
+            lista.replaceChildren();
+            const motoristas = [...new Set((window.todosMotoristasCloud || [])
+                .filter(m => m?.nome && m.status !== 'inativo')
+                .map(m => String(m.nome).toUpperCase().trim())
+                .filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+            if (!motoristas.length) {
+                const vazio = document.createElement('span');
+                vazio.className = 'lote-vazio';
+                vazio.textContent = 'Nenhum motorista ativo cadastrado.';
+                lista.appendChild(vazio);
+                return;
+            }
+
+            for (const nome of motoristas) {
+                const label = document.createElement('label');
+                label.className = 'lote-motorista';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = nome;
+                checkbox.className = 'lote-motorista-checkbox';
+                const texto = document.createElement('span');
+                texto.textContent = nome;
+                label.append(checkbox, texto);
+                lista.appendChild(label);
+            }
+        }
+
+        function atualizarAjudaLote() {
+            const status = document.getElementById('loteStatus')?.value;
+            const feriado = document.getElementById('loteMarcarFeriado')?.checked;
+            const ajuda = document.getElementById('loteAjuda');
+            if (!ajuda) return;
+            const dicaStatus = status === 'normal'
+                ? '“Trabalhou Normal” atualiza registros existentes sem produção; sem registro existente, use o formulário normal para informar a produção.'
+                : 'Registros que já tenham produção nessa data serão preservados para evitar apagar trabalho lançado.';
+            ajuda.textContent = feriado
+                ? `${dicaStatus} O feriado será marcado para toda a frota; quem não tiver lançamento receberá um registro de folga que poderá ser substituído depois.`
+                : dicaStatus;
+        }
+
+        document.getElementById('loteData')?.addEventListener('change', () => {
+            const dataLancamento = document.getElementById('dataLancamento');
+            const loteData = document.getElementById('loteData');
+            if (dataLancamento && loteData) dataLancamento.value = loteData.value;
+        });
+        document.getElementById('dataLancamento')?.addEventListener('change', () => {
+            const loteData = document.getElementById('loteData');
+            const dataLancamento = document.getElementById('dataLancamento');
+            if (dataLancamento?.value && loteData) loteData.value = dataLancamento.value;
+        });
+        document.getElementById('loteStatus')?.addEventListener('change', atualizarAjudaLote);
+        document.getElementById('loteMarcarFeriado')?.addEventListener('change', atualizarAjudaLote);
+        document.getElementById('loteSelecionarTodos')?.addEventListener('change', (event) => {
+            document.querySelectorAll('.lote-motorista-checkbox').forEach(input => { input.checked = event.target.checked; });
+        });
+        const dataLoteInicial = document.getElementById('loteData');
+        if (dataLoteInicial && !dataLoteInicial.value) dataLoteInicial.value = document.getElementById('dataLancamento')?.value || getHojeStr();
+        atualizarAjudaLote();
+
+        window.aplicarLancamentoEmLote = async function () {
+            const funcao = window.usuarioAtualFuncao;
+            if (funcao === 'operador' || funcao === 'global') {
+                alert('Seu perfil não tem permissão para aplicar lançamentos em lote.');
+                return;
+            }
+            const data = document.getElementById('loteData')?.value;
+            const status = document.getElementById('loteStatus')?.value;
+            const marcarFeriado = Boolean(document.getElementById('loteMarcarFeriado')?.checked);
+            if (!data) { alert('Selecione a data.'); return; }
+            if (window.LockMes?.acaoBloqueada(data)) return;
+
+            const todosAtivos = [...new Set((window.todosMotoristasCloud || [])
+                .filter(m => m?.nome && m.status !== 'inativo')
+                .map(m => String(m.nome).toUpperCase().trim())
+                .filter(Boolean))];
+            const nomesSelecionados = [...document.querySelectorAll('.lote-motorista-checkbox:checked')].map(input => input.value);
+            if (!nomesSelecionados.length && !marcarFeriado) { alert('Selecione pelo menos um motorista ou marque a opção de feriado para toda a frota.'); return; }
+            const nomes = [...new Set([...nomesSelecionados, ...(marcarFeriado ? todosAtivos : [])])];
+            const nomesValidos = new Set(['normal', 'falta', 'folga', 'atestado', 'suspensao', 'polioff', 'licenca', 'desligado']);
+            if (!nomesValidos.has(status)) { alert('Selecione um status válido.'); return; }
+
+            const resumoAcao = `${status === 'normal' ? 'marcar como Trabalhou Normal' : `lançar ${status}`} para ${nomesSelecionados.length} motorista(s)`;
+            if (!window.confirm(`Confirma ${resumoAcao}${marcarFeriado ? ' e marcar a data como feriado para toda a frota' : ''} em ${formatarDataParaExibicao(data)}?`)) return;
+
+            const botao = document.getElementById('btnAplicarLote');
+            if (botao) { botao.disabled = true; botao.textContent = 'Aplicando...'; }
+            try {
+                const { data: existentes, error: erroBusca } = await supabase
+                    .from('lancamentos').select('*').eq('data', data).in('motorista_nome', nomes);
+                if (erroBusca) throw erroBusca;
+
+                const porNome = new Map((existentes || []).map(registro => [String(registro.motorista_nome).toUpperCase().trim(), registro]));
+                const preservados = [];
+                const atualizacoes = [];
+                const alteracoesHistorico = [];
+                const payloads = [];
+                const tipoPadrao = nome => window.motOutros?.includes(nome) ? 'cacamba' : 'poliguindaste';
+                const statusLabels = { normal: 'Trabalhou Normal', falta: 'Falta', folga: 'Folga', atestado: 'Atestado', suspensao: 'Suspensão', polioff: 'Poli OFF / Oficina', licenca: 'Férias', desligado: 'Desligado' };
+
+                for (const nome of nomes) {
+                    const anterior = porNome.get(nome);
+                    // Não ressuscita nem modifica registros cancelados sem ação explícita do usuário.
+                    if (anterior?.cancelado_em) { preservados.push(nome); continue; }
+                    const selecionado = nomesSelecionados.includes(nome);
+
+                    if (anterior) {
+                        const campos = {};
+                        if (marcarFeriado && !anterior.is_feriado) campos.is_feriado = true;
+                        if (selecionado && anterior.status_servico !== status) {
+                            const temProducao = (Number(anterior.quantidade_servicos) || 0) > 0
+                                || (Number(anterior.valor_faturamento) || 0) > 0
+                                || (Number(anterior.valor_extra) || 0) > 0;
+                            if (temProducao) {
+                                preservados.push(nome);
+                            } else {
+                                campos.status_servico = status;
+                                if (status !== 'normal') {
+                                    campos.quantidade_servicos = 0;
+                                    campos.valor_faturamento = 0;
+                                    campos.valor_extra = 0;
+                                    campos.ganhou_bonus_semana = false;
+                                    if (!anterior.observacao) campos.observacao = statusLabels[status];
+                                }
+                            }
+                        }
+                        if (Object.keys(campos).length) {
+                            atualizacoes.push({ nome, campos });
+                            alteracoesHistorico.push({ anterior, depois: { ...anterior, ...campos } });
+                        }
+                        continue;
+                    }
+
+                    if (status === 'normal' && !marcarFeriado) continue;
+
+                    const payload = {
+                        data,
+                        motorista_nome: nome,
+                        status_servico: selecionado && status !== 'normal' ? status : 'folga',
+                        tipo_veiculo: tipoPadrao(nome),
+                        quantidade_servicos: 0,
+                        valor_faturamento: 0,
+                        valor_extra: 0,
+                        is_feriado: marcarFeriado,
+                        ganhou_bonus_semana: false,
+                        observacao: selecionado && status !== 'normal' ? statusLabels[status] : 'Feriado',
+                        cancelado_em: null,
+                        cancelado_por: null,
+                        cancelado_por_email: null,
+                        motivo_cancelamento: null,
+                    };
+                    payloads.push(payload);
+                    alteracoesHistorico.push({ anterior: null, depois: payload });
+                }
+
+                if (!payloads.length && !atualizacoes.length) {
+                    alert(preservados.length
+                        ? `Nenhuma alteração foi feita. ${preservados.length} lançamento(s) com produção ou cancelados foram preservados.`
+                        : 'Nenhuma alteração necessária para os motoristas selecionados.');
+                    return;
+                }
+
+                if (payloads.length) {
+                    const { error: erroSalvar } = await supabase
+                        .from('lancamentos').upsert(payloads, { onConflict: 'data,motorista_nome' });
+                    if (erroSalvar) throw erroSalvar;
+                }
+                for (const atualizacao of atualizacoes) {
+                    const { error: erroAtualizar } = await supabase
+                        .from('lancamentos').update(atualizacao.campos)
+                        .eq('data', data).eq('motorista_nome', atualizacao.nome).is('cancelado_em', null);
+                    if (erroAtualizar) throw erroAtualizar;
+                }
+
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const historico = alteracoesHistorico.map(({ anterior, depois }) => ({
+                        acao: anterior ? 'editar' : 'criar',
+                        data_servico: data,
+                        motorista_nome: depois.motorista_nome,
+                        usuario_id: user?.id || null,
+                        usuario_email: user?.email || null,
+                        origem: 'app_web',
+                        observacao: marcarFeriado
+                            ? `Status ${statusLabels[status]} aplicado aos selecionados; data marcada como feriado para a frota.`
+                            : `Status aplicado em lote: ${statusLabels[status]}.`,
+                        dados_antes: anterior,
+                        dados_depois: depois,
+                    }));
+                    const { error: erroHistorico } = await supabase.from('lancamentos_historico').insert(historico);
+                    if (erroHistorico) console.warn('Não foi possível registrar auditoria do lote:', erroHistorico.message);
+                } catch (erroHistorico) {
+                    console.warn('Falha ao registrar auditoria do lote:', erroHistorico);
+                }
+
+                await window.carregarDadosDoSupabase();
+                const mensagem = `${alteracoesHistorico.length} alteração(ões) aplicada(s).`;
+                alert(mensagem + (preservados.length ? ` ${preservados.length} lançamento(s) com produção ou cancelados foram preservados.` : ''));
+            } catch (erro) {
+                console.error('Falha ao aplicar lançamento em lote:', erro);
+                alert('Não foi possível aplicar a ação em lote: ' + (erro.message || erro));
+            } finally {
+                if (botao) { botao.disabled = false; botao.textContent = 'Aplicar'; }
+            }
+        };
 
         // =============================================================
         // GRAVAÇÃO DE LANÇAMENTOS
