@@ -13,7 +13,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <link rel="stylesheet" href="style.css?v=6">
-        <link rel="stylesheet" href="acerto.css?v=7">
+        <link rel="stylesheet" href="acerto.css?v=9">
 </head>
     <body>
 
@@ -320,6 +320,30 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <details class="lote-lancamento">
+                                    <summary>Lançar status para motoristas selecionados</summary>
+                                    <div class="lote-lancamento-corpo">
+                                        <label>Data<input type="date" id="loteData"></label>
+                                        <label>Status<select id="loteStatus">
+                                            <option value="folga">Folga</option>
+                                            <option value="falta">Falta</option>
+                                            <option value="atestado">Atestado</option>
+                                            <option value="suspensao">Suspensão</option>
+                                            <option value="polioff">Poli OFF / Oficina</option>
+                                            <option value="licenca">Férias</option>
+                                            <option value="desligado">Desligado</option>
+                                            <option value="normal">Trabalhou Normal</option>
+                                        </select></label>
+                                        <label class="lote-feriado"><input type="checkbox" id="loteMarcarFeriado"> Marcar esta data como feriado para toda a frota</label>
+                                        <div id="loteSelecaoMotoristas">
+                                            <div class="lote-selecao-topo"><strong>Motoristas</strong><label><input type="checkbox" id="loteSelecionarTodos"> Selecionar todos</label></div>
+                                            <div id="loteListaMotoristas" class="lote-lista-motoristas"></div>
+                                        </div>
+                                        <p id="loteAjuda" class="lote-ajuda">Selecione o status e os motoristas. Lançamentos com produção nessa data serão preservados.</p>
+                                        <button type="button" id="btnAplicarLote" class="btn-primary" onclick="window.aplicarLancamentoEmLote()">Aplicar</button>
+                                    </div>
+                                </details>
 
                                 <div class="flex-1" style="min-height:220px;">
                                     <div class="table-header-row">
@@ -1354,7 +1378,7 @@
         <script src="lock-mes.js?v=2"></script>
 
 
-<script type="module" src="app.js?v=33"></script>
+<script type="module" src="app.js?v=35"></script>
         <script>
             lucide.createIcons();
             // Show modals with flex when .hidden is removed
