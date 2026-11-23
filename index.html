@@ -212,9 +212,14 @@
         </div>
     </div>
     
-    <button id="btnRelatorioMot" onclick="window.gerarRelatorioMotoristaPDF()" class="btn-sistema" style="height: 36px; padding: 0 16px; background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; font-size: 13px; font-weight: 700;">
-        <i data-lucide="file-text" style="width: 16px; height: 16px; margin-right: 6px;"></i> Relatório Mensal
-    </button>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button id="btnFimRankingMotorista" type="button" onclick="window.toggleFimDosRankingsMotorista()" class="btn-sistema" style="display:none; height:36px; padding:0 12px; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-size:12px; font-weight:700;">
+            ↓ Colocar no fim dos rankings
+        </button>
+        <button id="btnRelatorioMot" onclick="window.gerarRelatorioMotoristaPDF()" class="btn-sistema" style="height: 36px; padding: 0 16px; background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; font-size: 13px; font-weight: 700;">
+            <i data-lucide="file-text" style="width: 16px; height: 16px; margin-right: 6px;"></i> Relatório Mensal
+        </button>
+    </div>
 </div>
 
                                 <div class="motorista-stats">
@@ -1378,7 +1383,7 @@
         <script src="lock-mes.js?v=2"></script>
 
 
-<script type="module" src="app.js?v=35"></script>
+<script type="module" src="app.js?v=37"></script>
         <script>
             lucide.createIcons();
             // Show modals with flex when .hidden is removed
