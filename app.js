@@ -65,6 +65,11 @@ import { gerarRelatorioEspeciais } from './src/business/relatorio-especiais.js?v
         // CONEXÃO COM SUPABASE
         // =============================================================
         const supabase = window.supabaseClient;
+        function motoristaNoFimDosRankings(nome) {
+            const chave = String(nome || '').trim().toUpperCase();
+            return Boolean((window.todosMotoristasCloud || []).find(m => String(m.nome || '').trim().toUpperCase() === chave)?.ranking_ultimo);
+        }
+
         function mapearLancamentosParaBanco(lancs) {
             const banco = {};
 
@@ -1054,11 +1059,12 @@ feitasJulia += extrasNoite;
                     pontos: info.pontos, 
                     percentual: percentualMeta, 
                     metaExata: metaMensalPontos, 
-                    inativo: window.motoristasInativos.includes(mot) 
+                    inativo: window.motoristasInativos.includes(mot),
+                    noFimDosRankings: motoristaNoFimDosRankings(mot)
                 };
             })
             .filter(item => item.pontos > 0 || item.valor > 0)
-            .sort((a, b) => b.percentual - a.percentual);
+            .sort((a, b) => Number(a.noFimDosRankings) - Number(b.noFimDosRankings) || b.percentual - a.percentual);
 
             let totalLiberado = 0;
             let fatBrutoFiltrado = 0;
@@ -1133,6 +1139,7 @@ rankFinal.forEach(item => {
                     <div class="posicao">#${index + 1}</div>
                     <div class="nome-motorista-rank" ${mot.inativo ? 'style="color:#ef4444;"' : ''}>
                         ${mot.nome}
+                        ${mot.noFimDosRankings ? '<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:999px;margin-left:5px;">FIM DO RANKING</span>' : ''}
                         <span class="valor-sub" style="${corFaturamento}">Fat: ${formatarMoeda(mot.valor)}${avisoBloqueio}</span>
                     </div>
                     <div><span class="badge-elo ${eloInfo.classe}">${eloInfo.nome}</span></div>
@@ -2320,10 +2327,10 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
                         porcentagem = 100; // Se filtrou só o sábado e ele trabalhou, a % é 100% garantida
                     }
 
-                    return { nome: mot, ...rankPeriodo[mot], porcentagem };
+                    return { nome: mot, ...rankPeriodo[mot], porcentagem, noFimDosRankings: motoristaNoFimDosRankings(mot) };
                 }).filter(item => item.pontos > 0 || item.valor > 0);
 
-            rankArray.sort((a, b) => b.porcentagem - a.porcentagem);
+            rankArray.sort((a, b) => Number(a.noFimDosRankings) - Number(b.noFimDosRankings) || b.porcentagem - a.porcentagem);
 
             const divLista = document.getElementById('listaRankingDiario');
             if (!divLista) return;
@@ -2355,7 +2362,7 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
                 linha.innerHTML = `
                     <div class="diario-top">
                         <div style="display:flex; flex-direction:column;">
-                            <span class="diario-nome">#${index + 1} - ${mot.nome} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
+                            <span class="diario-nome">#${index + 1} - ${mot.nome} ${mot.noFimDosRankings ? '<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:999px;">FIM DO RANKING</span>' : ''} <span class="text-blue-500 font-black">(${textoQtd})</span> ${extraBadge}</span>
                             ${pixHtml}
                         </div>
                         <span class="diario-faturamento">${formatarMoeda(mot.valor)}</span>
@@ -3287,6 +3294,8 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
         tbody.innerHTML = motoristasOrdenados.map(m => {
         const inativo = m.status === 'inativo';
         const nomeUpper = m.nome.toUpperCase().trim();
+        const noFimDosRankings = Boolean(m.ranking_ultimo);
+        const nomeAttr = String(m.nome).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
         const isDesligado = Object.values(window.bancoDadosCloud || {}).some(dia => dia[nomeUpper]?.status === 'desligado');
         const anivProximo = window.isAniversarioProximo(m.data_nascimento);
         const cnhVencida  = window.isCnhVencida(m.cnh_venc);
@@ -3296,6 +3305,7 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
             ${m.nome}
             ${inativo ? '<span style="font-size:11px; background:#fee2e2; color:#dc2626; padding:2px 6px; border-radius:4px; margin-left:6px;">Inativo</span>' : ''}
             ${isDesligado && !inativo ? '<span style="font-size:11px; background:#fecaca; color:#991b1b; padding:2px 6px; border-radius:4px; margin-left:6px;">Desligado</span>' : ''}
+            ${noFimDosRankings ? '<span style="font-size:10px; background:#f1f5f9; color:#64748b; padding:2px 6px; border-radius:999px; margin-left:6px;">Fim dos rankings</span>' : ''}
             </td>
             <td style="text-align:center; padding:12px; text-transform:capitalize;">${m.turno === 'dia' ? '☀️' : m.turno === 'noite' ? '🌙' : '🚛'} ${m.turno}</td>
             <td style="text-align:center; padding:12px; ${anivProximo ? 'color:#16a34a; font-weight:500;' : ''}">${m.data_nascimento ? new Date(m.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
@@ -3307,6 +3317,11 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
                 style="background:none; border:none; cursor:pointer; font-size:15px;" 
                 title="${inativo ? 'Reativar' : 'Desativar'}">
                 ${inativo ? '✅' : '🚫'}
+            </button>
+            <button type="button" class="js-toggle-fim-ranking" data-nome="${nomeAttr}" data-ativo="${noFimDosRankings ? 'true' : 'false'}"
+                style="background:none; border:none; cursor:pointer; font-size:15px;" 
+                title="${noFimDosRankings ? 'Retirar do fim dos rankings' : 'Mover para o fim dos rankings'}">
+                ${noFimDosRankings ? '⬆️' : '⬇️'}
             </button>
             <button onclick="window.toggleDetalhesMotorista(this, '${m.nome}', 'anexos-${m.nome.replace(/[^A-Z0-9]/gi, '_')}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:#6366f1;">+</button>    </td>
         </tr>
@@ -3331,6 +3346,13 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
         </tr>
         `;
         }).join('');
+
+        tbody.querySelectorAll('.js-toggle-fim-ranking').forEach(botao => {
+            botao.addEventListener('click', () => window.toggleFimDosRankingsMotorista(
+                botao.dataset.nome,
+                botao.dataset.ativo === 'true'
+            ));
+        });
         
         document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s)`;
         motoristas.forEach(m => {
@@ -3339,6 +3361,30 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
             window.carregarAnexosMotorista(m.nome, anexosId);
         }
         });
+        };
+
+        window.toggleFimDosRankingsMotorista = async function(nome, jaEstaNoFim) {
+            if (window.usuarioAtualFuncao === 'operador' || window.usuarioAtualFuncao === 'global') return;
+            const novoValor = !jaEstaNoFim;
+            const acao = novoValor ? 'mover para o fim' : 'retirar do fim';
+            if (!confirm(`Deseja ${acao} dos rankings o motorista ${nome}?`)) return;
+
+            const { error } = await window.supabaseClient
+                .from('motoristas')
+                .update({ ranking_ultimo: novoValor })
+                .eq('nome', nome);
+
+            if (error) {
+                console.error('Erro ao atualizar posição do motorista nos rankings:', error);
+                const precisaSql = error.code === '42703' || error.code === 'PGRST204';
+                alert(precisaSql
+                    ? 'A coluna da preferência ainda não existe no banco. Execute o arquivo supabase/08_ranking_ultimo.sql no SQL Editor do Supabase e tente novamente.'
+                    : 'Não foi possível atualizar a preferência: ' + error.message);
+                return;
+            }
+
+            await window.carregarDadosDoSupabase();
+            await window.carregarMotoristas();
         };
 
         // Salvar novo motorista
