@@ -65,9 +65,24 @@ import { gerarRelatorioEspeciais } from './src/business/relatorio-especiais.js?v
         // CONEXÃO COM SUPABASE
         // =============================================================
         const supabase = window.supabaseClient;
+        function normalizarNomeMotoristaRanking(nome) {
+            return String(nome || '')
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                .trim()
+                .toUpperCase();
+        }
+
+        function rankingFimAtivo(valor) {
+            return valor === true || valor === 1 || ['true', '1', 't', 'sim'].includes(String(valor ?? '').trim().toLowerCase());
+        }
+
         function motoristaNoFimDosRankings(nome) {
-            const chave = String(nome || '').trim().toUpperCase();
-            return Boolean((window.todosMotoristasCloud || []).find(m => String(m.nome || '').trim().toUpperCase() === chave)?.ranking_ultimo);
+            const chave = normalizarNomeMotoristaRanking(nome);
+            return (window.todosMotoristasCloud || []).some(m =>
+                normalizarNomeMotoristaRanking(m.nome) === chave && rankingFimAtivo(m.ranking_ultimo)
+            );
         }
 
         function mapearLancamentosParaBanco(lancs) {
@@ -3356,10 +3371,11 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
             const admin = window.usuarioAtualFuncao === 'admin';
             botao.style.display = admin && window.motoristaSelecionado ? '' : 'none';
             if (!admin || !window.motoristaSelecionado) return;
+            const nomeSelecionado = normalizarNomeMotoristaRanking(window.motoristaSelecionado);
             const cadastro = (window.todosMotoristasCloud || []).find(m =>
-                String(m.nome || '').trim().toUpperCase() === String(window.motoristaSelecionado).trim().toUpperCase()
+                normalizarNomeMotoristaRanking(m.nome) === nomeSelecionado
             );
-            const noFim = Boolean(cadastro?.ranking_ultimo);
+            const noFim = motoristaNoFimDosRankings(window.motoristaSelecionado);
             botao.textContent = noFim ? '↑ Retirar do fim dos rankings' : '↓ Colocar no fim dos rankings';
             botao.title = noFim
                 ? 'Este motorista está no fim dos rankings. Clique para voltar à posição normal.'
@@ -3373,11 +3389,12 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
             }
             const nome = window.motoristaSelecionado;
             if (!nome) return;
+            const nomeSelecionado = normalizarNomeMotoristaRanking(nome);
             const cadastro = (window.todosMotoristasCloud || []).find(m =>
-                String(m.nome || '').trim().toUpperCase() === String(nome).trim().toUpperCase()
+                normalizarNomeMotoristaRanking(m.nome) === nomeSelecionado
             );
             if (!cadastro) { alert('Não foi possível localizar o cadastro deste motorista.'); return; }
-            const novoValor = !Boolean(cadastro.ranking_ultimo);
+            const novoValor = !motoristaNoFimDosRankings(nome);
             const acao = novoValor ? 'mover para o fim' : 'retirar do fim';
             if (!confirm(`Deseja ${acao} dos rankings o motorista ${nome}?`)) return;
 
@@ -3403,7 +3420,7 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
                 return;
             }
 
-            cadastro.ranking_ultimo = Boolean(motoristaAtualizado.ranking_ultimo);
+            cadastro.ranking_ultimo = rankingFimAtivo(motoristaAtualizado.ranking_ultimo);
             if (Array.isArray(window.motoristasCache)) {
                 const cadastroCache = window.motoristasCache.find(m => m.id === motoristaAtualizado.id);
                 if (cadastroCache) cadastroCache.ranking_ultimo = cadastro.ranking_ultimo;
