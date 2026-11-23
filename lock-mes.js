@@ -108,6 +108,36 @@ window.LockMes = {
             return true; // Retorna true indicando que está bloqueado
         }
         return false; // Retorna false indicando que pode prosseguir
+    },
+
+    // Bloqueia períodos que incluam pelo menos um mês fechado.
+    periodoBloqueado: function(dataInicio, dataFim) {
+        if (!dataInicio || !dataFim) return false;
+        if (dataInicio > dataFim) {
+            alert('A data inicial não pode ser posterior à data final.');
+            return true;
+        }
+
+        const [anoInicio, mesInicio] = dataInicio.split('-').map(Number);
+        const [anoFim, mesFim] = dataFim.split('-').map(Number);
+        if (!anoInicio || !mesInicio || !anoFim || !mesFim) return false;
+
+        let ano = anoInicio;
+        let mes = mesInicio;
+        while (ano < anoFim || (ano === anoFim && mes <= mesFim)) {
+            const mesStr = `${ano}-${String(mes).padStart(2, '0')}`;
+            if (this.isTravado(mesStr)) {
+                alert(`⛔ AÇÃO BLOQUEADA!\nO período de férias inclui o mês fechado ${mesStr}. Destranque esse mês para continuar.`);
+                return true;
+            }
+
+            mes++;
+            if (mes > 12) {
+                mes = 1;
+                ano++;
+            }
+        }
+        return false;
     }
 };
 
