@@ -3381,10 +3381,14 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
             const acao = novoValor ? 'mover para o fim' : 'retirar do fim';
             if (!confirm(`Deseja ${acao} dos rankings o motorista ${nome}?`)) return;
 
-            const { error } = await window.supabaseClient
+            let consultaAtualizacao = window.supabaseClient
                 .from('motoristas')
                 .update({ ranking_ultimo: novoValor })
-                .eq('nome', nome);
+                .select('id,nome,ranking_ultimo');
+            consultaAtualizacao = cadastro.id
+                ? consultaAtualizacao.eq('id', cadastro.id)
+                : consultaAtualizacao.eq('nome', cadastro.nome);
+            const { data: motoristaAtualizado, error } = await consultaAtualizacao.maybeSingle();
 
             if (error) {
                 console.error('Erro ao atualizar posição do motorista nos rankings:', error);
@@ -3394,9 +3398,21 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
                     : 'Não foi possível atualizar a preferência: ' + error.message);
                 return;
             }
+            if (!motoristaAtualizado) {
+                alert('O banco não encontrou o cadastro para atualizar. Atualize a tela e tente novamente.');
+                return;
+            }
+
+            cadastro.ranking_ultimo = Boolean(motoristaAtualizado.ranking_ultimo);
+            if (Array.isArray(window.motoristasCache)) {
+                const cadastroCache = window.motoristasCache.find(m => m.id === motoristaAtualizado.id);
+                if (cadastroCache) cadastroCache.ranking_ultimo = cadastro.ranking_ultimo;
+            }
 
             await window.carregarDadosDoSupabase();
             await window.carregarMotoristas();
+            await window.gerarRankingMensal?.();
+            await window.gerarRankingPeriodo?.();
             window.atualizarControleFimRankingMotorista();
         };
 
