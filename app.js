@@ -272,6 +272,7 @@ global: ['rankings', 'lancamentos', 'domferiados', 'financeiro', 'projecao', 'ca
            const ehSomenteLeitura = (funcao === 'operador' || funcao === 'global');
             const btnGravar = document.getElementById('btnSalvarL');
             if (btnGravar) btnGravar.style.display = ehSomenteLeitura ? 'none' : '';
+            window.atualizarControleFimRankingMotorista?.();
         };
 
         // =============================================================
@@ -1568,6 +1569,7 @@ rankFinal.forEach(item => {
             if (estadoVazio) estadoVazio.style.display = 'none';
             if (conteudo)    conteudo.style.display = 'block';
             if (nomeDisplay) nomeDisplay.textContent = nome;
+            window.atualizarControleFimRankingMotorista?.();
 
             // No celular, "deslizar" para o painel de detalhe (como uma nova tela)
             const splitView = document.getElementById('frotaSplitView');
@@ -3294,8 +3296,6 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
         tbody.innerHTML = motoristasOrdenados.map(m => {
         const inativo = m.status === 'inativo';
         const nomeUpper = m.nome.toUpperCase().trim();
-        const noFimDosRankings = Boolean(m.ranking_ultimo);
-        const nomeAttr = String(m.nome).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
         const isDesligado = Object.values(window.bancoDadosCloud || {}).some(dia => dia[nomeUpper]?.status === 'desligado');
         const anivProximo = window.isAniversarioProximo(m.data_nascimento);
         const cnhVencida  = window.isCnhVencida(m.cnh_venc);
@@ -3305,7 +3305,6 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
             ${m.nome}
             ${inativo ? '<span style="font-size:11px; background:#fee2e2; color:#dc2626; padding:2px 6px; border-radius:4px; margin-left:6px;">Inativo</span>' : ''}
             ${isDesligado && !inativo ? '<span style="font-size:11px; background:#fecaca; color:#991b1b; padding:2px 6px; border-radius:4px; margin-left:6px;">Desligado</span>' : ''}
-            ${noFimDosRankings ? '<span style="font-size:10px; background:#f1f5f9; color:#64748b; padding:2px 6px; border-radius:999px; margin-left:6px;">Fim dos rankings</span>' : ''}
             </td>
             <td style="text-align:center; padding:12px; text-transform:capitalize;">${m.turno === 'dia' ? '☀️' : m.turno === 'noite' ? '🌙' : '🚛'} ${m.turno}</td>
             <td style="text-align:center; padding:12px; ${anivProximo ? 'color:#16a34a; font-weight:500;' : ''}">${m.data_nascimento ? new Date(m.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
@@ -3317,11 +3316,6 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
                 style="background:none; border:none; cursor:pointer; font-size:15px;" 
                 title="${inativo ? 'Reativar' : 'Desativar'}">
                 ${inativo ? '✅' : '🚫'}
-            </button>
-            <button type="button" class="js-toggle-fim-ranking" data-nome="${nomeAttr}" data-ativo="${noFimDosRankings ? 'true' : 'false'}"
-                style="background:none; border:none; cursor:pointer; font-size:15px;" 
-                title="${noFimDosRankings ? 'Retirar do fim dos rankings' : 'Mover para o fim dos rankings'}">
-                ${noFimDosRankings ? '⬆️' : '⬇️'}
             </button>
             <button onclick="window.toggleDetalhesMotorista(this, '${m.nome}', 'anexos-${m.nome.replace(/[^A-Z0-9]/gi, '_')}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:#6366f1;">+</button>    </td>
         </tr>
@@ -3347,13 +3341,6 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
         `;
         }).join('');
 
-        tbody.querySelectorAll('.js-toggle-fim-ranking').forEach(botao => {
-            botao.addEventListener('click', () => window.toggleFimDosRankingsMotorista(
-                botao.dataset.nome,
-                botao.dataset.ativo === 'true'
-            ));
-        });
-        
         document.getElementById('totalCadastrados').textContent = `Total: ${motoristas.length} motorista(s)`;
         motoristas.forEach(m => {
         const anexosId = `anexos-${m.nome.replace(/[^A-Z0-9]/gi, '_')}`;
@@ -3363,9 +3350,34 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
         });
         };
 
-        window.toggleFimDosRankingsMotorista = async function(nome, jaEstaNoFim) {
-            if (window.usuarioAtualFuncao === 'operador' || window.usuarioAtualFuncao === 'global') return;
-            const novoValor = !jaEstaNoFim;
+        window.atualizarControleFimRankingMotorista = function() {
+            const botao = document.getElementById('btnFimRankingMotorista');
+            if (!botao) return;
+            const admin = window.usuarioAtualFuncao === 'admin';
+            botao.style.display = admin && window.motoristaSelecionado ? '' : 'none';
+            if (!admin || !window.motoristaSelecionado) return;
+            const cadastro = (window.todosMotoristasCloud || []).find(m =>
+                String(m.nome || '').trim().toUpperCase() === String(window.motoristaSelecionado).trim().toUpperCase()
+            );
+            const noFim = Boolean(cadastro?.ranking_ultimo);
+            botao.textContent = noFim ? '↑ Retirar do fim dos rankings' : '↓ Colocar no fim dos rankings';
+            botao.title = noFim
+                ? 'Este motorista está no fim dos rankings. Clique para voltar à posição normal.'
+                : 'Mover este motorista para depois dos demais no Leaderboard Mensal e no Ranking de Período.';
+        };
+
+        window.toggleFimDosRankingsMotorista = async function() {
+            if (window.usuarioAtualFuncao !== 'admin') {
+                alert('Somente administradores podem alterar a posição do motorista nos rankings.');
+                return;
+            }
+            const nome = window.motoristaSelecionado;
+            if (!nome) return;
+            const cadastro = (window.todosMotoristasCloud || []).find(m =>
+                String(m.nome || '').trim().toUpperCase() === String(nome).trim().toUpperCase()
+            );
+            if (!cadastro) { alert('Não foi possível localizar o cadastro deste motorista.'); return; }
+            const novoValor = !Boolean(cadastro.ranking_ultimo);
             const acao = novoValor ? 'mover para o fim' : 'retirar do fim';
             if (!confirm(`Deseja ${acao} dos rankings o motorista ${nome}?`)) return;
 
@@ -3385,6 +3397,7 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
 
             await window.carregarDadosDoSupabase();
             await window.carregarMotoristas();
+            window.atualizarControleFimRankingMotorista();
         };
 
         // Salvar novo motorista
