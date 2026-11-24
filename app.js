@@ -366,8 +366,8 @@ global: ['rankings', 'lancamentos', 'domferiados', 'financeiro', 'projecao', 'ca
 
 
         // 🔥 ADICIONE ESTAS DUAS LINHAS AQUI para atualizar os cards e o leaderboard automaticamente:
-        if (typeof window.gerarRankingMensal === 'function') window.gerarRankingMensal();
-        if (typeof window.gerarRankingPeriodo === 'function') window.gerarRankingPeriodo();
+        if (typeof window.gerarRankingMensal === 'function') await window.gerarRankingMensal();
+        if (typeof window.gerarRankingPeriodo === 'function') await window.gerarRankingPeriodo();
             
         if (window.GerenciadorNotificacoes) window.GerenciadorNotificacoes.gerarInsightsEstrategicos(window.bancoDadosCloud, window.todosMotoristasCloud);
 
@@ -923,7 +923,9 @@ global: ['rankings', 'lancamentos', 'domferiados', 'financeiro', 'projecao', 'ca
         window._turnoLeaderboardIndex = 0;
         window._turnoLeaderboardAtual = 'todos'; // Memória global blindada
 
+       window._geracaoRankingMensal = 0;
        window.gerarRankingMensal = async function (mesForcado) {
+    const geracao = ++window._geracaoRankingMensal;
     const elFiltro = document.getElementById('mesFiltro');
     const mesFiltro = mesForcado || elFiltro?.value || window.anoMesAtual || new Date().toISOString().substring(0, 7);  
 
@@ -973,6 +975,9 @@ try {
 } catch (erro) {
     console.error('Erro inesperado ao carregar extras do operador:', erro);
 }
+
+// Uma consulta anterior não deve substituir o ranking calculado mais recentemente.
+if (geracao !== window._geracaoRankingMensal) return;
 
             const diasUteisGlobais = window.carregarDiasUteis(mesFiltro);
             const bancoDados = window.bancoDadosCloud;
@@ -2239,7 +2244,9 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
             window.gerarRankingPeriodo();
         };
 
+        window._geracaoRankingPeriodo = 0;
         window.gerarRankingPeriodo = async function () {
+            const geracao = ++window._geracaoRankingPeriodo;
             const elInicio = document.getElementById('dataRankingInicio');
             const elFim    = document.getElementById('dataRankingFim');
             if (!elInicio || !elFim) return;
@@ -2259,6 +2266,9 @@ ${window.usuarioAtualFuncao === 'operador' ? '' : `<button class="btn-delete" on
                 console.error("Erro ao buscar período:", err);
                 return;
             }
+
+            // Descarta respostas antigas quando uma chamada mais recente já começou.
+            if (geracao !== window._geracaoRankingPeriodo) return;
 
             let rankPeriodo  = {};
             
