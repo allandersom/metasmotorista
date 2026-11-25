@@ -33,7 +33,7 @@ import { gerarRelatorioEspeciais } from './src/business/relatorio-especiais.js?v
             calcularPontos,
             getMetaDiaria,
             getConfigVeiculo,
-        } from './src/business/financeiro.js?v=12';
+        } from './src/business/financeiro.js?v=13';
 
 
         import {
@@ -79,11 +79,13 @@ import { gerarRelatorioEspeciais } from './src/business/relatorio-especiais.js?v
             return valor === true || valor === 1 || ['true', '1', 't', 'sim'].includes(String(valor ?? '').trim().toLowerCase());
         }
 
-        function motoristaNoFimDosRankings(nome) {
+        function obterMotoristaRanking(nome) {
             const chave = normalizarNomeMotoristaRanking(nome);
-            return (window.todosMotoristasCloud || []).some(m =>
-                normalizarNomeMotoristaRanking(m.nome) === chave && rankingFimAtivo(m.ranking_ultimo)
-            );
+            return (window.todosMotoristasCloud || []).find(m => normalizarNomeMotoristaRanking(m.nome) === chave) || null;
+        }
+
+        function motoristaNoFimDosRankings(nome) {
+            return rankingFimAtivo(obterMotoristaRanking(nome)?.ranking_ultimo);
         }
 
         function mapearLancamentosParaBanco(lancs) {
@@ -3417,8 +3419,11 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
             try {
                 let consultaAtualizacao = window.supabaseClient
                     .from('motoristas')
-                    .update({ ranking_ultimo: novoValor })
-                    .select('id,nome,ranking_ultimo');
+                    .update({
+                        ranking_ultimo: novoValor,
+                        ranking_ultimo_em: novoValor ? new Date().toISOString() : null
+                    })
+                    .select('id,nome,ranking_ultimo,ranking_ultimo_em');
                 consultaAtualizacao = cadastro.id
                     ? consultaAtualizacao.eq('id', cadastro.id)
                     : consultaAtualizacao.eq('nome', cadastro.nome);
@@ -3428,7 +3433,7 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
                     console.error('Erro ao atualizar posição do motorista nos rankings:', error);
                     const precisaSql = error.code === '42703' || error.code === 'PGRST204';
                     throw new Error(precisaSql
-                        ? 'A coluna da preferência ainda não existe no banco. Execute supabase/08_ranking_ultimo.sql no SQL Editor do Supabase.'
+                        ? 'A coluna de ordem ainda não existe no banco. Execute supabase/09_ranking_ultimo_ordem.sql no SQL Editor do Supabase.'
                         : `O banco recusou a alteração: ${error.message}`);
                 }
                 if (!motoristaAtualizado) {
@@ -3437,14 +3442,16 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
 
                 let consultaVerificacao = window.supabaseClient
                     .from('motoristas')
-                    .select('id,nome,ranking_ultimo');
+                    .select('id,nome,ranking_ultimo,ranking_ultimo_em');
                 consultaVerificacao = motoristaAtualizado.id
                     ? consultaVerificacao.eq('id', motoristaAtualizado.id)
                     : consultaVerificacao.eq('nome', motoristaAtualizado.nome);
                 const { data: motoristaVerificado, error: erroVerificacao } = await consultaVerificacao.maybeSingle();
                 if (erroVerificacao) throw erroVerificacao;
-                if (!motoristaVerificado || rankingFimAtivo(motoristaVerificado.ranking_ultimo) !== novoValor) {
-                    throw new Error('A alteração não foi confirmada pelo banco. Confira as políticas de UPDATE/SELECT da tabela motoristas.');
+                if (!motoristaVerificado ||
+                    rankingFimAtivo(motoristaVerificado.ranking_ultimo) !== novoValor ||
+                    (novoValor && !motoristaVerificado.ranking_ultimo_em)) {
+                    throw new Error('A alteração não foi confirmada pelo banco. Confira as colunas e as políticas de UPDATE/SELECT da tabela motoristas.');
                 }
                 preferenciaSalva = true;
 
@@ -3452,7 +3459,10 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
                     const mesmoCadastro = motoristaVerificado.id
                         ? String(m.id) === String(motoristaVerificado.id)
                         : normalizarNomeMotoristaRanking(m.nome) === normalizarNomeMotoristaRanking(motoristaVerificado.nome);
-                    if (mesmoCadastro) m.ranking_ultimo = novoValor;
+                    if (mesmoCadastro) {
+                        m.ranking_ultimo = novoValor;
+                        m.ranking_ultimo_em = motoristaVerificado.ranking_ultimo_em || null;
+                    }
                 });
                 atualizarFlag(window.todosMotoristasCloud);
                 atualizarFlag(window.motoristasCache);
