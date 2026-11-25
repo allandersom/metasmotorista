@@ -70,6 +70,7 @@ import { gerarRelatorioEspeciais } from './src/business/relatorio-especiais.js?v
                 .normalize('NFKD')
                 .replace(/[\u0300-\u036f]/g, '')
                 .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                .replace(/\s+/g, ' ')
                 .trim()
                 .toUpperCase();
         }
@@ -3397,6 +3398,8 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
                 alert('Somente administradores podem alterar a posição do motorista nos rankings.');
                 return;
             }
+            if (window._fimRankingSalvando) return;
+
             const nome = window.motoristaSelecionado;
             if (!nome) return;
             const nomeSelecionado = normalizarNomeMotoristaRanking(nome);
@@ -3404,43 +3407,74 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
                 normalizarNomeMotoristaRanking(m.nome) === nomeSelecionado
             );
             if (!cadastro) { alert('Não foi possível localizar o cadastro deste motorista.'); return; }
+
             const novoValor = !motoristaNoFimDosRankings(nome);
             const acao = novoValor ? 'mover para o fim' : 'retirar do fim';
             if (!confirm(`Deseja ${acao} dos rankings o motorista ${nome}?`)) return;
 
-            let consultaAtualizacao = window.supabaseClient
-                .from('motoristas')
-                .update({ ranking_ultimo: novoValor })
-                .select('id,nome,ranking_ultimo');
-            consultaAtualizacao = cadastro.id
-                ? consultaAtualizacao.eq('id', cadastro.id)
-                : consultaAtualizacao.eq('nome', cadastro.nome);
-            const { data: motoristaAtualizado, error } = await consultaAtualizacao.maybeSingle();
+            const botao = document.getElementById('btnFimRankingMotorista');
+            window._fimRankingSalvando = true;
+            let preferenciaSalva = false;
+            if (botao) { botao.disabled = true; botao.textContent = 'Salvando posição...'; }
 
-            if (error) {
-                console.error('Erro ao atualizar posição do motorista nos rankings:', error);
-                const precisaSql = error.code === '42703' || error.code === 'PGRST204';
-                alert(precisaSql
-                    ? 'A coluna da preferência ainda não existe no banco. Execute o arquivo supabase/08_ranking_ultimo.sql no SQL Editor do Supabase e tente novamente.'
-                    : 'Não foi possível atualizar a preferência: ' + error.message);
-                return;
-            }
-            if (!motoristaAtualizado) {
-                alert('O banco não encontrou o cadastro para atualizar. Atualize a tela e tente novamente.');
-                return;
-            }
+            try {
+                let consultaAtualizacao = window.supabaseClient
+                    .from('motoristas')
+                    .update({ ranking_ultimo: novoValor })
+                    .select('id,nome,ranking_ultimo');
+                consultaAtualizacao = cadastro.id
+                    ? consultaAtualizacao.eq('id', cadastro.id)
+                    : consultaAtualizacao.eq('nome', cadastro.nome);
+                const { data: motoristaAtualizado, error } = await consultaAtualizacao.maybeSingle();
 
-            cadastro.ranking_ultimo = rankingFimAtivo(motoristaAtualizado.ranking_ultimo);
-            if (Array.isArray(window.motoristasCache)) {
-                const cadastroCache = window.motoristasCache.find(m => m.id === motoristaAtualizado.id);
-                if (cadastroCache) cadastroCache.ranking_ultimo = cadastro.ranking_ultimo;
-            }
+                if (error) {
+                    console.error('Erro ao atualizar posição do motorista nos rankings:', error);
+                    const precisaSql = error.code === '42703' || error.code === 'PGRST204';
+                    throw new Error(precisaSql
+                        ? 'A coluna da preferência ainda não existe no banco. Execute supabase/08_ranking_ultimo.sql no SQL Editor do Supabase.'
+                        : `O banco recusou a alteração: ${error.message}`);
+                }
+                if (!motoristaAtualizado) {
+                    throw new Error('O banco não retornou nenhum motorista atualizado. Verifique a permissão de edição da tabela motoristas (RLS).');
+                }
 
-            await window.carregarDadosDoSupabase();
-            await window.carregarMotoristas();
-            await window.gerarRankingMensal?.();
-            await window.gerarRankingPeriodo?.();
-            window.atualizarControleFimRankingMotorista();
+                let consultaVerificacao = window.supabaseClient
+                    .from('motoristas')
+                    .select('id,nome,ranking_ultimo');
+                consultaVerificacao = motoristaAtualizado.id
+                    ? consultaVerificacao.eq('id', motoristaAtualizado.id)
+                    : consultaVerificacao.eq('nome', motoristaAtualizado.nome);
+                const { data: motoristaVerificado, error: erroVerificacao } = await consultaVerificacao.maybeSingle();
+                if (erroVerificacao) throw erroVerificacao;
+                if (!motoristaVerificado || rankingFimAtivo(motoristaVerificado.ranking_ultimo) !== novoValor) {
+                    throw new Error('A alteração não foi confirmada pelo banco. Confira as políticas de UPDATE/SELECT da tabela motoristas.');
+                }
+                preferenciaSalva = true;
+
+                const atualizarFlag = lista => (lista || []).forEach(m => {
+                    const mesmoCadastro = motoristaVerificado.id
+                        ? String(m.id) === String(motoristaVerificado.id)
+                        : normalizarNomeMotoristaRanking(m.nome) === normalizarNomeMotoristaRanking(motoristaVerificado.nome);
+                    if (mesmoCadastro) m.ranking_ultimo = novoValor;
+                });
+                atualizarFlag(window.todosMotoristasCloud);
+                atualizarFlag(window.motoristasCache);
+
+                await Promise.all([
+                    window.gerarRankingMensal?.(),
+                    window.gerarRankingPeriodo?.()
+                ]);
+                window.atualizarControleFimRankingMotorista();
+            } catch (erro) {
+                console.error('Falha ao salvar posição nos rankings:', erro);
+                alert((preferenciaSalva
+                    ? 'A preferência foi salva no banco, mas houve um problema ao atualizar as listas. Atualize a página. '
+                    : 'A posição não foi salva. ') + (erro.message || erro));
+                window.atualizarControleFimRankingMotorista();
+            } finally {
+                window._fimRankingSalvando = false;
+                if (botao) botao.disabled = false;
+            }
         };
 
         // Salvar novo motorista
