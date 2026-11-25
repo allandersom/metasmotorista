@@ -187,12 +187,23 @@ function aplicarCorrecaoRankings() {
     .replace(/\s+/g, ' ')
     .trim()
     .toUpperCase();
-  const motoristaNoFimDosRankings = nome => {
+  const obterMotoristaRanking = nome => {
     const chave = normalizarNomeRanking(nome);
-    return (window.todosMotoristasCloud || []).some(m =>
-      normalizarNomeRanking(m.nome) === chave &&
-      (m.ranking_ultimo === true || m.ranking_ultimo === 1 || ['true', '1', 't', 'sim'].includes(String(m.ranking_ultimo ?? '').trim().toLowerCase()))
-    );
+    return (window.todosMotoristasCloud || []).find(m => normalizarNomeRanking(m.nome) === chave) || null;
+  };
+  const motoristaNoFimDosRankings = nome => {
+    const valor = obterMotoristaRanking(nome)?.ranking_ultimo;
+    return valor === true || valor === 1 || ['true', '1', 't', 'sim'].includes(String(valor ?? '').trim().toLowerCase());
+  };
+  const ordemFimDosRankings = nome => {
+    const valor = obterMotoristaRanking(nome)?.ranking_ultimo_em;
+    const data = valor ? Date.parse(valor) : 0;
+    return Number.isFinite(data) ? data : 0;
+  };
+  const compararPosicaoRanking = (a, b, campoPercentual) => {
+    if (a.noFimDosRankings !== b.noFimDosRankings) return Number(a.noFimDosRankings) - Number(b.noFimDosRankings);
+    if (a.noFimDosRankings && a.ordemFimRanking !== b.ordemFimRanking) return a.ordemFimRanking - b.ordemFimRanking;
+    return b[campoPercentual] - a[campoPercentual];
   };
 
   let versaoRanking = 0;
@@ -342,11 +353,11 @@ function aplicarCorrecaoRankings() {
                 porcentagem = 100;
             }
 
-            return { nome: mot, ...rankPeriodo[mot], porcentagem, noFimDosRankings: motoristaNoFimDosRankings(mot) };
+            return { nome: mot, ...rankPeriodo[mot], porcentagem, noFimDosRankings: motoristaNoFimDosRankings(mot), ordemFimRanking: ordemFimDosRankings(mot) };
         }).filter(item => item.pontos > 0 || item.valor > 0);
 
         // Marcados aparecem depois dos demais; os outros seguem pela meta.
-        rankArray.sort((a, b) => Number(a.noFimDosRankings) - Number(b.noFimDosRankings) || b.porcentagem - a.porcentagem);
+        rankArray.sort((a, b) => compararPosicaoRanking(a, b, 'porcentagem'));
         
         const divLista = document.getElementById('listaRankingDiario');
         if (!divLista) return;
@@ -505,9 +516,9 @@ if (!diaEspecial) {
             const info = acumuladoMes[mot];
             const metaMensalPontos = getMetaCalculadaMotorista(mot);
             const percentualMeta = metaMensalPontos > 0 ? ((info.pontos / metaMensalPontos) * 100) : 0;
-            return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos, noFimDosRankings: motoristaNoFimDosRankings(mot) };
+            return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos, noFimDosRankings: motoristaNoFimDosRankings(mot), ordemFimRanking: ordemFimDosRankings(mot) };
         }).filter(item => item.pontos > 0 || item.valor > 0)
-          .sort((a, b) => Number(a.noFimDosRankings) - Number(b.noFimDosRankings) || b.percentual - a.percentual);
+          .sort((a, b) => compararPosicaoRanking(a, b, 'percentual'));
 
         let totalLiberado = 0;
         rankFinal.forEach(mot => {
