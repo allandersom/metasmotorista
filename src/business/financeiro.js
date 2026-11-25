@@ -180,6 +180,21 @@ export function calcularValorDia({
 function aplicarCorrecaoRankings() {
     if (typeof window === 'undefined') return;
 
+  const normalizarNomeRanking = nome => String(nome || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+  const motoristaNoFimDosRankings = nome => {
+    const chave = normalizarNomeRanking(nome);
+    return (window.todosMotoristasCloud || []).some(m =>
+      normalizarNomeRanking(m.nome) === chave &&
+      (m.ranking_ultimo === true || m.ranking_ultimo === 1 || ['true', '1', 't', 'sim'].includes(String(m.ranking_ultimo ?? '').trim().toLowerCase()))
+    );
+  };
+
   let versaoRanking = 0;
   window.gerarRankingPeriodo = async function() {
         const versao = ++versaoRanking;
@@ -327,11 +342,11 @@ function aplicarCorrecaoRankings() {
                 porcentagem = 100;
             }
 
-            return { nome: mot, ...rankPeriodo[mot], porcentagem };
+            return { nome: mot, ...rankPeriodo[mot], porcentagem, noFimDosRankings: motoristaNoFimDosRankings(mot) };
         }).filter(item => item.pontos > 0 || item.valor > 0);
 
-        // O RANKING AGORA ORDENA PELA PORCENTAGEM (SLA PROPORCIONAL)
-        rankArray.sort((a, b) => b.porcentagem - a.porcentagem);
+        // Marcados aparecem depois dos demais; os outros seguem pela meta.
+        rankArray.sort((a, b) => Number(a.noFimDosRankings) - Number(b.noFimDosRankings) || b.porcentagem - a.porcentagem);
         
         const divLista = document.getElementById('listaRankingDiario');
         if (!divLista) return;
@@ -490,8 +505,9 @@ if (!diaEspecial) {
             const info = acumuladoMes[mot];
             const metaMensalPontos = getMetaCalculadaMotorista(mot);
             const percentualMeta = metaMensalPontos > 0 ? ((info.pontos / metaMensalPontos) * 100) : 0;
-            return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos };
-        }).filter(item => item.pontos > 0 || item.valor > 0).sort((a, b) => b.percentual - a.percentual);
+            return { nome: mot, caixas: info.caixas, viagens: info.viagens, valor: info.valor, pontos: info.pontos, percentual: percentualMeta, metaExata: metaMensalPontos, noFimDosRankings: motoristaNoFimDosRankings(mot) };
+        }).filter(item => item.pontos > 0 || item.valor > 0)
+          .sort((a, b) => Number(a.noFimDosRankings) - Number(b.noFimDosRankings) || b.percentual - a.percentual);
 
         let totalLiberado = 0;
         rankFinal.forEach(mot => {
