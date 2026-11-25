@@ -3409,9 +3409,6 @@ window.atualizarGraficosProjecao = async function (reiniciarPeriodos = false) {
             if (!cadastro) { alert('Não foi possível localizar o cadastro deste motorista.'); return; }
 
             const novoValor = !motoristaNoFimDosRankings(nome);
-            const acao = novoValor ? 'mover para o fim' : 'retirar do fim';
-            if (!confirm(`Deseja ${acao} dos rankings o motorista ${nome}?`)) return;
-
             const botao = document.getElementById('btnFimRankingMotorista');
             window._fimRankingSalvando = true;
             let preferenciaSalva = false;
