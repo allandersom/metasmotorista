@@ -33,7 +33,7 @@ import { gerarRelatorioEspeciais } from './src/business/relatorio-especiais.js?v
             calcularPontos,
             getMetaDiaria,
             getConfigVeiculo,
-        } from './src/business/financeiro.js?v=11';
+        } from './src/business/financeiro.js?v=12';
 
 
         import {
